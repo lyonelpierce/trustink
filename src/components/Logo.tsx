@@ -15,7 +15,9 @@ const Logo = ({
         <Link href="/">
           <h1 className={cn("font-semibold uppercase text-lg", className)}>
             Trust
-            <span className="bg-white p-0.5 text-black">Ink</span>
+            <span className="bg-black dark:bg-white p-0.5 text-white dark:text-black">
+              Ink
+            </span>
           </h1>
         </Link>
       ) : (
