@@ -82,20 +82,37 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
   highlightedSection: null,
   isDocumentLoading: false,
   
-  setCurrentDocument: (document: Document | null) => set({ currentDocument: document }),
+  setCurrentDocument: (document: Document | null) => {
+    console.log('[DocumentStore] Setting current document:', document?.name || 'null');
+    set({ currentDocument: document });
+  },
   
-  setHighlightedSection: (sectionId: string | null) => set({ highlightedSection: sectionId }),
+  setHighlightedSection: (sectionId: string | null) => {
+    console.log('[DocumentStore] Highlighting section:', sectionId);
+    set({ highlightedSection: sectionId });
+  },
   
-  setDocumentLoading: (loading: boolean) => set({ isDocumentLoading: loading }),
+  setDocumentLoading: (loading: boolean) => {
+    console.log('[DocumentStore] Set document loading:', loading);
+    set({ isDocumentLoading: loading });
+  },
   
   updateDocumentSection: (sectionId: string, newText: string, saveRevision = false) => {
+    console.log('[DocumentStore] Updating section:', sectionId, 'Save as revision:', saveRevision);
+    
     const currentDocument = get().currentDocument;
-    if (!currentDocument || !currentDocument.parsedContent) return;
+    if (!currentDocument || !currentDocument.parsedContent) {
+      console.log('[DocumentStore] Cannot update section: No current document or parsed content');
+      return;
+    }
     
     const sections = currentDocument.parsedContent.sections;
     const sectionToUpdate = sections.find((section: DocumentSection) => section.id === sectionId);
     
-    if (!sectionToUpdate) return;
+    if (!sectionToUpdate) {
+      console.log('[DocumentStore] Cannot update section: Section not found');
+      return;
+    }
     
     // If we need to save this as a revision
     if (saveRevision) {
@@ -109,6 +126,8 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
         aiGenerated: false
       };
       
+      console.log('[DocumentStore] Adding accepted revision:', newRevision);
+      
       set((state: DocumentState) => ({
         revisions: [...state.revisions, newRevision]
       }));
@@ -118,6 +137,8 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
     const updatedSections = sections.map((section: DocumentSection) => 
       section.id === sectionId ? { ...section, text: newText } : section
     );
+    
+    console.log('[DocumentStore] Section updated successfully');
     
     set({
       currentDocument: {
@@ -131,13 +152,21 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
   },
   
   proposeRevision: (sectionId: string, newText: string, aiGenerated = false, comment?: string) => {
+    console.log('[DocumentStore] Proposing revision for section:', sectionId, 'AI generated:', aiGenerated);
+    
     const currentDocument = get().currentDocument;
-    if (!currentDocument || !currentDocument.parsedContent) return;
+    if (!currentDocument || !currentDocument.parsedContent) {
+      console.log('[DocumentStore] Cannot propose revision: No current document or parsed content');
+      return;
+    }
     
     const sections = currentDocument.parsedContent.sections;
     const sectionToRevise = sections.find((section: DocumentSection) => section.id === sectionId);
     
-    if (!sectionToRevise) return;
+    if (!sectionToRevise) {
+      console.log('[DocumentStore] Cannot propose revision: Section not found');
+      return;
+    }
     
     const newRevision: SectionRevision = {
       sectionId,
@@ -150,6 +179,8 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
       comment
     };
     
+    console.log('[DocumentStore] Adding pending revision with session:', get().activeRevisionSession);
+    
     set((state: DocumentState) => ({
       pendingRevisions: [...state.pendingRevisions, newRevision],
       highlightedSection: sectionId // Auto-highlight the section being revised
@@ -157,16 +188,23 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
   },
   
   acceptRevision: (revisionId: string) => {
+    console.log('[DocumentStore] Accepting revision:', revisionId);
+    
     const pendingRevisions = get().pendingRevisions;
     const revisionToAccept = pendingRevisions.find((rev: SectionRevision) => rev.sectionId === revisionId);
     
-    if (!revisionToAccept) return;
+    if (!revisionToAccept) {
+      console.log('[DocumentStore] Cannot accept revision: Revision not found');
+      return;
+    }
     
     // Update the revision status
     const updatedRevision: SectionRevision = {
       ...revisionToAccept,
       status: 'accepted'
     };
+    
+    console.log('[DocumentStore] Updating document with accepted revision');
     
     // Update the document section
     get().updateDocumentSection(revisionToAccept.sectionId, revisionToAccept.proposedText);
@@ -179,10 +217,15 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
   },
   
   rejectRevision: (revisionId: string) => {
+    console.log('[DocumentStore] Rejecting revision:', revisionId);
+    
     const pendingRevisions = get().pendingRevisions;
     const revisionToReject = pendingRevisions.find((rev: SectionRevision) => rev.sectionId === revisionId);
     
-    if (!revisionToReject) return;
+    if (!revisionToReject) {
+      console.log('[DocumentStore] Cannot reject revision: Revision not found');
+      return;
+    }
     
     // Update the revision status
     const updatedRevision: SectionRevision = {
@@ -198,20 +241,25 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
   },
   
   startRevisionSession: (sessionId: string) => {
+    console.log('[DocumentStore] Starting revision session:', sessionId);
     set({ activeRevisionSession: sessionId });
   },
   
   endRevisionSession: () => {
+    console.log('[DocumentStore] Ending revision session');
     set({ activeRevisionSession: null });
   },
   
-  clearDocument: () => set({ 
-    currentDocument: null, 
-    highlightedSection: null, 
-    isDocumentLoading: false,
-    pendingRevisions: [],
-    activeRevisionSession: null
-  }),
+  clearDocument: () => {
+    console.log('[DocumentStore] Clearing document');
+    set({ 
+      currentDocument: null, 
+      highlightedSection: null, 
+      isDocumentLoading: false,
+      pendingRevisions: [],
+      activeRevisionSession: null
+    });
+  },
 }));
 
 export { useContractStore, useModalStore, useDocumentStore };

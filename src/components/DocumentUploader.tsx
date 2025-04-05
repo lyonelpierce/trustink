@@ -9,11 +9,16 @@ import { handleError, safeAsync } from '@/lib/error-utils';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 export function DocumentUploader() {
+  console.log('[DocumentUploader] Component rendered');
+  
   const { setCurrentDocument, setDocumentLoading, isDocumentLoading } = useDocumentStore();
   const [dragActive, setDragActive] = useState(false);
 
   const processFile = useCallback(async (file: File) => {
+    console.log('[DocumentUploader] Processing file:', file.name, 'Size:', Math.round(file.size / 1024), 'KB', 'Type:', file.type);
+    
     if (file.type !== 'application/pdf') {
+      console.log('[DocumentUploader] Invalid file type:', file.type);
       toast.error('Please upload a PDF file');
       return;
     }
@@ -22,33 +27,38 @@ export function DocumentUploader() {
       setDocumentLoading(true);
       
       // Read the file
+      console.log('[DocumentUploader] Reading file as ArrayBuffer...');
       const [arrayBuffer, readError] = await safeAsync(
         file.arrayBuffer(),
         { context: 'processFile.readFile', showToast: false }
       );
       
       if (readError || !arrayBuffer) {
+        console.log('[DocumentUploader] Failed to read file:', readError);
         throw new Error('Failed to read PDF file');
       }
       
       const uint8Array = new Uint8Array(arrayBuffer);
       
       // Parse the PDF
+      console.log('[DocumentUploader] Parsing PDF document...');
       const [pdfDoc, pdfError] = await safeAsync(
         PDFDocument.load(uint8Array),
         { context: 'processFile.parsePDF', showToast: false }
       );
       
       if (pdfError || !pdfDoc) {
+        console.log('[DocumentUploader] Failed to parse PDF:', pdfError);
         throw new Error('Failed to parse PDF document');
       }
       
       // Extract text from PDF (simplified version)
-      // In a real implementation, we would use a more robust text extraction
-      const sections = [];
+      console.log('[DocumentUploader] Extracting sections from PDF...');
       const pageCount = pdfDoc.getPageCount();
+      console.log('[DocumentUploader] Document has', pageCount, 'pages');
       
       // Create a basic parsed structure with page numbers for now
+      const sections = [];
       for (let i = 0; i < pageCount; i++) {
         const page = pdfDoc.getPage(i);
         const { width, height } = page.getSize();
@@ -63,6 +73,7 @@ export function DocumentUploader() {
       }
       
       // Set the document in the store
+      console.log('[DocumentUploader] Setting document with', sections.length, 'sections in store');
       setCurrentDocument({
         name: file.name,
         file: file,
@@ -72,8 +83,10 @@ export function DocumentUploader() {
         }
       });
       
+      console.log('[DocumentUploader] Document uploaded successfully');
       toast.success('Document uploaded successfully');
     } catch (error) {
+      console.log('[DocumentUploader] Error processing document:', error);
       handleError(error, {
         context: 'processFile',
         customMessage: 'Failed to process PDF'
@@ -86,12 +99,16 @@ export function DocumentUploader() {
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!dragActive) setDragActive(true);
+    if (!dragActive) {
+      console.log('[DocumentUploader] Drag active');
+      setDragActive(true);
+    }
   }, [dragActive]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('[DocumentUploader] Drag inactive');
     setDragActive(false);
   }, []);
 
@@ -101,6 +118,7 @@ export function DocumentUploader() {
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      console.log('[DocumentUploader] File dropped:', e.dataTransfer.files[0].name);
       processFile(e.dataTransfer.files[0]);
     }
   }, [processFile]);
@@ -108,6 +126,7 @@ export function DocumentUploader() {
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
+      console.log('[DocumentUploader] File selected:', e.target.files[0].name);
       processFile(e.target.files[0]);
     }
   }, [processFile]);

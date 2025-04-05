@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
 import { useDocumentStore } from '@/store/zustand';
 import { EditableDocumentViewerRef } from '@/components/EditableDocumentViewer';
+import { handleError } from '@/lib/error-utils';
 
 interface DocumentAIContextType {
   proposeEdit: (sectionId: string, newText: string) => void;
@@ -22,92 +23,160 @@ const DocumentAIContext = createContext<DocumentAIContextType | undefined>(undef
 export function useDocumentAI() {
   const context = useContext(DocumentAIContext);
   if (context === undefined) {
+    console.error('[DocumentAI] useDocumentAI must be used within a DocumentAIProvider');
     throw new Error('useDocumentAI must be used within a DocumentAIProvider');
   }
   return context;
 }
 
 export function DocumentAIProvider({ children }: { children: React.ReactNode }) {
+  console.log('[DocumentAI] Provider initialized');
+  
   const { setHighlightedSection, updateDocumentSection } = useDocumentStore();
   
-  // Keep track of the last action for reference
-  const [lastAction, setLastAction] = useState<DocumentAIContextType['lastAction']>({
-    type: null,
-    sectionId: null
-  });
+  const documentViewerRef = useRef<EditableDocumentViewerRef>(null) as React.RefObject<EditableDocumentViewerRef>;
+  const [lastAction, setLastAction] = useState<{
+    type: 'highlight' | 'propose_edit' | 'accept_edit' | 'reject_edit' | null;
+    sectionId: string | null;
+    text?: string;
+  }>({ type: null, sectionId: null });
   
-  // Reference to the editable document viewer component
-  // Use a non-null assertion to ensure the type matches the expected RefObject<EditableDocumentViewerRef>
-  const documentViewerRef = useRef<EditableDocumentViewerRef>(null!);
-  
-  // Function to highlight a section
   const highlightSection = useCallback((sectionId: string) => {
-    setHighlightedSection(sectionId);
+    console.log('[DocumentAI] Highlighting section:', sectionId);
     
-    // Use the ref's highlightSection method if available
-    if (documentViewerRef.current) {
-      documentViewerRef.current.highlightSection(sectionId);
-    }
-    
-    setLastAction({
-      type: 'highlight',
-      sectionId
-    });
-  }, [setHighlightedSection]);
-  
-  // Function to propose an edit to a section
-  const proposeEdit = useCallback((sectionId: string, newText: string) => {
-    // Update the highlighted section
-    setHighlightedSection(sectionId);
-    
-    // If we have a reference to the document viewer, use it to propose the edit
-    if (documentViewerRef.current) {
-      documentViewerRef.current.proposeEditFromAI(sectionId, newText);
-    }
-    
-    // Update last action
-    setLastAction({
-      type: 'propose_edit',
-      sectionId,
-      text: newText
-    });
-  }, [setHighlightedSection]);
-  
-  // Function to accept the last proposed edit
-  const acceptLastEdit = useCallback(() => {
-    if (lastAction.type === 'propose_edit' && lastAction.sectionId && lastAction.text) {
-      // Update the document
-      updateDocumentSection(lastAction.sectionId, lastAction.text);
+    try {
+      if (!documentViewerRef.current) {
+        console.warn('[DocumentAI] Document viewer ref is not available');
+        return;
+      }
       
-      // Update last action
+      documentViewerRef.current.highlightSection(sectionId);
+      
       setLastAction({
-        type: 'accept_edit',
-        sectionId: lastAction.sectionId
+        type: 'highlight',
+        sectionId,
+      });
+      
+      console.log('[DocumentAI] Section highlighted successfully');
+    } catch (error) {
+      console.error('[DocumentAI] Error highlighting section:', error);
+      handleError(error, {
+        context: 'DocumentAI.highlightSection',
+        customMessage: 'Failed to highlight section'
       });
     }
-  }, [lastAction, updateDocumentSection]);
+  }, []);
   
-  // Function to reject the last proposed edit
-  const rejectLastEdit = useCallback(() => {
-    if (lastAction.type === 'propose_edit' && lastAction.sectionId) {
-      // Update last action
+  const proposeEdit = useCallback((sectionId: string, newText: string) => {
+    console.log('[DocumentAI] Proposing edit for section:', sectionId);
+    
+    try {
+      if (!documentViewerRef.current) {
+        console.warn('[DocumentAI] Document viewer ref is not available');
+        return;
+      }
+      
+      documentViewerRef.current.proposeEditFromAI(sectionId, newText);
+      
       setLastAction({
-        type: 'reject_edit',
-        sectionId: lastAction.sectionId
+        type: 'propose_edit',
+        sectionId,
+        text: newText,
+      });
+      
+      console.log('[DocumentAI] Edit proposed successfully');
+    } catch (error) {
+      console.error('[DocumentAI] Error proposing edit:', error);
+      handleError(error, {
+        context: 'DocumentAI.proposeEdit',
+        customMessage: 'Failed to propose edit'
+      });
+    }
+  }, []);
+  
+  const acceptLastEdit = useCallback(() => {
+    console.log('[DocumentAI] Accepting last edit');
+    
+    try {
+      if (lastAction.type !== 'propose_edit' || !lastAction.sectionId) {
+        console.warn('[DocumentAI] No edit to accept');
+        return;
+      }
+      
+      const sections = documentViewerRef.current?.getSections() || [];
+      const section = sections.find(s => s.id === lastAction.sectionId);
+      
+      if (!section || !section.proposedText) {
+        console.warn('[DocumentAI] Section or proposed text not found');
+        return;
+      }
+      
+      if (documentViewerRef.current) {
+        console.log('[DocumentAI] Updating document with accepted changes');
+        const acceptButtonElement = document.querySelector(`#section-${lastAction.sectionId} button[aria-label="Accept edit"]`);
+        if (acceptButtonElement) {
+          (acceptButtonElement as HTMLButtonElement).click();
+        }
+      }
+      
+      setLastAction({
+        type: 'accept_edit',
+        sectionId: lastAction.sectionId,
+      });
+      
+      console.log('[DocumentAI] Edit accepted successfully');
+    } catch (error) {
+      console.error('[DocumentAI] Error accepting edit:', error);
+      handleError(error, {
+        context: 'DocumentAI.acceptLastEdit',
+        customMessage: 'Failed to accept edit'
       });
     }
   }, [lastAction]);
   
-  // The context value
+  const rejectLastEdit = useCallback(() => {
+    console.log('[DocumentAI] Rejecting last edit');
+    
+    try {
+      if (lastAction.type !== 'propose_edit' || !lastAction.sectionId) {
+        console.warn('[DocumentAI] No edit to reject');
+        return;
+      }
+      
+      if (documentViewerRef.current) {
+        console.log('[DocumentAI] Updating document with rejected changes');
+        const rejectButtonElement = document.querySelector(`#section-${lastAction.sectionId} button[aria-label="Reject edit"]`);
+        if (rejectButtonElement) {
+          (rejectButtonElement as HTMLButtonElement).click();
+        }
+      }
+      
+      setLastAction({
+        type: 'reject_edit',
+        sectionId: lastAction.sectionId,
+      });
+      
+      console.log('[DocumentAI] Edit rejected successfully');
+    } catch (error) {
+      console.error('[DocumentAI] Error rejecting edit:', error);
+      handleError(error, {
+        context: 'DocumentAI.rejectLastEdit',
+        customMessage: 'Failed to reject edit'
+      });
+    }
+  }, [lastAction]);
+  
   const value = {
     proposeEdit,
     highlightSection,
     lastAction,
     acceptLastEdit,
     rejectLastEdit,
-    documentViewerRef
+    documentViewerRef,
   };
-  
+
+  console.log('[DocumentAI] Rendering provider with context', { lastAction });
+
   return (
     <DocumentAIContext.Provider value={value}>
       {children}

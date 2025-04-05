@@ -28,6 +28,8 @@ export interface EditableDocumentViewerRef {
 }
 
 export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, EditableDocumentViewerProps>((props, ref) => {
+  console.log('[EditableDocumentViewer] Component rendered');
+  
   const { 
     currentDocument, 
     highlightedSection, 
@@ -42,7 +44,12 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
   // Process the document and extract sections
   useEffect(() => {
     try {
-      if (!currentDocument?.parsedContent?.sections) return;
+      if (!currentDocument?.parsedContent?.sections) {
+        console.log('[EditableDocumentViewer] No document sections to render');
+        return;
+      }
+      
+      console.log('[EditableDocumentViewer] Processing document sections:', currentDocument.parsedContent.sections.length);
       
       setSections(currentDocument.parsedContent.sections.map(section => ({
         ...section,
@@ -61,16 +68,21 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
   // Handle section highlighting
   useEffect(() => {
     if (highlightedSection) {
+      console.log('[EditableDocumentViewer] Highlighting section:', highlightedSection);
       // Find the element and scroll to it
       const element = document.getElementById(`section-${highlightedSection}`);
       if (element) {
+        console.log('[EditableDocumentViewer] Scrolling to highlighted section');
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        console.log('[EditableDocumentViewer] Could not find section element to highlight');
       }
     }
   }, [highlightedSection]);
 
   // Handle proposed edit from AI
   const handleProposedEdit = useCallback((sectionId: string, newText: string) => {
+    console.log('[EditableDocumentViewer] Handling proposed edit for section:', sectionId);
     // Update sections with proposed text
     setSections(prev => 
       prev.map(section => 
@@ -83,9 +95,11 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
 
   // Accept proposed edit
   const acceptEdit = useCallback((sectionId: string) => {
+    console.log('[EditableDocumentViewer] Accepting edit for section:', sectionId);
     const section = sections.find(s => s.id === sectionId);
     if (section?.proposedText) {
       // Update the section in the document store
+      console.log('[EditableDocumentViewer] Updating document with accepted changes');
       updateDocumentSection(sectionId, section.proposedText);
       
       // Update local state
@@ -96,11 +110,14 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
             : s
         )
       );
+    } else {
+      console.log('[EditableDocumentViewer] Cannot accept edit: No proposed text found');
     }
   }, [sections, updateDocumentSection]);
 
   // Reject proposed edit
   const rejectEdit = useCallback((sectionId: string) => {
+    console.log('[EditableDocumentViewer] Rejecting edit for section:', sectionId);
     // Clear the proposed edit
     setSections(prev => 
       prev.map(s => 
@@ -114,6 +131,7 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
   // This function would be called by the AI to propose an edit
   // Expose this via a ref or context to be called from the AI component
   const proposeEditFromAI = useCallback((sectionId: string, newText: string) => {
+    console.log('[EditableDocumentViewer] AI proposing edit for section:', sectionId);
     // Set highlighted section
     setHighlightedSection(sectionId);
     
@@ -123,20 +141,25 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
 
   // Add a function to get sections
   const getSections = useCallback(() => {
+    console.log('[EditableDocumentViewer] Getting current sections');
     return sections;
   }, [sections]);
   
   // Add a function to highlight sections
   const highlightSection = useCallback((sectionId: string | null) => {
+    console.log('[EditableDocumentViewer] Setting highlighted section:', sectionId);
     setHighlightedSection(sectionId);
   }, [setHighlightedSection]);
 
   // Expose functions through the ref
-  useImperativeHandle(ref, () => ({
-    proposeEditFromAI,
-    highlightSection,
-    getSections
-  }));
+  useImperativeHandle(ref, () => {
+    console.log('[EditableDocumentViewer] Exposing functions via ref');
+    return {
+      proposeEditFromAI,
+      highlightSection,
+      getSections
+    };
+  }, [proposeEditFromAI, highlightSection, getSections]);
 
   if (!currentDocument) {
     return (
@@ -163,7 +186,7 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
     <ErrorBoundary>
       <div className="border rounded-lg w-full overflow-hidden">
         <div className="bg-gray-100 p-2 border-b">
-          <h3 className="font-medium truncate">{currentDocument.name}</h3>
+          <h3 className="font-medium truncate">{currentDocument?.name || 'Untitled Document'}</h3>
         </div>
         <div className="w-full h-[600px] overflow-y-auto p-4">
           {sections.map((section) => (
@@ -175,6 +198,10 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
                   ? 'bg-yellow-50 border-yellow-400 shadow-md'
                   : 'border-gray-200'
               }`}
+              onClick={() => {
+                console.log('[EditableDocumentViewer] Section clicked:', section.id);
+                setHighlightedSection(section.id);
+              }}
             >
               {section.title && (
                 <h4 className="font-medium text-lg mb-2">{section.title}</h4>
@@ -191,14 +218,22 @@ export const EditableDocumentViewer = forwardRef<EditableDocumentViewerRef, Edit
                     <h5 className="font-medium text-sm text-blue-600">Suggested Edit:</h5>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => acceptEdit(section.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          console.log('[EditableDocumentViewer] Accept button clicked for section:', section.id);
+                          acceptEdit(section.id);
+                        }}
                         className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
                         aria-label="Accept edit"
                       >
                         <Check size={16} />
                       </button>
                       <button
-                        onClick={() => rejectEdit(section.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          console.log('[EditableDocumentViewer] Reject button clicked for section:', section.id);
+                          rejectEdit(section.id);
+                        }}
                         className="flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
                         aria-label="Reject edit"
                       >
