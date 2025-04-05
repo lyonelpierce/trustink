@@ -10,9 +10,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useUser } from "@clerk/nextjs";
+import { LogOutIcon } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { LogOutIcon } from "lucide-react";
 
 const UserDropdown = () => {
   const { user } = useUser();
@@ -44,7 +44,7 @@ const UserDropdown = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="px-0 cursor-pointer">
+        <DropdownMenuItem className="px-0 cursor-pointer text-xs">
           <SignOutButton>
             <Button
               variant="ghost"

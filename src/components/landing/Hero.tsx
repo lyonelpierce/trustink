@@ -9,7 +9,7 @@ const Hero = () => {
     <WidthWrapper className="flex flex-col gap-4 items-center justify-center pt-20 h-screen">
       <h2 className="text-7xl font-semibold text-center">
         The{" "}
-        <span className="dark:bg-white text-white bg-black dark:text-black p-0.5">
+        <span className="dark:bg-white text-white bg-black dark:text-black">
           next generation
         </span>{" "}
         of contracts
