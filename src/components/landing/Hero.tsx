@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import WidthWrapper from "../WidthWrapper";
 import { buttonVariants } from "../ui/button";
+import { SignedOut } from "@clerk/nextjs";
 
 const Hero = () => {
   return (
@@ -17,12 +18,14 @@ const Hero = () => {
         smart, dynamic, and personalized.
       </p>
 
-      <Link
-        href="/sign-in"
-        className={cn(buttonVariants({ variant: "default" }))}
-      >
-        Get Started
-      </Link>
+      <SignedOut>
+        <Link
+          href="/sign-in"
+          className={cn(buttonVariants({ variant: "default", size: "lg" }))}
+        >
+          Get Started
+        </Link>
+      </SignedOut>
     </WidthWrapper>
   );
 };
