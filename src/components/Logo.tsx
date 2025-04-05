@@ -22,7 +22,12 @@ const Logo = ({
         </Link>
       ) : (
         <Link href="/">
-          <h2 className={cn("font-semibold uppercase", className)}>Trustink</h2>
+          <h2 className={cn("font-semibold uppercase text-lg", className)}>
+            Trust
+            <span className="bg-black dark:bg-white p-0.5 text-white dark:text-black">
+              Ink
+            </span>
+          </h2>
         </Link>
       )}
     </>
