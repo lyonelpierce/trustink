@@ -12,6 +12,7 @@ import {
 import { useUser } from "@clerk/nextjs";
 import { SignOutButton } from "@clerk/nextjs";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { LogOutIcon } from "lucide-react";
 
 const UserDropdown = () => {
   const { user } = useUser();
@@ -26,15 +27,30 @@ const UserDropdown = () => {
           <AvatarFallback>{user?.firstName?.charAt(0)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-40" side="bottom" align="end">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+      <DropdownMenuContent className="w-56" side="bottom" align="end">
+        <DropdownMenuLabel className="flex items-center h-full gap-0">
+          <Avatar className="w-12 h-12 rounded-full flex items-center">
+            <AvatarImage
+              src={user?.imageUrl}
+              className="rounded-full size-10"
+            />
+            <AvatarFallback>{user?.firstName?.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <p className="text-sm font-medium">{user?.fullName}</p>
+            <p className="text-xs text-gray-500">
+              {user?.emailAddresses[0].emailAddress}
+            </p>
+          </div>
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer">
+        <DropdownMenuItem className="px-0 cursor-pointer">
           <SignOutButton>
             <Button
               variant="ghost"
-              className="flex items-start justify-start p-0 h-min w-full"
+              className="flex items-center justify-start p-0 h-min w-full"
             >
+              <LogOutIcon className="w-4 h-4" />
               Sign Out
             </Button>
           </SignOutButton>
