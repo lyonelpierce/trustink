@@ -10,14 +10,15 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useUser } from "@clerk/nextjs";
-import { LogOutIcon } from "lucide-react";
+import { GaugeIcon, LogOutIcon } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 const UserDropdown = () => {
   const { user } = useUser();
-
-  console.log(user);
 
   return (
     <DropdownMenu>
@@ -45,10 +46,22 @@ const UserDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="px-0 cursor-pointer text-xs">
+          <Link
+            href="/dashboard"
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "w-full justify-start h-min flex items-center gap-2"
+            )}
+          >
+            <GaugeIcon className="w-4 h-4" />
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="px-0 cursor-pointer text-xs">
           <SignOutButton>
             <Button
               variant="ghost"
-              className="flex items-center justify-start p-0 h-min w-full"
+              className="flex items-center justify-start h-min w-full font-medium"
             >
               <LogOutIcon className="w-4 h-4" />
               Sign Out
