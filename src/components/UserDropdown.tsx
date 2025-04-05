@@ -17,17 +17,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 const UserDropdown = () => {
   const { user } = useUser();
 
-  const handleFetchData = async () => {
-    try {
-      const response = await fetch("/api/test");
-      const data = await response.json();
-
-      console.log("DATA", data);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="cursor-pointer rounded-full">
@@ -52,15 +41,12 @@ const UserDropdown = () => {
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuItem onClick={handleFetchData}>
-          Fetch Data
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="px-0 cursor-pointer text-xs">
           <SignOutButton>
             <Button
               variant="ghost"
-              className="flex items-center justify-start p-0 h-min w-full"
+              className="flex items-center justify-start p-0 h-min w-full font-medium text-xs"
             >
               <LogOutIcon className="w-4 h-4" />
               Sign Out
