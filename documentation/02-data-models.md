@@ -1,193 +1,287 @@
 # Data Models
 
-This document outlines the core data types and state management structure in TrustInk. Understanding these models is essential for working with the application's data flow.
+This document outlines the key data structures within TrustInk.
 
-## Core Data Types
+## Core Entities
 
-TrustInk uses TypeScript interfaces to define the structure of its data models. Here are the key data types used across the application:
-
-### Document Types
+### User
 
 ```typescript
-// Document section
-interface DocumentSection {
+interface User {
+  id: string;          // Primary key, from Clerk
+  email: string;       // User's email address
+  name: string;        // User's full name
+  created_at: Date;    // When the user account was created
+  updated_at: Date;    // When the user was last updated
+}
+```
+
+### Document
+
+```typescript
+interface Document {
+  id: string;          // Primary key, UUID
+  name: string;        // Document name (typically filename)
+  path: string;        // Storage path in Supabase
+  type: string;        // Document MIME type (e.g., application/pdf)
+  size: number;        // File size in bytes
+  user_id: string;     // Foreign key to User
+  created_at: Date;    // When the document was uploaded
+  updated_at: Date;    // When the document was last modified
+}
+```
+
+### DocumentAnalysis
+
+```typescript
+interface DocumentAnalysis {
+  id: string;          // Primary key, UUID
+  document_id: string; // Foreign key to Document
+  user_id: string;     // Foreign key to User who requested analysis
+  content: object;     // JSON containing analysis results, including sections
+  created_at: Date;    // When the analysis was performed
+}
+```
+
+### Contract
+
+```typescript
+interface Contract {
+  id: string;          // Primary key, UUID
+  name: string;        // Contract name
+  document_id: string; // Foreign key to Document
+  user_id: string;     // Foreign key to User (owner)
+  status: string;      // draft, active, completed, etc.
+  created_at: Date;    // When the contract was created
+  updated_at: Date;    // When the contract was last updated
+}
+```
+
+### ContractRevision
+
+```typescript
+interface ContractRevision {
+  id: string;           // Primary key, UUID
+  contract_id: string;  // Foreign key to Contract
+  document_id: string;  // Foreign key to Document (current version)
+  proposed_by: string;  // Foreign key to User who proposed the revision
+  status: string;       // pending, accepted, rejected
+  comment: string;      // Optional comment about the revision
+  changes: object;      // JSON with metadata about changes
+  created_at: Date;     // When the revision was proposed
+  updated_at: Date;     // When the revision status was last updated
+}
+```
+
+### SectionChange
+
+```typescript
+interface SectionChange {
+  id: string;               // Primary key, UUID
+  revision_id: string;      // Foreign key to ContractRevision
+  section_id: string;       // ID of the document section being changed
+  original_text: string;    // Text before change
+  proposed_text: string;    // Text after change
+  ai_generated: boolean;    // Whether the change was AI-generated
+  created_at: Date;         // When the change was created
+}
+```
+
+### RevisionComment
+
+```typescript
+interface RevisionComment {
+  id: string;           // Primary key, UUID
+  revision_id: string;  // Foreign key to ContractRevision
+  user_id: string;      // Foreign key to User who made the comment
+  comment: string;      // Text of the comment
+  created_at: Date;     // When the comment was created
+}
+```
+
+## User-Document Relationship
+
+### Implementation Status
+
+The user-document relationship is fully implemented with:
+
+1. **Database Structure**
+   - Documents table includes `user_id` foreign key
+   - Row-level security ensures users can only access their documents
+   - Clerk integration provides user authentication and identity
+
+2. **API Endpoints**
+   - `GET /api/documents` - Retrieves all documents for the current user
+   - `GET /api/documents?id=X` - Retrieves a specific document (with user verification)
+   - `POST /api/documents` - Creates a new document associated with the current user
+
+3. **Supabase Functions**
+   - `getUserDocuments(supabase, userId)` - Gets all documents for a user
+   - `getUserDocumentsWithMeta(supabase, userId)` - Gets documents with related metadata
+   - `getDocumentById(supabase, documentId, userId)` - Gets a specific document for a user
+
+## Application State Models
+
+### Document Store (Zustand)
+
+```typescript
+interface DocumentState {
+  currentDocument: {
+    id: string;
+    name: string;
+    file: File;
+    pdfBytes: Uint8Array;
+    parsedContent: {
+      sections: Section[];
+    };
+  } | null;
+  isDocumentLoading: boolean;
+  highlightedSection: string | null;
+  
+  // Actions
+  setCurrentDocument: (document: Document) => void;
+  setDocumentLoading: (loading: boolean) => void;
+  setHighlightedSection: (sectionId: string | null) => void;
+  updateDocumentSection: (sectionId: string, newText: string) => void;
+}
+```
+
+### Section
+
+```typescript
+interface Section {
   id: string;
   title?: string;
   text: string;
   pageNumber: number;
-  position: { x: number, y: number, width: number, height: number };
+  position: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+```
+
+## Custom Hook Types
+
+### useDocumentUpload Hook
+
+```typescript
+interface UseDocumentUploadResult {
+  dragActive: boolean;
+  setDragActive: (active: boolean) => void;
+  uploadError: string | null;
+  lastFile: File | null;
+  processFile: (file: File) => Promise<string | null>;
+  isProcessing: boolean;
+}
+```
+
+### useDocumentEditing Hook
+
+```typescript
+interface UseDocumentEditingResult {
+  sections: EditableSection[];
+  highlightedSection: string | null;
+  setHighlightedSection: (sectionId: string | null) => void;
+  proposeEdit: (sectionId: string, newText: string) => void;
+  acceptEdit: (sectionId: string) => void;
+  rejectEdit: (sectionId: string) => void;
+  startEditing: (sectionId: string) => void;
+  saveEdit: (sectionId: string, newText: string) => void;
+  cancelEditing: (sectionId: string) => void;
+  hasDocument: boolean;
 }
 
-// Editable version of a document section
-interface EditableSection extends DocumentSection {
+interface EditableSection extends Section {
   isEditing?: boolean;
   proposedText?: string;
 }
-
-// Document model
-interface Document {
-  id?: string;
-  name?: string;
-  content?: string;
-  file?: File;
-  pdfBytes?: Uint8Array;
-  parsedContent?: {
-    sections: DocumentSection[];
-  };
-  contractId?: string;
-  ownerId?: string;
-}
 ```
 
-### Revision Types
-
-```typescript
-// Section revision
-interface SectionRevision {
-  sectionId: string;
-  originalText: string;
-  proposedText: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  createdAt: Date;
-  createdBy: string;
-  aiGenerated?: boolean;
-  comment?: string;
-}
-
-// Contract revision
-interface ContractRevision {
-  id?: string;
-  contractId: string;
-  documentId: string;
-  proposedBy: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  comment?: string;
-  changes: SectionRevision[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-```
-
-### AI Interaction Types
-
-```typescript
-// EditableDocumentViewerRef type for AI interaction
-interface EditableDocumentViewerRef {
-  proposeEditFromAI: (sectionId: string, newText: string) => void;
-  highlightSection: (sectionId: string | null) => void;
-  getSections: () => EditableSection[];
-}
-
-// AI action types
-type AIAction = 
-  | { type: 'propose_edit'; sectionId: string; text: string }
-  | { type: 'highlight'; sectionId: string | null }
-  | { type: 'none' };
-```
-
-## Zustand Store Structure
-
-TrustInk uses Zustand for state management, particularly for document and revision state. The store structure is designed to provide a clean interface for components to interact with shared state.
-
-### Store Interface
-
-```typescript
-interface DocumentStore {
-  // State
-  currentDocument: Document | null;
-  revisions: Record<string, ContractRevision>;
-  pendingRevisions: SectionRevision[];
-  activeRevisionSession: string | null;
-  highlightedSection: string | null;
-  isDocumentLoading: boolean;
-  
-  // Actions
-  setCurrentDocument: (document: Document) => void;
-  setHighlightedSection: (sectionId: string | null) => void;
-  updateDocumentSection: (sectionId: string, newText: string) => void;
-  proposeRevision: (
-    sectionId: string, 
-    newText: string, 
-    aiGenerated?: boolean,
-    comment?: string
-  ) => void;
-  acceptRevision: (revisionId: string) => void;
-  rejectRevision: (revisionId: string) => void;
-  startRevisionSession: (sessionId: string) => void;
-  endRevisionSession: () => void;
-  clearDocument: () => void;
-}
-```
-
-### Store Structure Diagram
+## Database Relationships
 
 ```mermaid
-graph LR
-    A[useDocumentStore] --> B[State]
-    B --> C[currentDocument]
-    B --> D[revisions]
-    B --> E[pendingRevisions]
-    B --> F[activeRevisionSession]
-    B --> G[highlightedSection]
-    B --> H[isDocumentLoading]
-    
-    A --> I[Actions]
-    I --> J[setCurrentDocument]
-    I --> K[setHighlightedSection]
-    I --> L[updateDocumentSection]
-    I --> M[proposeRevision]
-    I --> N[acceptRevision]
-    I --> O[rejectRevision]
-    I --> P[startRevisionSession]
-    I --> Q[endRevisionSession]
-    I --> R[clearDocument]
+erDiagram
+    User ||--o{ Document : owns
+    Document ||--o{ DocumentAnalysis : has
+    Document ||--o{ Contract : becomes
+    Contract ||--o{ ContractRevision : has
+    ContractRevision ||--o{ SectionChange : contains
+    ContractRevision ||--o{ RevisionComment : has
+    User ||--o{ ContractRevision : proposes
+    User ||--o{ RevisionComment : makes
 ```
 
-## DocumentAI Context
+## Current Implementation
 
-The DocumentAI context is a React context that facilitates communication between the AI assistant and document components. It uses a reference to the EditableDocumentViewer to control document interaction.
+The database layer is fully implemented using Supabase with:
 
-```typescript
-interface DocumentAIContextType {
-  proposeEdit: (sectionId: string, newText: string) => void;
-  highlightSection: (sectionId: string | null) => void;
-  lastAction: AIAction;
-  acceptLastEdit: () => void;
-  rejectLastEdit: () => void;
-  documentViewerRef: MutableRefObject<EditableDocumentViewerRef | null>;
-}
-```
+1. Tables for all core entities
+2. Row-level security policies
+3. Foreign key relationships
+4. Indexes for efficient queries
 
-## Database Models
+The document fetching API is currently:
+- Using standardized functions in `src/lib/supabase.ts`
+- Properly handling authorization with Clerk
+- Supporting filtering and metadata inclusion
+- Returning properly typed results 
 
-The database models mirror many of the TypeScript interfaces but are structured for SQL storage. The key tables are defined in the Supabase schema:
+## Storage Structure
 
-- **documents**: Stores document metadata and file paths
-- **document_analyses**: Stores AI analysis results
-- **contract_revisions**: Tracks proposed contract changes
-- **section_changes**: Stores specific text edits within revisions
+TrustInk uses Supabase for both database and file storage. Here's how storage is structured:
 
-See [Supabase Schema](./01-system-architecture.md#database-structure) for full database model details.
+### Storage Buckets
 
-## Data Flow Between Models
+The application uses three primary storage buckets:
 
-```mermaid
-flowchart TD
-    A[User Interface] -->|Document Upload| B[Document Store]
-    B -->|Store Document| C[API Routes]
-    C -->|Persist| D[Supabase Database]
-    
-    E[AI Assistant] -->|Propose Edit| F[DocumentAI Context]
-    F -->|Control| G[EditableDocumentViewer]
-    G -->|Update| B
-    
-    H[RevisionPanel] -->|Accept/Reject| B
-    B -->|Update| C
-    C -->|Persist Changes| D
-    
-    D -->|Load Data| C
-    C -->|Populate| B
-    B -->|Render| A
-```
+1. **`pdf-documents`**: Primary bucket for original PDF files
+   - File naming: `userId_timestamp.pdf`
+   - Usage: Preserves original, unmodified documents
 
-This data flow ensures that user interactions, document changes, and AI suggestions all flow through the centralized document store before being persisted to the database. 
+2. **`documents`**: General-purpose document storage
+   - File naming: `userId_timestamp.fileExtension`
+   - Usage: Processed files, thumbnails, exported versions
+
+3. **`voice-recordings`**: Storage for voice interaction recordings
+   - File naming: `userId_sessionId_timestamp.webm`
+   - Usage: Stores recordings when explicitly enabled by users
+
+### Database Tables
+
+The core application data is stored in several main tables:
+
+#### `documents`
+
+Stores metadata about uploaded files.
+
+| Column       | Type         | Description                                 |
+|--------------|--------------|---------------------------------------------|
+| id           | UUID         | Primary key                                 |
+| user_id      | String       | Owner ID (from Clerk)                       |
+| name         | String       | Display name for the document               |
+| path         | String       | Storage path in Supabase bucket             |
+| type         | String       | MIME type (e.g., "application/pdf")         |
+| size         | Number       | File size in bytes                          |
+| created_at   | Timestamp    | Creation timestamp                          |
+| updated_at   | Timestamp    | Last update timestamp                       |
+
+#### `document_analyses`
+
+Stores extracted content and analysis results for documents.
+
+| Column       | Type         | Description                                 |
+|--------------|--------------|---------------------------------------------|
+| id           | UUID         | Primary key                                 |
+| document_id  | UUID         | Reference to documents.id                   |
+| user_id      | String       | Owner ID (from Clerk)                       |
+| content      | JSONB        | Analysis results, sections, metadata        |
+| created_at   | Timestamp    | Creation timestamp                          |
+
+The `content` field is a structured JSON object containing:
+- `pageCount`: Number of pages in the document
+- `sections`: Array of extracted document sections
+- `analysis`: Results from AI processing
+- `extractedAt`: Timestamp when extraction occurred 

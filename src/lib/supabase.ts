@@ -82,6 +82,21 @@ export const getUserDocuments = async (supabase: SupabaseClient, userId: string)
 };
 
 /**
+ * Get all documents for a user with additional metadata
+ */
+export const getUserDocumentsWithMeta = async (supabase: SupabaseClient, userId: string) => {
+  return await supabase
+    .from('documents')
+    .select(`
+      *,
+      document_analyses(id, content),
+      contracts(id, name, status)
+    `)
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false });
+};
+
+/**
  * Upload a document to storage
  */
 export const uploadDocumentFile = async (
@@ -286,7 +301,7 @@ export const downloadDocument = async (supabase: SupabaseClient, path: string) =
 };
 
 /**
- * Save document analysis results
+ * Save document analysis to the database
  */
 export const saveDocumentAnalysis = async (
   supabase: SupabaseClient,
@@ -296,11 +311,69 @@ export const saveDocumentAnalysis = async (
 ) => {
   return await supabase
     .from('document_analyses')
-    .upsert({
+    .insert({
       document_id: documentId,
       user_id: userId,
-      content: analysisContent,
-      created_at: new Date().toISOString()
-    })
-    .select();
+      content: analysisContent
+    });
+};
+
+/**
+ * Get document analysis for a specific document
+ */
+export const getDocumentAnalysis = async (
+  supabase: SupabaseClient,
+  documentId: string,
+  userId?: string
+) => {
+  let query = supabase
+    .from('document_analyses')
+    .select('*')
+    .eq('document_id', documentId);
+  
+  // Add user filter if provided
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+  
+  return await query.single();
+};
+
+/**
+ * Extract text from PDF document using PDF-lib
+ * Creates basic section structure based on pages
+ */
+export const extractPdfText = async (buffer: ArrayBuffer) => {
+  const { PDFDocument } = await import('pdf-lib');
+  console.log('[extractPdfText] Extracting text from PDF...');
+  
+  try {
+    const pdfDoc = await PDFDocument.load(buffer);
+    const pageCount = pdfDoc.getPageCount();
+    console.log(`[extractPdfText] PDF has ${pageCount} pages`);
+    
+    // For now, create basic sections by page
+    // In a more advanced implementation, you'd use PDF.js or another library
+    // to extract actual text content and identify meaningful sections
+    const sections = [];
+    
+    for (let i = 0; i < pageCount; i++) {
+      const page = pdfDoc.getPage(i);
+      const { width, height } = page.getSize();
+      
+      sections.push({
+        id: `page-${i+1}`,
+        title: `Page ${i+1}`,
+        text: `Content from page ${i+1}`, // Placeholder - would contain actual text in full implementation
+        pageNumber: i+1,
+        position: { x: 0, y: 0, width, height }
+      });
+    }
+    
+    console.log(`[extractPdfText] Extracted ${sections.length} sections`);
+    return { sections, pageCount };
+  } catch (error) {
+    console.error('[extractPdfText] Error extracting PDF text:', error);
+    throw new Error('Failed to extract text from PDF');
+  }
 }; 

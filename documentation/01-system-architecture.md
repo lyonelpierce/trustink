@@ -94,6 +94,7 @@ erDiagram
     }
     
     USERS ||--o{ DOCUMENTS : creates
+    USERS ||--o{ DOCUMENT_ANALYSES : performs
     DOCUMENTS ||--o{ DOCUMENT_ANALYSES : analyzes
     DOCUMENTS ||--o{ CONTRACTS : has
     CONTRACTS ||--o{ CONTRACT_REVISIONS : proposes
@@ -106,13 +107,54 @@ erDiagram
 ### Key Tables
 
 - **users**: Extends Clerk authentication with additional user information
-- **documents**: Stores uploaded files with metadata
+- **documents**: Stores uploaded files with metadata, linked to users
 - **document_analyses**: Stores AI analysis results for documents
 - **contracts**: Represents legal contracts linked to documents
 - **contract_revisions**: Tracks proposed changes to contracts
 - **section_changes**: Stores specific text changes within a revision
 - **revision_comments**: Captures discussion on proposed changes
 - **messages**: Stores conversation history with the AI
+
+## User-Document Relationships
+
+Users own documents and perform actions on them through a permission model:
+
+1. **Document Ownership**: Every document is linked to a user through the `user_id` field
+2. **Document Access**: Documents can be shared with other users (upcoming feature)
+3. **User Dashboard**: Users can view all their documents and associated metadata
+4. **Document History**: All changes to documents are tracked with user attribution
+
+When a user logs in via Clerk, a webhook ensures their information is synchronized to our database:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Clerk
+    participant Webhook
+    participant DB as Supabase DB
+    
+    User->>Clerk: Login with credentials
+    Clerk->>User: Authentication successful
+    Clerk-->>Webhook: user.created/updated event
+    Webhook->>DB: Create/Update user record
+```
+
+The user dashboard provides a centralized view of all documents owned by the current user:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Dashboard
+    participant API
+    participant DB as Supabase DB
+    
+    User->>Dashboard: View dashboard
+    Dashboard->>API: GET /api/documents
+    API->>DB: Query documents by user_id
+    DB-->>API: Return document list with metadata
+    API-->>Dashboard: Format and display documents
+    Dashboard->>User: Show document grid
+```
 
 ## Component Architecture
 
@@ -144,12 +186,17 @@ graph TD
     I -.->|AI responses| J
     
     %% Document uploader flow
-    K[DocumentUploader] -->|uploads| L[API Routes]
+    K[DocumentUploader] -->|uses| KK[useDocumentUpload]
+    KK -->|uploads| L[API Routes]
     L -->|stores| M[Supabase]
     
     %% Document analysis flow
     D -->|analyzes| L
     L -->|retrieves/updates| M
+    
+    %% User dashboard flow
+    N[UserDashboard] -->|fetches| L
+    N -->|displays| O[User Documents]
 ```
 
 ## Key Architectural Components
@@ -159,6 +206,7 @@ graph TD
 - **Next.js**: Server-side rendering and API routes
 - **React**: Component-based UI
 - **Zustand**: State management for document data
+- **Custom Hooks**: Business logic separation for better maintainability
 - **Context API**: Communication between AI and document components
 
 ### Backend
@@ -182,6 +230,8 @@ src/
 │   └── auth/         # Authentication routes
 ├── components/      # React components
 ├── hooks/           # Custom React hooks
+│   ├── useDocumentUpload.ts   # Document upload logic
+│   └── useDocumentEditing.ts  # Document editing logic
 ├── interfaces/      # TypeScript interfaces
 ├── lib/             # Utility functions, API clients
 ├── providers/       # Context providers
@@ -193,7 +243,8 @@ src/
 
 1. **User Interaction**: User interacts with document or asks AI questions
 2. **State Management**: Zustand store manages document state
-3. **Context Communication**: DocumentAIProvider facilitates AI-document interaction
-4. **API Integration**: API routes handle database operations
-5. **Storage**: Document files stored in Supabase storage
-6. **Database**: Structured data stored in Supabase PostgreSQL 
+3. **Custom Hooks**: Encapsulate business logic for components
+4. **Context Communication**: DocumentAIProvider facilitates AI-document interaction
+5. **API Integration**: API routes handle database operations
+6. **Storage**: Document files stored in Supabase storage
+7. **Database**: Structured data stored in Supabase PostgreSQL

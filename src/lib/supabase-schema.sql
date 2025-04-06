@@ -145,8 +145,8 @@ CREATE INDEX idx_revision_comments_revision_id ON revision_comments(revision_id)
 -- Run these in the Supabase SQL editor:
 
 -- INSERT INTO storage.buckets (id, name) VALUES ('documents', 'documents');
--- INSERT INTO storage.buckets (id, name) VALUES ('pdf_documents', 'pdf_documents');
--- INSERT INTO storage.buckets (id, name) VALUES ('voice_recordings', 'voice_recordings');
+-- INSERT INTO storage.buckets (id, name) VALUES ('pdf-documents', 'pdf-documents');
+-- INSERT INTO storage.buckets (id, name) VALUES ('voice-recordings', 'voice-recordings');
 
 -- Set up Row Level Security (RLS) policies
 -- Documents RLS

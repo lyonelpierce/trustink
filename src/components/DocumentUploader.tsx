@@ -1,118 +1,38 @@
 'use client';
 
-import { useDocumentStore } from '@/store/zustand';
-import { PDFDocument } from 'pdf-lib';
-import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
-import { FileUp, Loader2 } from 'lucide-react';
-import { handleError, safeAsync } from '@/lib/error-utils';
+import { useDocumentUpload } from '@/hooks/useDocumentUpload';
+import { FileUp, Loader2, AlertCircle } from 'lucide-react';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 export function DocumentUploader() {
   console.log('[DocumentUploader] Component rendered');
   
-  const { setCurrentDocument, setDocumentLoading, isDocumentLoading } = useDocumentStore();
-  const [dragActive, setDragActive] = useState(false);
+  const {
+    dragActive,
+    setDragActive,
+    uploadError,
+    lastFile,
+    processFile,
+    isProcessing
+  } = useDocumentUpload();
 
-  const processFile = useCallback(async (file: File) => {
-    console.log('[DocumentUploader] Processing file:', file.name, 'Size:', Math.round(file.size / 1024), 'KB', 'Type:', file.type);
-    
-    if (file.type !== 'application/pdf') {
-      console.log('[DocumentUploader] Invalid file type:', file.type);
-      toast.error('Please upload a PDF file');
-      return;
-    }
-
-    try {
-      setDocumentLoading(true);
-      
-      // Read the file
-      console.log('[DocumentUploader] Reading file as ArrayBuffer...');
-      const [arrayBuffer, readError] = await safeAsync(
-        file.arrayBuffer(),
-        { context: 'processFile.readFile', showToast: false }
-      );
-      
-      if (readError || !arrayBuffer) {
-        console.log('[DocumentUploader] Failed to read file:', readError);
-        throw new Error('Failed to read PDF file');
-      }
-      
-      const uint8Array = new Uint8Array(arrayBuffer);
-      
-      // Parse the PDF
-      console.log('[DocumentUploader] Parsing PDF document...');
-      const [pdfDoc, pdfError] = await safeAsync(
-        PDFDocument.load(uint8Array),
-        { context: 'processFile.parsePDF', showToast: false }
-      );
-      
-      if (pdfError || !pdfDoc) {
-        console.log('[DocumentUploader] Failed to parse PDF:', pdfError);
-        throw new Error('Failed to parse PDF document');
-      }
-      
-      // Extract text from PDF (simplified version)
-      console.log('[DocumentUploader] Extracting sections from PDF...');
-      const pageCount = pdfDoc.getPageCount();
-      console.log('[DocumentUploader] Document has', pageCount, 'pages');
-      
-      // Create a basic parsed structure with page numbers for now
-      const sections = [];
-      for (let i = 0; i < pageCount; i++) {
-        const page = pdfDoc.getPage(i);
-        const { width, height } = page.getSize();
-        
-        sections.push({
-          id: `page-${i+1}`,
-          title: `Page ${i+1}`,
-          text: `Content from page ${i+1}`,
-          pageNumber: i+1,
-          position: { x: 0, y: 0, width, height }
-        });
-      }
-      
-      // Set the document in the store
-      console.log('[DocumentUploader] Setting document with', sections.length, 'sections in store');
-      setCurrentDocument({
-        name: file.name,
-        file: file,
-        pdfBytes: uint8Array,
-        parsedContent: {
-          sections: sections
-        }
-      });
-      
-      console.log('[DocumentUploader] Document uploaded successfully');
-      toast.success('Document uploaded successfully');
-    } catch (error) {
-      console.log('[DocumentUploader] Error processing document:', error);
-      handleError(error, {
-        context: 'processFile',
-        customMessage: 'Failed to process PDF'
-      });
-    } finally {
-      setDocumentLoading(false);
-    }
-  }, [setCurrentDocument, setDocumentLoading]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!dragActive) {
       console.log('[DocumentUploader] Drag active');
       setDragActive(true);
     }
-  }, [dragActive]);
+  };
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     console.log('[DocumentUploader] Drag inactive');
     setDragActive(false);
-  }, []);
+  };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -121,15 +41,24 @@ export function DocumentUploader() {
       console.log('[DocumentUploader] File dropped:', e.dataTransfer.files[0].name);
       processFile(e.dataTransfer.files[0]);
     }
-  }, [processFile]);
+  };
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
       console.log('[DocumentUploader] File selected:', e.target.files[0].name);
       processFile(e.target.files[0]);
     }
-  }, [processFile]);
+  };
+
+  const handleRetry = () => {
+    if (lastFile) {
+      console.log('[DocumentUploader] Retrying upload with file:', lastFile.name);
+      processFile(lastFile);
+    } else {
+      document.getElementById('file-upload')?.click();
+    }
+  };
 
   return (
     <ErrorBoundary>
@@ -137,31 +66,48 @@ export function DocumentUploader() {
         <div
           className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer transition-all
             ${dragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-gray-400'}
-            ${isDocumentLoading ? 'pointer-events-none opacity-70' : ''}`}
+            ${isProcessing ? 'pointer-events-none opacity-70' : ''}
+            ${uploadError ? 'border-red-300 bg-red-50' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => document.getElementById('file-upload')?.click()}
+          onClick={uploadError ? handleRetry : () => document.getElementById('file-upload')?.click()}
         >
-          {isDocumentLoading ? (
+          {isProcessing ? (
             <div className="flex flex-col items-center justify-center gap-3">
               <Loader2 className="h-10 w-10 animate-spin text-gray-500" />
               <p className="text-sm text-gray-500">Processing document...</p>
+            </div>
+          ) : uploadError ? (
+            <div className="flex flex-col items-center justify-center gap-3">
+              <AlertCircle className="h-10 w-10 text-red-500" />
+              <p className="text-sm text-red-600 font-medium">{uploadError}</p>
+              <button 
+                className="mt-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRetry();
+                }}
+              >
+                Try again
+              </button>
             </div>
           ) : (
             <>
               <FileUp className="h-10 w-10 mb-3 text-gray-400" />
               <p className="mb-2 text-lg font-semibold">Upload your document</p>
-              <p className="text-sm text-gray-500 mb-4 text-center">
+              <p className="text-sm text-gray-500 mb-2 text-center">
                 Drag and drop a PDF file or click to browse
+              </p>
+              <p className="text-xs text-gray-400 text-center">
+                Maximum file size: 10MB
               </p>
               <input
                 id="file-upload"
                 type="file"
-                className="hidden"
                 accept="application/pdf"
+                className="hidden"
                 onChange={handleChange}
-                disabled={isDocumentLoading}
               />
             </>
           )}
