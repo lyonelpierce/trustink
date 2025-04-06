@@ -60,22 +60,40 @@ Retrieves a specific document by ID.
 
 ### POST /api/documents
 
-Uploads a new document.
+Uploads a new document to the system and processes it.
 
-**Request:**
-Form data with:
-- `file`: The document file
-- `name` (optional): Custom name for the document
+**Request**:
+- Format: `multipart/form-data`
+- Authentication: Required
 
-**Response:**
+| Field    | Type | Required | Description                         |
+|----------|------|----------|-------------------------------------|
+| file     | File | Yes      | The PDF file to upload (max 10MB)   |
+| name     | String | No     | Custom name for the document        |
+
+**Response**:
+- Status: 200 OK
+
 ```json
 {
-  "id": "uuid",
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Contract.pdf",
-  "path": "documents/user_id_timestamp.pdf",
+  "path": "userId_1649759238273.pdf",
+  "pageCount": 12,
   "message": "Document uploaded successfully"
 }
 ```
+
+**Errors**:
+- 401 Unauthorized: Authentication required
+- 400 Bad Request: No file provided or invalid file
+- 500 Internal Server Error: Upload or processing failed
+
+**Implementation Notes**:
+- File is uploaded to Supabase storage in the `documents` bucket
+- Document metadata is stored in the `documents` table
+- Document content/sections are stored in the `document_analyses` table
+- Unique filename created using `userId_timestamp.fileExtension` format
 
 ### DELETE /api/documents/:id
 

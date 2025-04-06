@@ -11,52 +11,44 @@ The main page component for document analysis, serving as the entry point for do
 **Location:** `src/app/(app)/documents/[id]/page.tsx`
 
 **Responsibilities:**
+- Fetches document data and analysis
 - Provides error boundary for the document analysis content
-- Wraps content in DocumentAIProvider
+- Wraps content in DocumentAnalysisLayout
 
 **Structure:**
 ```mermaid
 graph TD
     A[DocumentAnalysisPage] --> B[ErrorBoundary]
-    B --> C[DocumentAIProvider]
-    C --> D[DocumentAnalysisContent]
+    B --> C[DocumentAnalysisLayout]
+    C --> D[EditableDocumentViewer]
+    C --> E[VoiceAssistant]
+    C --> F[RevisionPanel]
 ```
 
-### DocumentAnalysisContent
+### DocumentAnalysisLayout
 
-The main content component that handles document loading, user interactions, and AI responses.
+A layout component that organizes the document viewer alongside voice assistant and revision panels.
 
-**Location:** `src/app/(app)/documents/[id]/page.tsx`
+**Location:** `src/components/DocumentAnalysisLayout.tsx`
+
+**Props:**
+```typescript
+interface DocumentAnalysisLayoutProps {
+  documentId: string;
+}
+```
 
 **State:**
-- `loading`: Boolean indicating if document is loading
-- `analyzing`: Boolean indicating if AI is analyzing the document
-- `documentName`: Name of the current document
-- `currentText`: Current text being displayed by the AI
-- `reviewMode`: Boolean to toggle between AI assistant and review mode
-
-**Hooks:**
-- `useDocumentStore`: Zustand store for document state
-- `useDocumentAI`: Context for AI interaction
-- `useConversation`: ElevenLabs hook for voice conversation
+- `activeTab`: Current active tab ('assistant' or 'revisions')
 
 **Key Features:**
-- Toggles between AI assistant and revision review modes
-- Processes user questions and AI responses
-- Handles document analysis through the API
-- Manages AI-proposed edits and user approval workflow
+- Organizes document viewer and assistant panels in a split layout
+- Provides tabbed interface between AI assistant and revision panels
+- Handles loading states for document content
 
-**Structure:**
-```mermaid
-graph TD
-    A[DocumentAnalysisContent] --> B[Document Display]
-    A --> C[AI Assistant/Review Panel]
-    
-    B --> D[EditableDocumentViewer]
-    
-    C --> E{Mode Toggle}
-    E -->|AI Mode| F[TextAnimation]
-    E -->|Review Mode| G[RevisionPanel]
+**Usage:**
+```jsx
+<DocumentAnalysisLayout documentId="doc-123" />
 ```
 
 ### EditableDocumentViewer
@@ -91,6 +83,36 @@ interface EditableDocumentViewerRef {
 **Usage:**
 ```jsx
 <EditableDocumentViewer ref={documentViewerRef} />
+```
+
+### VoiceAssistant
+
+A component that provides voice-based interaction with documents, allowing users to ask questions and receive spoken responses.
+
+**Location:** `src/components/VoiceAssistant.tsx`
+
+**Props:**
+```typescript
+interface VoiceAssistantProps {
+  className?: string;
+}
+```
+
+**State:**
+- `inputText`: The text entered by the user
+- `messages`: Array of conversation messages between user and assistant
+- `isProcessing`: Whether the assistant is processing a request
+
+**Key Features:**
+- Provides voice recognition for document questions
+- Displays conversation history with AI assistant
+- Offers text-to-speech for responses
+- Enables both voice and text input options
+- Handles processing states with visual feedback
+
+**Usage:**
+```jsx
+<VoiceAssistant className="h-full" />
 ```
 
 ### RevisionPanel
@@ -197,6 +219,31 @@ interface TextAnimationProps {
 />
 ```
 
+### UserDashboard
+
+A component that displays a user's documents with filtering and sorting capabilities.
+
+**Location:** `src/components/UserDashboard.tsx`
+
+**Props:**
+- None required
+
+**State:**
+- `documents`: Array of user's documents retrieved from the API
+- `isLoading`: Boolean indicating if documents are being loaded
+- `error`: Error message if document fetching fails
+
+**Key Features:**
+- Fetches and displays user's documents
+- Shows loading, error, and empty states
+- Formats document information (file size, dates)
+- Links to document view pages
+
+**Usage:**
+```jsx
+<UserDashboard />
+```
+
 ## Provider Components
 
 ### DocumentAIProvider
@@ -277,6 +324,108 @@ const {
 } = useDocumentStore();
 ```
 
+### useVoiceAssistant
+
+A custom hook that provides voice recognition, text-to-speech, and AI interaction capabilities for document analysis.
+
+**Location:** `src/hooks/useVoiceAssistant.ts`
+
+**Options:**
+```typescript
+interface VoiceAssistantOptions {
+  onResult?: (result: string) => void;
+  onError?: (error: string) => void;
+  autoStart?: boolean;
+}
+```
+
+**State:**
+- `isListening`: Whether voice recognition is active
+- `isSpeaking`: Whether text-to-speech is active
+- `transcript`: Current speech recognition transcript
+- `lastResponse`: Last AI response text
+- `isProcessing`: Whether the AI is processing a request
+
+**Functions:**
+- `startListening`: Starts voice recognition
+- `stopListening`: Stops voice recognition
+- `resetTranscript`: Clears the current transcript
+- `speak`: Reads text aloud using speech synthesis
+- `stopSpeaking`: Stops text-to-speech
+- `sendMessage`: Sends a message to the AI for processing
+
+**Usage:**
+```jsx
+const {
+  isListening,
+  transcript,
+  lastResponse,
+  startListening,
+  stopListening,
+  speak,
+  sendMessage
+} = useVoiceAssistant();
+```
+
+### useDocumentUpload
+
+A custom hook that handles document file selection, validation, and uploading.
+
+**Location:** `src/hooks/useDocumentUpload.ts`
+
+**State:**
+- `dragActive`: Boolean for drag-and-drop state
+- `lastFile`: Last file that was processed
+- `uploadError`: Error message from upload attempt
+- `isProcessing`: Boolean for upload/processing state
+
+**Functions:**
+- `validateFile`: Validates file type and size
+- `processFile`: Processes and uploads a file
+- `setDragActive`: Updates drag state for UI feedback
+
+**Usage:**
+```jsx
+const {
+  dragActive,
+  setDragActive,
+  uploadError,
+  lastFile,
+  processFile,
+  isProcessing
+} = useDocumentUpload();
+```
+
+### useDocumentEditing
+
+A custom hook that manages document section editing functionality.
+
+**Location:** `src/hooks/useDocumentEditing.ts`
+
+**State:**
+- `sections`: Array of document sections with editing states
+- `highlightedSection`: ID of currently highlighted section
+
+**Functions:**
+- `proposeEdit`: Proposes a new text for a section
+- `acceptEdit`: Accepts a proposed edit
+- `rejectEdit`: Rejects a proposed edit
+- `startEditing`: Begins direct editing of a section
+- `saveEdit`: Saves changes from direct editing
+- `cancelEditing`: Cancels direct editing
+
+**Usage:**
+```jsx
+const {
+  sections,
+  highlightedSection,
+  setHighlightedSection,
+  proposeEdit,
+  acceptEdit,
+  rejectEdit
+} = useDocumentEditing();
+```
+
 ### useDocumentAI
 
 A custom hook that provides access to the DocumentAI context.
@@ -301,43 +450,61 @@ const {
 
 ```mermaid
 graph TD
-    A[DocumentAnalysisPage] --> B[DocumentAIProvider]
-    B --> C[DocumentAnalysisContent]
-    C --> D[EditableDocumentViewer]
-    C --> E[RevisionPanel]
-    C --> F[TextAnimation]
+    A[DocumentAnalysisPage] --> B[DocumentAnalysisLayout]
+    B --> C[EditableDocumentViewer]
+    B --> D[VoiceAssistant]
+    B --> E[RevisionPanel]
     
-    G[useDocumentStore] -.->|state & actions| D
-    G -.->|state & actions| E
+    F[useDocumentStore] -.->|state & actions| C
+    F -.->|state & actions| E
+    F -.->|document context| D
     
-    H[useDocumentAI] -.->|AI interactions| D
-    C -.->|uses| G
-    C -.->|uses| H
+    G[useVoiceAssistant] -.->|speech recognition| D
+    G -.->|text-to-speech| D
+    G -.->|AI interaction| D
     
-    I[useConversation] -.->|voice & text| C
-    I -.->|voice & text| F
+    H[useDocumentAI] -.->|AI interactions| C
+    B -.->|uses| F
+    B -.->|uses| H
+    
+    I[useConversation] -.->|voice & text| B
+    
+    J[UserDashboard] -.->|displays| K[User Documents]
+    L[DocumentUploader] -.->|uses| M[useDocumentUpload]
+    C -.->|uses| N[useDocumentEditing]
 ```
 
-## Key Component Interfaces
+## Voice Integration Architecture
 
-### EditableDocumentViewer Ref
+The voice assistant integration in TrustInk allows users to interact with documents using natural language.
 
-The EditableDocumentViewer exposes a ref interface for AI interaction, allowing direct control of the document view from the AI context.
-
-```typescript
-// This is the ref passed to EditableDocumentViewer
-const documentViewerRef = useRef<EditableDocumentViewerRef | null>(null);
-
-// Implementing the ref in EditableDocumentViewer
-useImperativeHandle(ref, () => ({
-  proposeEditFromAI: (sectionId: string, newText: string) => {
-    proposeEdit(sectionId, newText);
-  },
-  highlightSection: (sectionId: string | null) => {
-    setHighlightedSectionId(sectionId);
-  },
-  getSections: () => sections
-}));
+```mermaid
+sequenceDiagram
+    participant User
+    participant VoiceAssistant
+    participant SpeechRecognition
+    participant DocumentAI
+    participant API as Document API
+    participant OpenAI
+    
+    User->>VoiceAssistant: Ask document question
+    VoiceAssistant->>SpeechRecognition: Start listening
+    SpeechRecognition-->>VoiceAssistant: Return transcript
+    VoiceAssistant->>DocumentAI: Process transcript
+    DocumentAI->>API: Send analysis request
+    API->>OpenAI: Forward for processing
+    OpenAI-->>API: Return analysis
+    API-->>DocumentAI: Return results
+    DocumentAI-->>VoiceAssistant: Return response
+    VoiceAssistant->>User: Show and speak response
 ```
 
-This pattern enables the AI to control the document viewer without tightly coupling the components. 
+### Voice Assistant Workflow
+
+1. **User speaks or types a question** about the document
+2. **Speech is converted to text** using the browser's SpeechRecognition API
+3. **Text is sent to the document analysis API** with context about the current document
+4. **The analysis service processes the request** (using mock responses for now, real OpenAI in production)
+5. **Results are returned to the VoiceAssistant component**
+6. **The response is displayed and spoken** using the SpeechSynthesis API
+7. **Relevant document sections may be highlighted** based on the analysis 

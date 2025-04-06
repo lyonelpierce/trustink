@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabaseAdmin';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export type RevisionStatus = 'pending' | 'accepted' | 'rejected';

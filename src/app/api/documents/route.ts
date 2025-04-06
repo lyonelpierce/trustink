@@ -5,7 +5,16 @@ export const fetchCache = 'force-no-store';
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabaseAdmin';
-import { uploadDocumentFile, createDocumentRecord, getDocumentById, getUserDocuments } from '@/lib/supabase';
+import { 
+  uploadDocumentFile, 
+  createDocumentRecord, 
+  getDocumentById, 
+  getUserDocuments, 
+  saveDocumentAnalysis, 
+  getUserDocumentsWithMeta,
+  extractPdfText,
+  getDocumentAnalysis
+} from '@/lib/supabase';
 import { 
   handleApiError, 
   unauthorized, 
@@ -49,9 +58,12 @@ export async function POST(request: Request) {
     );
     
     if (storageError) {
-      console.error('Error uploading to storage:', storageError);
+      console.error('[API/documents] Error uploading to storage:', storageError);
       return handleApiError(storageError, 'documents.upload', 'Failed to upload document');
     }
+    
+    // Extract document content
+    const { sections, pageCount } = await extractPdfText(fileBuffer);
     
     // Create document record in database
     const { data: documentData, error: documentError } = await createDocumentRecord(
@@ -66,21 +78,37 @@ export async function POST(request: Request) {
     );
       
     if (documentError) {
-      console.error('Error saving document record:', documentError);
+      console.error('[API/documents] Error saving document record:', documentError);
       return handleApiError(documentError, 'documents.create', 'Failed to save document record');
     }
     
-    // TODO: Queue document for analysis with AI
-    // This would be implemented in a production version
+    // Save document analysis with sections
+    const { error: analysisError } = await saveDocumentAnalysis(
+      supabase,
+      documentData.id,
+      userId,
+      {
+        pageCount,
+        sections,
+        extractedAt: new Date().toISOString()
+      }
+    );
+    
+    if (analysisError) {
+      console.error('[API/documents] Error saving document analysis:', analysisError);
+      // We'll continue even if analysis saving fails
+    }
     
     return NextResponse.json({ 
       id: documentData.id,
       name: documentData.name,
       path: documentData.path,
+      pageCount,
       message: 'Document uploaded successfully' 
     });
     
   } catch (error) {
+    console.error('[API/documents] Error processing document:', error);
     return handleApiError(error, 'documents.post', 'Failed to process document');
   }
 }
@@ -96,6 +124,9 @@ export async function GET(request: Request) {
     
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
+    const includeAnalysis = url.searchParams.get('includeAnalysis') === 'true';
+    const includeContracts = url.searchParams.get('includeContracts') === 'true';
+    
     const supabase = await createClient();
     
     if (id) {
@@ -106,10 +137,25 @@ export async function GET(request: Request) {
         return notFound('Document not found');
       }
       
+      // Get additional data if requested
+      if (includeAnalysis) {
+        const { data: analysisData, error: analysisError } = await getDocumentAnalysis(
+          supabase,
+          id,
+          userId
+        );
+          
+        if (!analysisError && analysisData) {
+          data.analysis = analysisData;
+        }
+      }
+      
       return NextResponse.json(data);
     } else {
       // List all documents for the user
-      const { data, error } = await getUserDocuments(supabase, userId);
+      const { data, error } = includeAnalysis || includeContracts
+        ? await getUserDocumentsWithMeta(supabase, userId)
+        : await getUserDocuments(supabase, userId);
         
       if (error) {
         return handleApiError(error, 'documents.list', 'Failed to fetch documents');

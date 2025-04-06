@@ -32,7 +32,7 @@ export function useDocumentAI() {
 export function DocumentAIProvider({ children }: { children: React.ReactNode }) {
   console.log('[DocumentAI] Provider initialized');
   
-  const { setHighlightedSection, updateDocumentSection } = useDocumentStore();
+  const documentStore = useDocumentStore();
   
   const documentViewerRef = useRef<EditableDocumentViewerRef>(null) as React.RefObject<EditableDocumentViewerRef>;
   const [lastAction, setLastAction] = useState<{
@@ -52,6 +52,8 @@ export function DocumentAIProvider({ children }: { children: React.ReactNode }) 
       
       documentViewerRef.current.highlightSection(sectionId);
       
+      documentStore.setHighlightedSection(sectionId);
+      
       setLastAction({
         type: 'highlight',
         sectionId,
@@ -65,7 +67,7 @@ export function DocumentAIProvider({ children }: { children: React.ReactNode }) 
         customMessage: 'Failed to highlight section'
       });
     }
-  }, []);
+  }, [documentStore]);
   
   const proposeEdit = useCallback((sectionId: string, newText: string) => {
     console.log('[DocumentAI] Proposing edit for section:', sectionId);

@@ -212,3 +212,37 @@ sequenceDiagram
    - Provides file drag-and-drop interface
    - Validates document types and size
    - Shows upload progress feedback 
+
+## Document Upload Flow
+
+The document upload flow allows users to add PDF documents to the system for analysis:
+
+1. **Access Upload Interface**
+   - User navigates to the Documents page
+   - The DocumentUploader component provides a drag-and-drop interface
+
+2. **Select Document**
+   - User selects a PDF file through drag-and-drop or file browser
+   - System validates file type (PDF only) and size (10MB max)
+
+3. **Process Upload**
+   - Frontend reads the file and prepares it for upload
+   - File is sent to the API endpoint via a POST request to `/api/documents`
+   - Backend uploads file to Supabase storage in the `documents` bucket
+   - System extracts basic section information from the PDF
+   - Document record is created in the database with metadata
+   - Document analysis record is created with extracted sections
+
+4. **Confirmation**
+   - User receives success confirmation
+   - Document appears in the user's document list
+   - User can now view and analyze the document
+
+### Technical Implementation
+
+The upload flow is implemented through:
+- `DocumentUploader` component: User interface for uploads
+- `useDocumentUpload` hook: Business logic for file handling
+- `/api/documents` endpoint: Server-side processing
+- Supabase storage integration for file storage
+- Database tables for metadata and content storage 
