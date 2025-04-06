@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from "@supabase/supabase-js";
 
 type MessageInput = {
   id: string;
@@ -14,24 +14,26 @@ type MessageInput = {
 /**
  * Get the count of messages for a session to maintain order
  */
-export const getMessageCount = async (supabase: SupabaseClient, sessionId: string) => {
+export const getMessageCount = async (
+  supabase: SupabaseClient,
+  sessionId: string
+) => {
   return await supabase
-    .from('messages')
-    .select('count')
-    .eq('session_id', sessionId);
+    .from("messages")
+    .select("count")
+    .eq("session_id", sessionId);
 };
 
 /**
  * Insert a new message with conflict handling
  */
 export const insertMessage = async (
-  supabase: SupabaseClient, 
-  message: MessageInput, 
+  supabase: SupabaseClient,
+  message: MessageInput,
   orderIndex: number
 ) => {
-  return await supabase
-    .from('messages')
-    .upsert({
+  return await supabase.from("messages").upsert(
+    {
       created_at: orderIndex,
       id: message.id,
       session_id: message.session_id,
@@ -40,55 +42,66 @@ export const insertMessage = async (
       object: message.object,
       role: message.role,
       status: message.status,
-      type: message.type
-    }, { 
-      onConflict: 'id',
-      ignoreDuplicates: true 
-    });
+      type: message.type,
+    },
+    {
+      onConflict: "id",
+      ignoreDuplicates: true,
+    }
+  );
 };
 
 /**
  * Get all messages for a session ordered by created_at
  */
-export const getSessionMessages = async (supabase: SupabaseClient, sessionId: string) => {
+export const getSessionMessages = async (
+  supabase: SupabaseClient,
+  sessionId: string
+) => {
   return await supabase
-    .from('messages')
-    .select('*')
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: true });
+    .from("messages")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
 };
 
 /**
  * Get a document by ID for a specific user
  */
-export const getDocumentById = async (supabase: SupabaseClient, documentId: string, clerkId: string) => {
+export const getDocumentById = async (
+  supabase: SupabaseClient,
+  documentId: string,
+  clerkId: string
+) => {
   try {
     // Try direct query first
     let result = await supabase
-      .from('documents')
-      .select('*')
-      .eq('id', documentId)
-      .eq('user_id', clerkId)
+      .from("documents")
+      .select("*")
+      .eq("id", documentId)
+      .eq("user_id", clerkId)
       .single();
-    
+
     // If we get a UUID format error, try to find the UUID for this Clerk ID
-    if (result.error && result.error.code === '22P02') {
-      console.log('User ID format error while fetching document, trying to find UUID for Clerk ID');
+    if (result.error && result.error.code === "22P02") {
+      console.log(
+        "User ID format error while fetching document, trying to find UUID for Clerk ID"
+      );
       const userUuid = await getUserIdByClerkId(supabase, clerkId);
-      
+
       if (userUuid) {
         result = await supabase
-          .from('documents')
-          .select('*')
-          .eq('id', documentId)
-          .eq('user_id', userUuid)
+          .from("documents")
+          .select("*")
+          .eq("id", documentId)
+          .eq("user_id", userUuid)
           .single();
       }
     }
-    
+
     return result;
   } catch (error) {
-    console.error('Error in getDocumentById:', error);
+    console.error("Error in getDocumentById:", error);
     return { data: null, error };
   }
 };
@@ -96,50 +109,56 @@ export const getDocumentById = async (supabase: SupabaseClient, documentId: stri
 /**
  * Find user UUID by Clerk ID
  */
-export const getUserIdByClerkId = async (supabase: SupabaseClient, clerkId: string) => {
+export const getUserIdByClerkId = async (
+  supabase: SupabaseClient,
+  clerkId: string
+) => {
   const { data, error } = await supabase
-    .from('users')
-    .select('id')
-    .eq('clerk_id', clerkId)
+    .from("users")
+    .select("id")
+    .eq("clerk_id", clerkId)
     .single();
-  
+
   if (error || !data) {
-    console.error('Error finding user by Clerk ID:', error);
+    console.error("Error finding user by Clerk ID:", error);
     return null;
   }
-  
+
   return data.id;
 };
 
 /**
  * Get all documents for a user
  */
-export const getUserDocuments = async (supabase: SupabaseClient, clerkId: string) => {
+export const getUserDocuments = async (
+  supabase: SupabaseClient,
+  clerkId: string
+) => {
   try {
     // Try direct query first (if user_id is TEXT type)
     let result = await supabase
-      .from('documents')
-      .select('*')
-      .eq('user_id', clerkId)
-      .order('created_at', { ascending: false });
-    
+      .from("documents")
+      .select("*")
+      .eq("user_id", clerkId)
+      .order("created_at", { ascending: false });
+
     // If we get an error about UUID format, try to find the UUID for this Clerk ID
-    if (result.error && result.error.code === '22P02') {
-      console.log('User ID format error, trying to find UUID for Clerk ID');
+    if (result.error && result.error.code === "22P02") {
+      console.log("User ID format error, trying to find UUID for Clerk ID");
       const userUuid = await getUserIdByClerkId(supabase, clerkId);
-      
+
       if (userUuid) {
         result = await supabase
-          .from('documents')
-          .select('*')
-          .eq('user_id', userUuid)
-          .order('created_at', { ascending: false });
+          .from("documents")
+          .select("*")
+          .eq("user_id", userUuid)
+          .order("created_at", { ascending: false });
       }
     }
-    
+
     return result;
   } catch (error) {
-    console.error('Error in getUserDocuments:', error);
+    console.error("Error in getUserDocuments:", error);
     return { data: [], error };
   }
 };
@@ -147,40 +166,47 @@ export const getUserDocuments = async (supabase: SupabaseClient, clerkId: string
 /**
  * Get all documents for a user with additional metadata
  */
-export const getUserDocumentsWithMeta = async (supabase: SupabaseClient, clerkId: string) => {
+export const getUserDocumentsWithMeta = async (
+  supabase: SupabaseClient,
+  clerkId: string
+) => {
   try {
     // Try direct query first (if user_id is TEXT type)
     let result = await supabase
-      .from('documents')
-      .select(`
+      .from("documents")
+      .select(
+        `
         *,
         document_analyses(id, content),
         contracts(id, name, status)
-      `)
-      .eq('user_id', clerkId)
-      .order('updated_at', { ascending: false });
-    
+      `
+      )
+      .eq("user_id", clerkId)
+      .order("updated_at", { ascending: false });
+
     // If we get an error about UUID format, try to find the UUID for this Clerk ID
-    if (result.error && result.error.code === '22P02') {
-      console.log('User ID format error, trying to find UUID for Clerk ID');
+    if (result.error && result.error.code === "22P02") {
+      console.log("User ID format error, trying to find UUID for Clerk ID");
       const userUuid = await getUserIdByClerkId(supabase, clerkId);
-      
+
       if (userUuid) {
         result = await supabase
-          .from('documents')
-          .select(`
+          .from("documents")
+          .select(
+            `
             *,
             document_analyses(id, content),
             contracts(id, name, status)
-          `)
-          .eq('user_id', userUuid)
-          .order('updated_at', { ascending: false });
+          `
+          )
+          .eq("user_id", userUuid)
+          .order("updated_at", { ascending: false });
       }
     }
-    
+
     return result;
   } catch (error) {
-    console.error('Error in getUserDocumentsWithMeta:', error);
+    console.error("Error in getUserDocumentsWithMeta:", error);
     return { data: [], error };
   }
 };
@@ -194,13 +220,10 @@ export const uploadDocumentFile = async (
   fileBuffer: ArrayBuffer,
   contentType: string
 ) => {
-  return await supabase
-    .storage
-    .from('documents')
-    .upload(fileName, fileBuffer, {
-      contentType,
-      upsert: false
-    });
+  return await supabase.storage.from("documents").upload(fileName, fileBuffer, {
+    contentType,
+    upsert: false,
+  });
 };
 
 /**
@@ -219,32 +242,34 @@ export const createDocumentRecord = async (
   try {
     // Try direct insert first
     let result = await supabase
-      .from('documents')
+      .from("documents")
       .insert(data)
       .select()
       .single();
-    
+
     // If we get a UUID format error, try to find the UUID for this Clerk ID
-    if (result.error && result.error.code === '22P02') {
-      console.log('User ID format error during document creation, trying to find UUID for Clerk ID');
+    if (result.error && result.error.code === "22P02") {
+      console.log(
+        "User ID format error during document creation, trying to find UUID for Clerk ID"
+      );
       const userUuid = await getUserIdByClerkId(supabase, data.user_id);
-      
+
       if (userUuid) {
         // Replace clerk ID with UUID and try again
         result = await supabase
-          .from('documents')
+          .from("documents")
           .insert({
             ...data,
-            user_id: userUuid
+            user_id: userUuid,
           })
           .select()
           .single();
       }
     }
-    
+
     return result;
   } catch (error) {
-    console.error('Error in createDocumentRecord:', error);
+    console.error("Error in createDocumentRecord:", error);
     return { data: null, error };
   }
 };
@@ -255,17 +280,17 @@ export const createDocumentRecord = async (
 export const getRevisionsByContract = async (
   supabase: SupabaseClient,
   contractId: string,
-  status?: 'pending' | 'accepted' | 'rejected'
+  status?: "pending" | "accepted" | "rejected"
 ) => {
   let query = supabase
-    .from('contract_revisions')
-    .select('*, section_changes(*)')
-    .eq('contract_id', contractId);
-  
+    .from("contract_revisions")
+    .select("*, section_changes(*)")
+    .eq("contract_id", contractId);
+
   if (status) {
-    query = query.eq('status', status);
+    query = query.eq("status", status);
   }
-  
+
   return await query;
 };
 
@@ -278,20 +303,20 @@ export const createRevision = async (
     contract_id: string;
     document_id: string;
     proposed_by: string;
-    status?: 'pending' | 'accepted' | 'rejected';
+    status?: "pending" | "accepted" | "rejected";
     comment?: string;
     changes: Record<string, unknown>;
   }
 ) => {
   return await supabase
-    .from('contract_revisions')
+    .from("contract_revisions")
     .insert({
       contract_id: data.contract_id,
       document_id: data.document_id,
       proposed_by: data.proposed_by,
-      status: data.status || 'pending',
+      status: data.status || "pending",
       comment: data.comment,
-      changes: data.changes
+      changes: data.changes,
     })
     .select()
     .single();
@@ -310,27 +335,28 @@ export const addSectionChanges = async (
     ai_generated?: boolean;
   }>
 ) => {
-  const formattedChanges = changes.map(change => ({
+  const formattedChanges = changes.map((change) => ({
     revision_id: revisionId,
     section_id: change.section_id,
     original_text: change.original_text,
     proposed_text: change.proposed_text,
-    ai_generated: change.ai_generated || false
+    ai_generated: change.ai_generated || false,
   }));
-  
-  return await supabase
-    .from('section_changes')
-    .insert(formattedChanges);
+
+  return await supabase.from("section_changes").insert(formattedChanges);
 };
 
 /**
  * Get revision by ID with contract details
  */
-export const getRevisionWithContract = async (supabase: SupabaseClient, revisionId: string) => {
+export const getRevisionWithContract = async (
+  supabase: SupabaseClient,
+  revisionId: string
+) => {
   return await supabase
-    .from('contract_revisions')
-    .select('*, contracts:contract_id(*)')
-    .eq('id', revisionId)
+    .from("contract_revisions")
+    .select("*, contracts:contract_id(*)")
+    .eq("id", revisionId)
     .single();
 };
 
@@ -340,16 +366,16 @@ export const getRevisionWithContract = async (supabase: SupabaseClient, revision
 export const updateRevisionStatus = async (
   supabase: SupabaseClient,
   revisionId: string,
-  status: 'accepted' | 'rejected',
+  status: "accepted" | "rejected",
   updatedAt?: string
 ) => {
   return await supabase
-    .from('contract_revisions')
-    .update({ 
-      status, 
-      updated_at: updatedAt || new Date().toISOString() 
+    .from("contract_revisions")
+    .update({
+      status,
+      updated_at: updatedAt || new Date().toISOString(),
     })
-    .eq('id', revisionId)
+    .eq("id", revisionId)
     .select()
     .single();
 };
@@ -363,13 +389,11 @@ export const addRevisionComment = async (
   userId: string,
   comment: string
 ) => {
-  return await supabase
-    .from('revision_comments')
-    .insert({
-      revision_id: revisionId,
-      user_id: userId,
-      comment
-    });
+  return await supabase.from("revision_comments").insert({
+    revision_id: revisionId,
+    user_id: userId,
+    comment,
+  });
 };
 
 /**
@@ -380,39 +404,39 @@ export const getRevisions = async (
   filters: {
     contractId?: string;
     documentId?: string;
-    status?: 'pending' | 'accepted' | 'rejected';
+    status?: "pending" | "accepted" | "rejected";
   }
 ) => {
   let query = supabase
-    .from('contract_revisions')
-    .select('*, section_changes(*), revision_comments(*)');
-  
+    .from("contract_revisions")
+    .select("*, section_changes(*), revision_comments(*)");
+
   if (filters.contractId) {
-    query = query.eq('contract_id', filters.contractId);
+    query = query.eq("contract_id", filters.contractId);
   }
-  
+
   if (filters.documentId) {
-    query = query.eq('document_id', filters.documentId);
+    query = query.eq("document_id", filters.documentId);
   }
-  
+
   if (filters.status) {
-    query = query.eq('status', filters.status);
+    query = query.eq("status", filters.status);
   }
-  
+
   // Order by created_at descending (newest first)
-  query = query.order('created_at', { ascending: false });
-  
+  query = query.order("created_at", { ascending: false });
+
   return await query;
 };
 
 /**
  * Download document content from storage
  */
-export const downloadDocument = async (supabase: SupabaseClient, path: string) => {
-  return await supabase
-    .storage
-    .from('documents')
-    .download(path);
+export const downloadDocument = async (
+  supabase: SupabaseClient,
+  path: string
+) => {
+  return await supabase.storage.from("documents").download(path);
 };
 
 /**
@@ -426,34 +450,32 @@ export const saveDocumentAnalysis = async (
 ) => {
   try {
     // Try direct insert first
-    let result = await supabase
-      .from('document_analyses')
-      .insert({
-        document_id: documentId,
-        user_id: userId,
-        content: analysisContent
-      });
-    
+    let result = await supabase.from("document_analyses").insert({
+      document_id: documentId,
+      user_id: userId,
+      content: analysisContent,
+    });
+
     // If we get a UUID format error, try to find the UUID for this Clerk ID
-    if (result.error && result.error.code === '22P02') {
-      console.log('User ID format error during analysis creation, trying to find UUID for Clerk ID');
+    if (result.error && result.error.code === "22P02") {
+      console.log(
+        "User ID format error during analysis creation, trying to find UUID for Clerk ID"
+      );
       const userUuid = await getUserIdByClerkId(supabase, userId);
-      
+
       if (userUuid) {
         // Replace clerk ID with UUID and try again
-        result = await supabase
-          .from('document_analyses')
-          .insert({
-            document_id: documentId,
-            user_id: userUuid,
-            content: analysisContent
-          });
+        result = await supabase.from("document_analyses").insert({
+          document_id: documentId,
+          user_id: userUuid,
+          content: analysisContent,
+        });
       }
     }
-    
+
     return result;
   } catch (error) {
-    console.error('Error in saveDocumentAnalysis:', error);
+    console.error("Error in saveDocumentAnalysis:", error);
     return { error };
   }
 };
@@ -467,44 +489,46 @@ export const getDocumentAnalysis = async (
   clerkId?: string
 ) => {
   try {
-    let query = supabase
-      .from('document_analyses')
-      .select('*')
-      .eq('document_id', documentId);
-    
+    const query = supabase
+      .from("document_analyses")
+      .select("*")
+      .eq("document_id", documentId);
+
     // Add user filter if provided
     if (clerkId) {
-      let result = await query.eq('user_id', clerkId);
-      
+      let result = await query.eq("user_id", clerkId);
+
       // If we get a UUID format error, try to find the UUID for this Clerk ID
-      if (result.error && result.error.code === '22P02') {
-        console.log('User ID format error while fetching analysis, trying to find UUID for Clerk ID');
+      if (result.error && result.error.code === "22P02") {
+        console.log(
+          "User ID format error while fetching analysis, trying to find UUID for Clerk ID"
+        );
         const userUuid = await getUserIdByClerkId(supabase, clerkId);
-        
+
         if (userUuid) {
           result = await supabase
-            .from('document_analyses')
-            .select('*')
-            .eq('document_id', documentId)
-            .eq('user_id', userUuid);
+            .from("document_analyses")
+            .select("*")
+            .eq("document_id", documentId)
+            .eq("user_id", userUuid);
         }
       }
-      
+
       // Handle conversion to single record
       if (!result.error && result.data && result.data.length > 0) {
         return { data: result.data[0], error: null };
       }
       return result;
     }
-    
+
     // Handle potential empty result
     const res = await query;
     if (!res.error && res.data && res.data.length > 0) {
       return { data: res.data[0], error: null };
     }
-    return { data: null, error: { message: 'Analysis not found' } };
+    return { data: null, error: { message: "Analysis not found" } };
   } catch (error) {
-    console.error('Error in getDocumentAnalysis:', error);
+    console.error("Error in getDocumentAnalysis:", error);
     return { data: null, error };
   }
 };
@@ -514,36 +538,36 @@ export const getDocumentAnalysis = async (
  * Creates basic section structure based on pages
  */
 export const extractPdfText = async (buffer: ArrayBuffer) => {
-  const { PDFDocument } = await import('pdf-lib');
-  console.log('[extractPdfText] Extracting text from PDF...');
-  
+  const { PDFDocument } = await import("pdf-lib");
+  console.log("[extractPdfText] Extracting text from PDF...");
+
   try {
     const pdfDoc = await PDFDocument.load(buffer);
     const pageCount = pdfDoc.getPageCount();
     console.log(`[extractPdfText] PDF has ${pageCount} pages`);
-    
+
     // For now, create basic sections by page
     // In a more advanced implementation, you'd use PDF.js or another library
     // to extract actual text content and identify meaningful sections
     const sections = [];
-    
+
     for (let i = 0; i < pageCount; i++) {
       const page = pdfDoc.getPage(i);
       const { width, height } = page.getSize();
-      
+
       sections.push({
-        id: `page-${i+1}`,
-        title: `Page ${i+1}`,
-        text: `Content from page ${i+1}`, // Placeholder - would contain actual text in full implementation
-        pageNumber: i+1,
-        position: { x: 0, y: 0, width, height }
+        id: `page-${i + 1}`,
+        title: `Page ${i + 1}`,
+        text: `Content from page ${i + 1}`, // Placeholder - would contain actual text in full implementation
+        pageNumber: i + 1,
+        position: { x: 0, y: 0, width, height },
       });
     }
-    
+
     console.log(`[extractPdfText] Extracted ${sections.length} sections`);
     return { sections, pageCount };
   } catch (error) {
-    console.error('[extractPdfText] Error extracting PDF text:', error);
-    throw new Error('Failed to extract text from PDF');
+    console.error("[extractPdfText] Error extracting PDF text:", error);
+    throw new Error("Failed to extract text from PDF");
   }
 };
