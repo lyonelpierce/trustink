@@ -9,13 +9,13 @@ import {
   DropdownMenuContent,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { useUser } from "@clerk/nextjs";
-import { GaugeIcon, LogOutIcon } from "lucide-react";
-import { SignOutButton } from "@clerk/nextjs";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
+import { SignOutButton } from "@clerk/nextjs";
+import { GaugeIcon, LogOutIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 
 const UserDropdown = () => {
   const { user } = useUser();

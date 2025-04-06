@@ -11,7 +11,7 @@ const Navbar = () => {
       <WidthWrapper className="flex items-center justify-between h-full">
         <Logo isMainLogo={true} />
         <div className="flex items-center gap-4">
-          <ModeToggle />
+          <ModeToggle rounded />
           <SignedOut>
             <SignInButton>
               <Button>Get Started</Button>

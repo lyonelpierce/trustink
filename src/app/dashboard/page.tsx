@@ -1,7 +1,7 @@
 const Dashboard = () => {
   return (
     <>
-      <div className="flex flex-col items-center justify-center h-full">
+      <div className="flex flex-col items-center justify-center h-full px-8">
         <h1 className="text-4xl font-bold">Dashboard</h1>
       </div>
     </>

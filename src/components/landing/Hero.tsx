@@ -8,10 +8,11 @@ const Hero = () => {
   return (
     <WidthWrapper className="flex flex-col gap-4 items-center justify-center pt-20 h-screen">
       <h2 className="text-7xl font-semibold text-center">
-        A new generation of{" "}
+        A new era of{" "}
         <span className="dark:bg-white text-white bg-black dark:text-black">
-          smart contracts.
-        </span>{" "}
+          digital agreements
+        </span>
+        .{" "}
       </h2>
       <p className="text-2xl text-muted-foreground">
         smart, dynamic, and personalized.
