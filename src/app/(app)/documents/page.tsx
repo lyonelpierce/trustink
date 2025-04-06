@@ -20,19 +20,30 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     async function loadDocuments() {
+      setLoading(true);
+      
       try {
-        setLoading(true);
         const response = await fetch('/api/documents');
         
         if (!response.ok) {
-          throw new Error('Failed to load documents');
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.error || 'Failed to load documents');
         }
         
         const data = await response.json();
-        setDocuments(data || []);
+        setDocuments(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error loading documents:', error);
-        toast.error('Failed to load documents');
+        
+        // Display a more user-friendly error message
+        if (error instanceof Error) {
+          toast.error(`Error: ${error.message}`);
+        } else {
+          toast.error('Unable to load your documents. Please try again later.');
+        }
+        
+        // Set documents to empty array to avoid undefined errors
+        setDocuments([]);
       } finally {
         setLoading(false);
       }

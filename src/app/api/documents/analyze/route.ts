@@ -4,7 +4,12 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabaseAdmin';
-import { getDocumentById, downloadDocument, saveDocumentAnalysis } from '@/lib/supabase';
+import { 
+  getDocumentById, 
+  downloadDocument, 
+  saveDocumentAnalysis,
+  getUserIdByClerkId
+} from '@/lib/supabase';
 import { PDFDocument } from 'pdf-lib';
 import { analyzeDocument, type AnalysisRequest, type DocumentSection } from '@/lib/document-ai';
 
@@ -65,6 +70,15 @@ export async function GET(request: Request) {
     
     // Get document from database
     const supabase = await createClient();
+    
+    // Try to find the database user UUID from Clerk ID
+    const userUuid = await getUserIdByClerkId(supabase, userId);
+    
+    if (!userUuid) {
+      console.error(`[API/analyze] GET: No user found for Clerk ID ${userId}`);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
     const { data: document, error: documentError } = await getDocumentById(supabase, documentId, userId);
       
     if (documentError || !document) {
@@ -77,7 +91,7 @@ export async function GET(request: Request) {
       .from('document_analyses')
       .select('*')
       .eq('document_id', documentId)
-      .eq('user_id', userId)
+      .eq('user_id', userUuid) // Use the UUID instead of Clerk ID
       .order('created_at', { ascending: false })
       .limit(1);
     
@@ -108,11 +122,11 @@ export async function GET(request: Request) {
       extractedAt: new Date().toISOString()
     };
     
-    // Save analysis to database
+    // Save analysis to database with user UUID
     const { error: saveError } = await saveDocumentAnalysis(
       supabase,
       documentId,
-      userId,
+      userUuid, // Use the UUID instead of Clerk ID
       analysisResult
     );
     
@@ -153,6 +167,15 @@ export async function POST(request: Request) {
     
     // Get document from database
     const supabase = await createClient();
+    
+    // Try to find the database user UUID from Clerk ID
+    const userUuid = await getUserIdByClerkId(supabase, userId);
+    
+    if (!userUuid) {
+      console.error(`[API/analyze] POST: No user found for Clerk ID ${userId}`);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
     const { data: document, error: documentError } = await getDocumentById(supabase, documentId, userId);
       
     if (documentError || !document) {
@@ -174,7 +197,7 @@ export async function POST(request: Request) {
       .from('document_analyses')
       .select('content')
       .eq('document_id', documentId)
-      .eq('user_id', userId)
+      .eq('user_id', userUuid) // Use UUID instead of Clerk ID
       .order('created_at', { ascending: false })
       .limit(1);
     
@@ -202,7 +225,7 @@ export async function POST(request: Request) {
     const { error: saveError } = await saveDocumentAnalysis(
       supabase,
       documentId,
-      userId,
+      userUuid,
       {
         analysis: analysisResult,
         query: question || requestType,

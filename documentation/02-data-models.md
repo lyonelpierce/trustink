@@ -101,24 +101,67 @@ interface RevisionComment {
 
 ## User-Document Relationship
 
+### User Identity Structure
+
+The application uses a dual identity system:
+
+1. **Clerk Authentication System**
+   - `clerk_id`: String ID format like `user_2vJU16RIAVWrQHF8ndiNE7Azrhk`
+   - Used for authentication and user management
+   - Returned by the `auth()` function in API routes
+
+2. **Internal Database Identity**
+   - `id`: UUID format like `550e8400-e29b-41d4-a716-446655440000`
+   - Used for database relationships
+   - References between tables use this UUID, not the Clerk ID
+
+The `users` table bridges these two identity systems:
+
+```typescript
+interface DbUser {
+  id: string;          // UUID primary key for database relationships
+  clerk_id: string;    // Clerk's user ID for authentication
+  email: string;       // User's email address
+  first_name: string;  // User's first name
+  last_name: string;   // User's last name
+  image_url: string;   // User's profile image
+  created_at: Date;    // When the user account was created
+  updated_at: Date;    // When the user was last updated
+}
+```
+
 ### Implementation Status
 
 The user-document relationship is fully implemented with:
 
 1. **Database Structure**
-   - Documents table includes `user_id` foreign key
+   - `users` table stores mapping between Clerk IDs and internal UUIDs
+   - Documents table includes `user_id` foreign key (references `users.id`)
    - Row-level security ensures users can only access their documents
    - Clerk integration provides user authentication and identity
 
 2. **API Endpoints**
-   - `GET /api/documents` - Retrieves all documents for the current user
-   - `GET /api/documents?id=X` - Retrieves a specific document (with user verification)
-   - `POST /api/documents` - Creates a new document associated with the current user
+   - API routes first authenticate with Clerk to get the Clerk user ID
+   - Then use the Clerk ID to look up the corresponding UUID in the users table
+   - All database queries use the UUID for relationships
+   - Helper function `getUserIdByClerkId` handles the mapping
 
 3. **Supabase Functions**
-   - `getUserDocuments(supabase, userId)` - Gets all documents for a user
-   - `getUserDocumentsWithMeta(supabase, userId)` - Gets documents with related metadata
-   - `getDocumentById(supabase, documentId, userId)` - Gets a specific document for a user
+   - `getUserDocuments(supabase, clerkId)` - Gets all documents for a user
+   - `getUserDocumentsWithMeta(supabase, clerkId)` - Gets documents with related metadata
+   - `getDocumentById(supabase, documentId, clerkId)` - Gets a specific document for a user
+
+### ID Type Handling
+
+The application includes safeguards to handle ID type mismatches:
+
+1. **Automatic UUID Lookup**
+   - When Clerk IDs are used in database queries, the system automatically looks up the corresponding UUID
+   - If a UUID format error occurs, the system retries the query with the proper UUID
+
+2. **Webhook Integration**
+   - When users are created in Clerk, a webhook creates the corresponding entry in our `users` table
+   - This preserves the relationship between Clerk IDs and our internal UUIDs
 
 ## Application State Models
 

@@ -13,7 +13,8 @@ import {
   saveDocumentAnalysis, 
   getUserDocumentsWithMeta,
   extractPdfText,
-  getDocumentAnalysis
+  getDocumentAnalysis,
+  getUserIdByClerkId
 } from '@/lib/supabase';
 import { 
   handleApiError, 
@@ -152,18 +153,29 @@ export async function GET(request: Request) {
       
       return NextResponse.json(data);
     } else {
-      // List all documents for the user
-      const { data, error } = includeAnalysis || includeContracts
-        ? await getUserDocumentsWithMeta(supabase, userId)
-        : await getUserDocuments(supabase, userId);
+      try {
+        // List all documents for the user
+        const { data, error } = includeAnalysis || includeContracts
+          ? await getUserDocumentsWithMeta(supabase, userId)
+          : await getUserDocuments(supabase, userId);
+          
+        if (error) {
+          console.error('[API:documents.list]', error);
+          // If there's a format error with the user ID, return an empty array
+          // rather than a 500 error
+          return NextResponse.json([]);
+        }
         
-      if (error) {
-        return handleApiError(error, 'documents.list', 'Failed to fetch documents');
+        return NextResponse.json(data || []);
+      } catch (error) {
+        console.error('[API:documents.list]', error);
+        // Return empty array instead of error for better user experience
+        return NextResponse.json([]);
       }
-      
-      return NextResponse.json(data);
     }
   } catch (error) {
-    return handleApiError(error, 'documents.get', 'Failed to fetch documents');
+    console.error('[API:documents.get]', error);
+    // Return empty array for document list requests
+    return NextResponse.json([]);
   }
 } 

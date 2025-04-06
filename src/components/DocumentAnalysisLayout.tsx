@@ -6,7 +6,9 @@ import { VoiceAssistant } from '@/components/VoiceAssistant';
 import { RevisionPanel } from '@/components/RevisionPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDocumentStore } from '@/store/zustand';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@clerk/nextjs';
 
 interface DocumentAnalysisLayoutProps {
   documentId: string;
@@ -18,18 +20,36 @@ interface DocumentAnalysisLayoutProps {
  */
 export function DocumentAnalysisLayout({ documentId }: DocumentAnalysisLayoutProps) {
   const [activeTab, setActiveTab] = useState('assistant');
+  const [error, setError] = useState<string | null>(null);
   const { setCurrentDocument, setDocumentLoading, currentDocument, isDocumentLoading } = useDocumentStore();
+  const { isLoaded, userId, isSignedIn } = useAuth();
   
   useEffect(() => {
     async function fetchDocument() {
       setDocumentLoading(true);
+      setError(null);
       
       try {
+        // Make sure auth is loaded and user is signed in
+        if (!isLoaded || !isSignedIn || !userId) {
+          throw new Error('You must be signed in to view documents');
+        }
+        
         // Fetch document metadata
         const response = await fetch(`/api/documents?id=${documentId}`);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch document: ${response.statusText}`);
+          // Try to get error details
+          let errorMessage = `Failed to fetch document: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+          throw new Error(errorMessage);
         }
         
         const documentData = await response.json();
@@ -38,7 +58,17 @@ export function DocumentAnalysisLayout({ documentId }: DocumentAnalysisLayoutPro
         const analysisResponse = await fetch(`/api/documents/analyze?documentId=${documentId}`);
         
         if (!analysisResponse.ok) {
-          throw new Error('Failed to fetch document analysis');
+          // Try to get error details
+          let errorMessage = 'Failed to fetch document analysis';
+          try {
+            const errorData = await analysisResponse.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+          throw new Error(errorMessage);
         }
         
         const analysisData = await analysisResponse.json();
@@ -53,6 +83,9 @@ export function DocumentAnalysisLayout({ documentId }: DocumentAnalysisLayoutPro
         
       } catch (error) {
         console.error('Error fetching document:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error loading document';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setDocumentLoading(false);
       }
@@ -65,14 +98,54 @@ export function DocumentAnalysisLayout({ documentId }: DocumentAnalysisLayoutPro
       // Clear document when navigating away
       setCurrentDocument(null);
     };
-  }, [documentId, setCurrentDocument, setDocumentLoading]);
+  }, [documentId, setCurrentDocument, setDocumentLoading, isLoaded, isSignedIn, userId]);
+  
+  // Auth loading state
+  if (!isLoaded) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-lg">Loading authentication...</p>
+      </div>
+    );
+  }
+  
+  // Not signed in
+  if (!isSignedIn) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center">
+        <AlertCircle className="h-8 w-8 text-destructive mb-4" />
+        <p className="text-lg">You must be signed in to view documents</p>
+      </div>
+    );
+  }
   
   // Loading state
-  if (isDocumentLoading || !currentDocument) {
+  if (isDocumentLoading) {
     return (
       <div className="h-full flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
         <p className="text-lg">Loading document...</p>
+      </div>
+    );
+  }
+  
+  // Error state
+  if (error) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center">
+        <AlertCircle className="h-8 w-8 text-destructive mb-4" />
+        <p className="text-lg text-destructive">{error}</p>
+      </div>
+    );
+  }
+  
+  // No document loaded
+  if (!currentDocument) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center">
+        <AlertCircle className="h-8 w-8 text-warning mb-4" />
+        <p className="text-lg">No document loaded</p>
       </div>
     );
   }
