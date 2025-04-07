@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { EyeIcon } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Database } from "../../../../../database.types";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { EyeIcon, TrashIcon } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import DeleteDocumentAlert from "../DeleteDocumentAlert";
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 
@@ -52,9 +53,7 @@ export const columns: ColumnDef<
           >
             <EyeIcon className="w-4 h-4" />
           </Link>
-          <Button variant="ghost" size="icon">
-            <TrashIcon className="w-4 h-4" />
-          </Button>
+          <DeleteDocumentAlert document={row.original} />
         </div>
       );
     },

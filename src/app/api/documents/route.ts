@@ -211,3 +211,54 @@ export async function GET(request: Request) {
     return NextResponse.json([]);
   }
 }
+
+export async function DELETE(request: Request) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json(
+      {
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+
+  const url = new URL(request.url);
+  const id = url.searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "No document ID provided" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    const { error } = await supabase.from("documents").delete().eq("id", id);
+
+    if (error) {
+      return NextResponse.json(
+        {
+          error: "Failed to delete document",
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Document deleted successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[API:documents.delete]", error);
+    return NextResponse.json(
+      {
+        error: "Failed to delete document",
+      },
+      { status: 500 }
+    );
+  }
+}
