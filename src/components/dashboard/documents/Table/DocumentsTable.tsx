@@ -69,7 +69,7 @@ export function DocumentsTable<TData, TValue>({
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
+                There are no documents yet. Add one to get started.
               </TableCell>
             </TableRow>
           )}
