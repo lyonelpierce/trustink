@@ -237,12 +237,48 @@ export async function DELETE(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { error } = await supabase.from("documents").delete().eq("id", id);
+    // First get the document to get its storage path
+    const { data: document, error: fetchError } = await supabase
+      .from("documents")
+      .select("path")
+      .eq("id", id)
+      .single();
 
-    if (error) {
+    if (fetchError) {
       return NextResponse.json(
         {
-          error: "Failed to delete document",
+          error: "Failed to fetch document",
+        },
+        { status: 500 }
+      );
+    }
+
+    // Delete from storage bucket if path exists
+    if (document?.path) {
+      const { error: storageError } = await supabase.storage
+        .from("documents")
+        .remove([document.path]);
+
+      if (storageError) {
+        return NextResponse.json(
+          {
+            error: "Failed to delete document from storage",
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Delete the database record
+    const { error: deleteError } = await supabase
+      .from("documents")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) {
+      return NextResponse.json(
+        {
+          error: "Failed to delete document record",
         },
         { status: 500 }
       );
