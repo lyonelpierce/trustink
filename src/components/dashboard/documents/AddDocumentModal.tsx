@@ -10,14 +10,25 @@ import {
   CredenzaTrigger,
   CredenzaContent,
 } from "@/components/ui/credenza";
+import { toast } from "sonner";
 import { useState } from "react";
 import Dropzone from "react-dropzone";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { FileIcon, PlusIcon, Trash2Icon, UploadIcon } from "lucide-react";
+import {
+  FileIcon,
+  Loader2Icon,
+  PlusIcon,
+  Trash2Icon,
+  UploadIcon,
+} from "lucide-react";
 
 const AddDocumentModal = () => {
+  const router = useRouter();
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pageCount, setPageCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -36,6 +47,33 @@ const AddDocumentModal = () => {
   const removeFile = () => {
     setSelectedFile(null);
     setPageCount(0);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+      const formData = new FormData();
+      formData.append("file", selectedFile as File);
+
+      const response = await fetch("/api/documents", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload document");
+      }
+
+      const data = await response.json();
+
+      toast.success("Document uploaded successfully");
+      router.push(`/dashboard/documents/${data.id}`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to upload document");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -111,11 +149,19 @@ const AddDocumentModal = () => {
           )}
         </CredenzaBody>
         <CredenzaFooter className="flex justify-between">
-          <Button type="submit" disabled={!selectedFile}>
-            Continue
+          <Button
+            type="submit"
+            disabled={!selectedFile || isLoading}
+            onClick={handleSubmit}
+          >
+            {isLoading ? <Loader2Icon className="animate-spin" /> : "Continue"}
           </Button>
           <CredenzaClose asChild>
-            <Button variant="link" onClick={() => setSelectedFile(null)}>
+            <Button
+              variant="link"
+              onClick={() => setSelectedFile(null)}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
           </CredenzaClose>

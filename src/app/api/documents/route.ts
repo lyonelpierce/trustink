@@ -4,7 +4,6 @@ export const fetchCache = "force-no-store";
 
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createClient } from "@/lib/supabaseAdmin";
 import {
   uploadDocumentFile,
   createDocumentRecord,
@@ -15,12 +14,7 @@ import {
   extractPdfText,
   getDocumentAnalysis,
 } from "@/lib/supabase";
-import {
-  handleApiError,
-  unauthorized,
-  badRequest,
-  notFound,
-} from "@/lib/api-error-utils";
+import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
 export async function POST(request: Request) {
   try {
@@ -28,20 +22,30 @@ export async function POST(request: Request) {
     const { userId } = await auth();
 
     if (!userId) {
-      return unauthorized();
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+        },
+        { status: 401 }
+      );
     }
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
-      return badRequest("No file provided");
+      return NextResponse.json(
+        {
+          error: "No file provided",
+        },
+        { status: 400 }
+      );
     }
 
     const name = (formData.get("name") as string) || file.name;
 
     // Upload file to Supabase storage
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
     const fileBuffer = await file.arrayBuffer();
 
     // Create a unique filename
@@ -51,7 +55,6 @@ export async function POST(request: Request) {
 
     // Upload the file
     const { data: storageData, error: storageError } = await uploadDocumentFile(
-      supabase,
       fileName,
       fileBuffer,
       file.type
@@ -62,10 +65,11 @@ export async function POST(request: Request) {
         "[API/documents] Error uploading to storage:",
         storageError
       );
-      return handleApiError(
-        storageError,
-        "documents.upload",
-        "Failed to upload document"
+      return NextResponse.json(
+        {
+          error: "Failed to upload document",
+        },
+        { status: 500 }
       );
     }
 
@@ -87,10 +91,11 @@ export async function POST(request: Request) {
         "[API/documents] Error saving document record:",
         documentError
       );
-      return handleApiError(
-        documentError,
-        "documents.create",
-        "Failed to save document record"
+      return NextResponse.json(
+        {
+          error: "Failed to save document record",
+        },
+        { status: 500 }
       );
     }
 
@@ -123,10 +128,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[API/documents] Error processing document:", error);
-    return handleApiError(
-      error,
-      "documents.post",
-      "Failed to process document"
+    return NextResponse.json(
+      {
+        error: "Failed to process document",
+      },
+      { status: 500 }
     );
   }
 }
@@ -137,7 +143,12 @@ export async function GET(request: Request) {
     const { userId } = await auth();
 
     if (!userId) {
-      return unauthorized();
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+        },
+        { status: 401 }
+      );
     }
 
     const url = new URL(request.url);
@@ -146,14 +157,19 @@ export async function GET(request: Request) {
     const includeContracts =
       url.searchParams.get("includeContracts") === "true";
 
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
 
     if (id) {
       // Get a specific document
       const { data, error } = await getDocumentById(supabase, id, userId);
 
       if (error) {
-        return notFound("Document not found");
+        return NextResponse.json(
+          {
+            error: "Document not found",
+          },
+          { status: 404 }
+        );
       }
 
       // Get additional data if requested

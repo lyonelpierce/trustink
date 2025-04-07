@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "./supabaseSsr";
 
 type MessageInput = {
   id: string;
@@ -177,7 +178,7 @@ export const getUserDocumentsWithMeta = async (
       .select(
         `
         *,
-        document_analyses(id, content),
+        document_analysis(id, content),
         contracts(id, name, status)
       `
       )
@@ -195,7 +196,7 @@ export const getUserDocumentsWithMeta = async (
           .select(
             `
             *,
-            document_analyses(id, content),
+            document_analysis(id, content),
             contracts(id, name, status)
           `
           )
@@ -215,11 +216,12 @@ export const getUserDocumentsWithMeta = async (
  * Upload a document to storage
  */
 export const uploadDocumentFile = async (
-  supabase: SupabaseClient,
   fileName: string,
   fileBuffer: ArrayBuffer,
   contentType: string
 ) => {
+  const supabase = createServerSupabaseClient();
+
   return await supabase.storage.from("documents").upload(fileName, fileBuffer, {
     contentType,
     upsert: false,
@@ -450,7 +452,7 @@ export const saveDocumentAnalysis = async (
 ) => {
   try {
     // Try direct insert first
-    let result = await supabase.from("document_analyses").insert({
+    let result = await supabase.from("document_analysis").insert({
       document_id: documentId,
       user_id: userId,
       content: analysisContent,
@@ -465,7 +467,7 @@ export const saveDocumentAnalysis = async (
 
       if (userUuid) {
         // Replace clerk ID with UUID and try again
-        result = await supabase.from("document_analyses").insert({
+        result = await supabase.from("document_analysis").insert({
           document_id: documentId,
           user_id: userUuid,
           content: analysisContent,
@@ -490,7 +492,7 @@ export const getDocumentAnalysis = async (
 ) => {
   try {
     const query = supabase
-      .from("document_analyses")
+      .from("document_analysis")
       .select("*")
       .eq("document_id", documentId);
 
@@ -507,7 +509,7 @@ export const getDocumentAnalysis = async (
 
         if (userUuid) {
           result = await supabase
-            .from("document_analyses")
+            .from("document_analysis")
             .select("*")
             .eq("document_id", documentId)
             .eq("user_id", userUuid);
