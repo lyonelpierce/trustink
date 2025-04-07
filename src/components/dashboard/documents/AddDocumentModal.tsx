@@ -10,10 +10,10 @@ import {
   CredenzaTrigger,
   CredenzaContent,
 } from "@/components/ui/credenza";
-import { useDropzone } from "react-dropzone";
-import { Button } from "@/components/ui/button";
-import { FileIcon, PlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { useState } from "react";
+import Dropzone from "react-dropzone";
+import { Button } from "@/components/ui/button";
+import { FileIcon, PlusIcon, Trash2Icon, UploadIcon } from "lucide-react";
 
 const AddDocumentModal = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -30,9 +30,6 @@ const AddDocumentModal = () => {
   const onDrop = async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     setSelectedFile(file);
-
-    // Here you would typically get the page count from your backend
-    // For now, we'll set a dummy value
     setPageCount(3); // Replace this with actual page count logic
   };
 
@@ -40,14 +37,6 @@ const AddDocumentModal = () => {
     setSelectedFile(null);
     setPageCount(0);
   };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "application/pdf": [".pdf"],
-    },
-    multiple: false,
-  });
 
   return (
     <Credenza>
@@ -63,30 +52,40 @@ const AddDocumentModal = () => {
         </CredenzaHeader>
         <CredenzaBody>
           {!selectedFile ? (
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-                ${
-                  isDragActive
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
+            <Dropzone
+              onDrop={onDrop}
+              accept={{
+                "application/pdf": [".pdf"],
+              }}
+              multiple={false}
             >
-              <input {...getInputProps()} />
-              <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-              {isDragActive ? (
-                <p className="mt-2 text-sm text-gray-600">
-                  Drop the file here...
-                </p>
-              ) : (
-                <div>
-                  <p className="mt-2 text-sm text-gray-600">
-                    Drag and drop a PDF file here, or click to select a file
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">10MB max</p>
+              {({ getRootProps, getInputProps, isDragActive }) => (
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+                    ${
+                      isDragActive
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                >
+                  <input {...getInputProps()} />
+                  <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  {isDragActive ? (
+                    <p className="mt-2 text-sm text-gray-600">
+                      Drop the file here...
+                    </p>
+                  ) : (
+                    <div>
+                      <p className="mt-2 text-sm text-gray-600">
+                        Drag and drop a PDF file here, or click to select a file
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">10MB max</p>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+            </Dropzone>
           ) : (
             <div className="border rounded-lg p-4">
               <div className="flex items-start justify-between">
@@ -105,7 +104,7 @@ const AddDocumentModal = () => {
                   onClick={removeFile}
                   className="h-8 w-8 p-0"
                 >
-                  <XIcon className="h-4 w-4" />
+                  <Trash2Icon className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -116,7 +115,9 @@ const AddDocumentModal = () => {
             Continue
           </Button>
           <CredenzaClose asChild>
-            <Button variant="link">Cancel</Button>
+            <Button variant="link" onClick={() => setSelectedFile(null)}>
+              Cancel
+            </Button>
           </CredenzaClose>
         </CredenzaFooter>
       </CredenzaContent>
