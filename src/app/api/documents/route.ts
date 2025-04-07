@@ -189,7 +189,7 @@ export async function GET(request: Request) {
         const { data, error } =
           includeAnalysis || includeContracts
             ? await getUserDocumentsWithMeta(supabase, userId)
-            : await getUserDocuments(supabase, userId);
+            : await getUserDocuments(userId);
 
         if (error) {
           console.error("[API:documents.list]", error);

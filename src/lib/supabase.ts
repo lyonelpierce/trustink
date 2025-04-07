@@ -131,10 +131,9 @@ export const getUserIdByClerkId = async (
 /**
  * Get all documents for a user
  */
-export const getUserDocuments = async (
-  supabase: SupabaseClient,
-  clerkId: string
-) => {
+export const getUserDocuments = async (clerkId: string) => {
+  const supabase = createServerSupabaseClient();
+
   try {
     // Try direct query first (if user_id is TEXT type)
     let result = await supabase

@@ -1,6 +1,15 @@
 "use client";
 
 import {
+  FileIcon,
+  PlusIcon,
+  Trash2Icon,
+  UploadIcon,
+  Loader2Icon,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useState } from "react";
+import {
   Credenza,
   CredenzaBody,
   CredenzaClose,
@@ -10,18 +19,9 @@ import {
   CredenzaTrigger,
   CredenzaContent,
 } from "@/components/ui/credenza";
-import { toast } from "sonner";
-import { useState } from "react";
 import Dropzone from "react-dropzone";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  FileIcon,
-  Loader2Icon,
-  PlusIcon,
-  Trash2Icon,
-  UploadIcon,
-} from "lucide-react";
 
 const AddDocumentModal = () => {
   const router = useRouter();
