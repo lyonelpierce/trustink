@@ -5,7 +5,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="w-full">{children}</main>
+      <main className="w-full p-12">{children}</main>
     </SidebarProvider>
   );
 };

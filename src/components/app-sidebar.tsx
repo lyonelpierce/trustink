@@ -14,19 +14,20 @@ import {
 import { SignOutButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/theme-toggle";
-import { Home, Inbox, LogOutIcon, Signature } from "lucide-react";
+import { File, Home, LogOutIcon, Signature } from "lucide-react";
 
 const items = [
   {
     title: "Home",
-    url: "#",
+    url: "/dashboard",
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
+    title: "Documents",
+    url: "/dashboard/documents",
+    icon: File,
   },
+
   {
     title: "Signatures",
     url: "/dashboard/signatures",
