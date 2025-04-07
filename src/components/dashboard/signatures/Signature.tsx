@@ -12,7 +12,7 @@ const Signature = ({
   className?: string;
 }) => {
   return (
-    <span className={cn(`${font} text-4xl`, className)}>
+    <span className={cn(`${font} text-4xl select-none`, className)}>
       {fullName} {initials}
     </span>
   );

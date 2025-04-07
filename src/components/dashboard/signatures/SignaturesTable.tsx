@@ -42,10 +42,12 @@ const SignaturesTable = ({
       <TableBody>
         {signatures.map((signature) => (
           <TableRow key={signature.id}>
-            <TableCell className={cn("font-medium text-4xl", signature.font)}>
+            <TableCell
+              className={cn("font-medium text-4xl select-none", signature.font)}
+            >
               {signature.full_name}
             </TableCell>
-            <TableCell className={cn("text-4xl", signature.font)}>
+            <TableCell className={cn("text-4xl select-none", signature.font)}>
               {signature.initials}
             </TableCell>
             <TableCell className="flex gap-1 justify-center">
