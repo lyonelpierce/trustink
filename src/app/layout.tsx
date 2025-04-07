@@ -6,7 +6,10 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "TrustInk | First Smart Agreements Platform",
+  title: {
+    default: "TrustInk | First Smart Agreements Platform",
+    template: "%s | TrustInk",
+  },
   description: "First Smart Agreements Platform",
 };
 

@@ -1,9 +1,15 @@
+import { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
+import DashbaordTitle from "@/components/dashboard/title";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 import SignaturesTable from "@/components/dashboard/signatures/SignaturesTable";
 import AddEditSignatureModal from "@/components/dashboard/signatures/AddEditSignatureModal";
 import AddEditSignatureButton from "@/components/dashboard/signatures/AddEditSignatureButton";
-import DashbaordTitle from "@/components/dashboard/title";
+
+export const metadata: Metadata = {
+  title: "Signatures",
+  description: "Add or update your signatures",
+};
 
 const getUserSignatures = async () => {
   const { userId } = await auth();
