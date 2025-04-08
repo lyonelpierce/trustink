@@ -13,6 +13,13 @@ const nextConfig = {
     };
     return config;
   },
+  experimental: {
+    turbo: {
+      resolveAlias: {
+        canvas: "./empty-module.ts",
+      },
+    },
+  },
 };
 
 module.exports = nextConfig;
