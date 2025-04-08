@@ -6,7 +6,13 @@ const nextConfig = {
     "react-feather",
     "tailwind-merge",
   ],
-  webpack: (config) => {
+  webpack: (config, { nextRuntime }) => {
+    // Add canvas alias for Node.js runtime
+    if (nextRuntime === "nodejs") {
+      config.resolve.alias.canvas = false;
+    }
+
+    // Existing PDF.js configuration
     config.resolve.alias = {
       ...config.resolve.alias,
       "pdfjs-dist": require.resolve("pdfjs-dist"),
