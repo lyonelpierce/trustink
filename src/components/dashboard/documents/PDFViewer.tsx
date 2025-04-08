@@ -12,7 +12,11 @@ export default function PDFViewer({ url }: { url: string }) {
   return (
     <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.js">
       <div className="h-screen">
-        <Viewer fileUrl={url} plugins={[defaultLayoutPluginInstance]} />
+        <Viewer
+          fileUrl={url}
+          plugins={[defaultLayoutPluginInstance]}
+          defaultScale={1.5}
+        />
       </div>
     </Worker>
   );
