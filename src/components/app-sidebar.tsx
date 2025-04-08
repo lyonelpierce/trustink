@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/sidebar";
 import { SignOutButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/theme-toggle";
 import { File, Home, LogOutIcon, Signature } from "lucide-react";
 
 const items = [
@@ -40,7 +39,6 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="flex flex-row justify-between items-center p-4">
         <Logo isMainLogo={false} className="text-xl" />
-        <ModeToggle rounded={false} />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

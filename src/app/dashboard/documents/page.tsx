@@ -16,7 +16,7 @@ const DocumentsPage = async () => {
   const { userId } = await auth();
 
   if (!userId) {
-    return redirect("/dashboard");
+    return redirect("/sign-in");
   }
 
   const documents = await getUserDocuments(userId);

@@ -67,7 +67,7 @@ const AddDocumentModal = () => {
       const data = await response.json();
 
       toast.success("Document uploaded successfully");
-      router.push(`/dashboard/documents/${data.id}`);
+      router.push(`/editor/${data.id}`);
     } catch (error) {
       console.error(error);
       toast.error("Failed to upload document");

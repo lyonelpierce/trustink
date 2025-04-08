@@ -31,8 +31,6 @@ const SingleDocumentPage = async (props: {
 
   const document = await getDocument(id);
 
-  console.log("[DOCUMENT]", document);
-
   return (
     <div>
       <PDFViewer url={document.signedUrl.signedUrl} />
