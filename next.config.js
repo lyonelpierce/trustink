@@ -7,6 +7,13 @@ const nextConfig = {
     "tailwind-merge",
   ],
   webpack: (config) => {
+    // Add .node file handling
+    config.module.rules.push({
+      test: /\.node/,
+      use: "raw-loader",
+    });
+
+    // Existing PDF.js configuration
     config.resolve.alias = {
       ...config.resolve.alias,
       "pdfjs-dist": require.resolve("pdfjs-dist"),
