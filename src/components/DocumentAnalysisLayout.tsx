@@ -6,8 +6,10 @@ import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { RevisionPanel } from "@/components/RevisionPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDocumentStore } from "@/store/zustand";
-import { Loader2, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { mockDocument } from "@/mocks/document-mock";
+import { handleError } from "@/lib/error-handler";
+import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
 import { useAuth } from "@clerk/nextjs";
 
 interface DocumentAnalysisLayoutProps {
@@ -17,6 +19,12 @@ interface DocumentAnalysisLayoutProps {
 /**
  * Layout component for document analysis
  * Displays document viewer alongside voice assistant and revision panel
+ * 
+ * Features:
+ * - Split view with document on the left, assistant/revisions on the right
+ * - Tabbed interface for switching between AI assistant and revisions
+ * - Handles authentication, loading, and error states
+ * - Supports demo mode with mock data
  */
 export function DocumentAnalysisLayout({
   documentId,
@@ -30,19 +38,51 @@ export function DocumentAnalysisLayout({
     isDocumentLoading,
   } = useDocumentStore();
   const { isLoaded, userId, isSignedIn } = useAuth();
+  const { isDemoMode, setUsingMockData } = useDemoMode();
 
   useEffect(() => {
     async function fetchDocument() {
+      console.log(`[DocumentAnalysisLayout] Fetching document: ${documentId}`);
       setDocumentLoading(true);
       setError(null);
 
       try {
-        // Make sure auth is loaded and user is signed in
-        if (!isLoaded || !isSignedIn || !userId) {
+        // Demo mode check - use mock data if in demo mode
+        if (isDemoMode) {
+          console.log('[DocumentAnalysisLayout] Using mock document in demo mode');
+          setUsingMockData(true);
+          
+          // Set mock document data
+          if (documentId === 'doc-123' || documentId === 'sample') {
+            setCurrentDocument({
+              ...mockDocument,
+              id: documentId,
+              parsedContent: {
+                sections: mockDocument.sections || [],
+              },
+            });
+            
+            console.log('[DocumentAnalysisLayout] Loaded mock document with sections:', 
+              mockDocument.sections?.length || 0);
+              
+            setDocumentLoading(false);
+            return;
+          }
+        }
+        
+        // For real implementation, ensure auth is loaded first
+        if (!isLoaded) {
+          console.log('[DocumentAnalysisLayout] Waiting for auth to load');
+          return; // Wait for auth to load
+        }
+        
+        // Real auth check
+        if (!isSignedIn || !userId) {
           throw new Error("You must be signed in to view documents");
         }
 
         // Fetch document metadata
+        console.log(`[DocumentAnalysisLayout] Fetching document metadata: ${documentId}`);
         const response = await fetch(`/api/documents?id=${documentId}`);
 
         if (!response.ok) {
@@ -53,16 +93,18 @@ export function DocumentAnalysisLayout({
             if (errorData.error) {
               errorMessage = errorData.error;
             }
-          } catch (error) {
-            console.error("Error fetching document:", error);
+          } catch (parseError) {
+            console.error("Error parsing error response:", parseError);
             // Ignore JSON parsing errors
           }
           throw new Error(errorMessage);
         }
 
         const documentData = await response.json();
+        console.log('[DocumentAnalysisLayout] Document metadata loaded successfully');
 
         // Fetch document analysis/content
+        console.log(`[DocumentAnalysisLayout] Fetching document analysis: ${documentId}`);
         const analysisResponse = await fetch(
           `/api/documents/analyze?documentId=${documentId}`
         );
@@ -75,14 +117,15 @@ export function DocumentAnalysisLayout({
             if (errorData.error) {
               errorMessage = errorData.error;
             }
-          } catch (error) {
-            console.error("Error fetching document analysis:", error);
+          } catch (parseError) {
+            console.error("Error parsing analysis error:", parseError);
             // Ignore JSON parsing errors
           }
           throw new Error(errorMessage);
         }
 
         const analysisData = await analysisResponse.json();
+        console.log('[DocumentAnalysisLayout] Document analysis loaded successfully');
 
         // Set current document with analysis data
         setCurrentDocument({
@@ -92,13 +135,27 @@ export function DocumentAnalysisLayout({
           },
         });
       } catch (error) {
-        console.error("Error fetching document:", error);
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "Unknown error loading document";
-        setError(errorMessage);
-        toast.error(errorMessage);
+        // Use standardized error handling
+        const errorObj = handleError(error, {
+          context: 'Document Analysis Layout',
+          showToast: true,
+          logToConsole: true
+        });
+        
+        setError(errorObj.message);
+        
+        // In demo mode, fallback to mock data even for errors
+        if (isDemoMode) {
+          console.log('[DocumentAnalysisLayout] Falling back to mock document after error');
+          setCurrentDocument({
+            ...mockDocument,
+            id: documentId,
+            parsedContent: {
+              sections: mockDocument.sections || [],
+            },
+          });
+          setError(null); // Clear error since we're showing mock data
+        }
       } finally {
         setDocumentLoading(false);
       }
@@ -118,55 +175,57 @@ export function DocumentAnalysisLayout({
     isLoaded,
     isSignedIn,
     userId,
+    isDemoMode,
+    setUsingMockData
   ]);
 
   // Auth loading state
-  if (!isLoaded) {
+  if (!isLoaded && !isDemoMode) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Loading authentication...</p>
-      </div>
+      <LoadingState
+        title="Loading authentication"
+        description="Please wait while we load your authentication data..."
+      />
     );
   }
 
-  // Not signed in
-  if (!isSignedIn) {
+  // Not signed in (except in demo mode)
+  if (!isSignedIn && !isDemoMode) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <AlertCircle className="h-8 w-8 text-destructive mb-4" />
-        <p className="text-lg">You must be signed in to view documents</p>
-      </div>
+      <ErrorState
+        title="Authentication Required"
+        description="You must be signed in to view documents"
+      />
     );
   }
 
   // Loading state
   if (isDocumentLoading) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-lg">Loading document...</p>
-      </div>
+      <LoadingState 
+        title="Loading document"
+        description="Please wait while we load your document..."
+      />
     );
   }
 
   // Error state
   if (error) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <AlertCircle className="h-8 w-8 text-destructive mb-4" />
-        <p className="text-lg text-destructive">{error}</p>
-      </div>
+      <ErrorState
+        title="Error loading document"
+        description={error}
+      />
     );
   }
 
   // No document loaded
   if (!currentDocument) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <AlertCircle className="h-8 w-8 text-warning mb-4" />
-        <p className="text-lg">No document loaded</p>
-      </div>
+      <EmptyState
+        title="No document loaded"
+        description="The requested document could not be found or has not been loaded yet."
+      />
     );
   }
 
@@ -187,19 +246,17 @@ export function DocumentAnalysisLayout({
             }
             className="h-full flex flex-col"
           >
-            <div className="border-b">
-              <TabsList className="mx-4 my-2">
-                <TabsTrigger value="assistant">AI Assistant</TabsTrigger>
-                <TabsTrigger value="revisions">Revisions</TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="assistant" className="flex-grow">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="assistant">AI Assistant</TabsTrigger>
+              <TabsTrigger value="revisions">Revisions</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="assistant" className="flex-grow overflow-auto">
               <VoiceAssistant className="h-full" />
             </TabsContent>
-
+            
             <TabsContent value="revisions" className="flex-grow overflow-auto">
-              <RevisionPanel />
+              <RevisionPanel showAccepted={true} />
             </TabsContent>
           </Tabs>
         </div>

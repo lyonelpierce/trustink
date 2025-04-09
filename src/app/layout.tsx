@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/theme-provider";
+import { DemoModeProvider } from "@/contexts/DemoModeContext";
 
 export const metadata: Metadata = {
   title: {
@@ -28,8 +29,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <ErrorBoundary>{children}</ErrorBoundary>
-            <Toaster position="bottom-right" richColors />
+            <DemoModeProvider>
+              <ErrorBoundary>{children}</ErrorBoundary>
+              <Toaster position="bottom-right" richColors />
+            </DemoModeProvider>
           </ThemeProvider>
         </body>
       </html>

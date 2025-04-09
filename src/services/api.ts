@@ -15,7 +15,7 @@ export const DocumentService = {
   /**
    * Get document metadata and content
    */
-  getDocument: async (id: string) => {
+  getDocument: async () => {
     await delay(800);
     return mockDocument;
   },
