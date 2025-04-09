@@ -84,7 +84,7 @@ const ToolbarSlotsExample: React.FC<ToolbarSlotsExampleProps> = ({
                     <NumberOfPages />
                     <GoToNextPage />
                     <Link
-                      href="/dashboard/documents"
+                      href="/documents"
                       className="p-2 rounded-full hover:bg-gray-100"
                     >
                       <XIcon />
