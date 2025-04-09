@@ -14,7 +14,9 @@ const Navbar = () => {
           <ModeToggle rounded />
           <SignedOut>
             <SignInButton>
-              <Button>Get Started</Button>
+              <Button size="sm" className="h-10">
+                Get Started
+              </Button>
             </SignInButton>
           </SignedOut>
           <SignedIn>
