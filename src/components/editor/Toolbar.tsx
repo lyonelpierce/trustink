@@ -62,6 +62,9 @@ const ToolbarSlotsExample: React.FC<ToolbarSlotsExampleProps> = ({
         </Toolbar>
       </div>
       <div className="flex-1 overflow-hidden">
+        <div className="w-72 border-r bg-white absolute left-0 z-50 h-full">
+          Sidebar
+        </div>
         <Viewer
           fileUrl={fileUrl}
           plugins={[toolbarPluginInstance]}

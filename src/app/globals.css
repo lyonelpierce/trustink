@@ -132,3 +132,11 @@
 .font-waterfall {
   font-family: "Waterfall", cursive;
 }
+
+.rpv-thumbnail__container-background-color {
+  background-color: var(--color-muted) !important;
+}
+
+.rpv-core__inner-page {
+  background-color: var(--color-muted) !important;
+}
