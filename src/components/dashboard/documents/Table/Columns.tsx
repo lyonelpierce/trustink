@@ -27,7 +27,11 @@ export const columns: ColumnDef<
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      return <div className="capitalize w-1/6">{row.original.status}</div>;
+      return (
+        <div className="capitalize w-1/6 text-center">
+          {row.original.status}
+        </div>
+      );
     },
   },
   {
@@ -36,11 +40,13 @@ export const columns: ColumnDef<
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
       return (
-        <div className="w-1/6">
+        <div className="w-1/6 text-center">
           {date.toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
           })}
         </div>
       );
@@ -52,11 +58,13 @@ export const columns: ColumnDef<
     cell: ({ row }) => {
       const date = new Date(row.original.updated_at);
       return (
-        <div className="w-1/6">
+        <div className="w-1/6 text-center">
           {date.toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
           })}
         </div>
       );
@@ -67,7 +75,7 @@ export const columns: ColumnDef<
     header: "Actions",
     cell: ({ row }) => {
       return (
-        <div className="flex items-center justify-end gap-2 w-1/6">
+        <div className="flex items-center justify-center gap-2 w-1/6">
           <Link
             href={`/editor/${row.original.id}`}
             className={buttonVariants({ variant: "ghost", size: "icon" })}
