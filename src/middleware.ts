@@ -35,24 +35,32 @@ export default clerkMiddleware(async (auth, req) => {
     const url = req.nextUrl;
     const host = req.headers.get("host") || "";
 
-    // Normalize hostname
-    const hostname = host
-      .replace(".localhost:3000", `.${process.env.NEXT_PUBLIC_BASE_URL}`)
-      .replace("localhost:3000", process.env.NEXT_PUBLIC_BASE_URL || "")
-      .replace(/^https?:\/\//, "");
+    // Normalize hostname - Remove port and protocol
+    const hostname = host.split(":")[0].replace(/^https?:\/\//, "");
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(
+      /^https?:\/\//,
+      ""
+    );
+
+    console.log("normalized hostname", hostname);
+    console.log("normalized baseUrl", baseUrl);
+
+    // Handle root domain and www subdomain
+    if (
+      hostname === "localhost" ||
+      hostname === baseUrl ||
+      hostname === `www.${baseUrl}` ||
+      hostname === "trustink.dev" ||
+      hostname === "www.trustink.dev"
+    ) {
+      return NextResponse.next();
+    }
 
     // Construct path with search params
     const searchParams = url.searchParams.toString();
     const path = `${url.pathname}${searchParams ? `?${searchParams}` : ""}`;
 
-    // Handle root domain and www subdomain
-    if (
-      hostname === "localhost:3000" ||
-      hostname === process.env.NEXT_PUBLIC_BASE_URL ||
-      hostname === `www.${process.env.NEXT_PUBLIC_BASE_URL}`
-    ) {
-      return NextResponse.rewrite(new URL(path === "/" ? "/" : path, req.url));
-    }
+    console.log("path", path);
 
     // Handle app subdomain
     if (hostname.startsWith("app.")) {
