@@ -10,7 +10,7 @@ export const config = {
      * 3. /_static (inside /public)
      * 4. all root files inside /public (e.g. /favicon.ico)
      */
-    "/((?!api/|_next/|_static/|_vercel|[\\w-]+\\.\\w+).*)",
+    "/((?!_next/|_static/|_vercel|[\\w-]+\\.\\w+).*)",
   ],
 };
 
@@ -64,6 +64,10 @@ export default clerkMiddleware(async (auth, req) => {
 
     // Handle app subdomain
     if (hostname.startsWith("app.")) {
+      // Check if it's an API route
+      if (url.pathname.startsWith("/api/")) {
+        return NextResponse.next();
+      }
       return NextResponse.rewrite(new URL(`/app${path}`, req.url));
     }
 
