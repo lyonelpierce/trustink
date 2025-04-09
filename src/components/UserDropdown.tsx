@@ -13,7 +13,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
 import { SignOutButton } from "@clerk/nextjs";
-import { GaugeIcon, LogOutIcon } from "lucide-react";
+import { LogOutIcon, User2Icon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 
@@ -45,23 +45,23 @@ const UserDropdown = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="px-0 cursor-pointer text-xs">
+        <DropdownMenuItem className="px-0 cursor-pointer text-xs h-10">
           <Link
-            href={`${process.env.NEXT_PUBLIC_SUBDOMAIN_URL}`}
+            href={`/profile`}
             className={cn(
               buttonVariants({ variant: "ghost" }),
-              "w-full justify-start h-min flex items-center gap-2"
+              "w-full justify-start flex items-center gap-2"
             )}
           >
-            <GaugeIcon className="w-4 h-4" />
-            Dashboard
+            <User2Icon className="w-4 h-4" />
+            Profile
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem className="px-0 cursor-pointer text-xs">
+        <DropdownMenuItem className="px-0 cursor-pointer text-xs h-10">
           <SignOutButton>
             <Button
               variant="ghost"
-              className="flex items-center justify-start h-min w-full font-medium"
+              className="flex items-center justify-start w-full font-medium"
             >
               <LogOutIcon className="w-4 h-4" />
               Sign Out
