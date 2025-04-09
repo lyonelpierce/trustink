@@ -17,8 +17,17 @@ export const columns: ColumnDef<
     header: "Name",
     cell: ({ row }) => {
       return (
-        <Link href={`/editor/${row.original.id}`}>{row.original.name}</Link>
+        <div className="w-2/6">
+          <Link href={`/editor/${row.original.id}`}>{row.original.name}</Link>
+        </div>
       );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      return <div className="capitalize w-1/6">{row.original.status}</div>;
     },
   },
   {
@@ -27,7 +36,23 @@ export const columns: ColumnDef<
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
       return (
-        <div>
+        <div className="w-1/6">
+          {date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "updated_at",
+    header: "Updated At",
+    cell: ({ row }) => {
+      const date = new Date(row.original.updated_at);
+      return (
+        <div className="w-1/6">
           {date.toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
@@ -39,12 +64,10 @@ export const columns: ColumnDef<
   },
   {
     accessorKey: "actions",
-    header: () => (
-      <div className="flex items-center justify-end gap-2">Actions</div>
-    ),
+    header: "Actions",
     cell: ({ row }) => {
       return (
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2 w-1/6">
           <Link
             href={`/editor/${row.original.id}`}
             className={buttonVariants({ variant: "ghost", size: "icon" })}
