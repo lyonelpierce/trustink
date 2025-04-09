@@ -7,7 +7,7 @@ import { SignedOut, SignInButton, SignedIn } from "@clerk/nextjs";
 
 const Navbar = () => {
   return (
-    <div className="h-14 w-full border-b fixed top-0">
+    <div className="h-14 w-full border-b fixed top-0 z-20 backdrop-blur">
       <WidthWrapper className="flex items-center justify-between h-full">
         <Logo isMainLogo={true} />
         <div className="flex items-center gap-4">

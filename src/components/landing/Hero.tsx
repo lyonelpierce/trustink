@@ -6,7 +6,7 @@ import { buttonVariants } from "../ui/button";
 
 const Hero = () => {
   return (
-    <WidthWrapper className="flex flex-col gap-4 items-center justify-center pt-20 h-screen">
+    <WidthWrapper className="flex flex-col gap-4 items-center justify-center pt-20 h-screen z-20">
       <h2 className="text-7xl font-semibold text-center">
         A new era of{" "}
         <span className="dark:bg-white text-white bg-black dark:text-black">

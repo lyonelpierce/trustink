@@ -96,7 +96,7 @@ const ToolbarSlotsExample: React.FC<ToolbarSlotsExampleProps> = ({
           </Toolbar>
         </div>
         <div className="flex-1 flex overflow-hidden mt-14">
-          <div className="bg-white w-80 border-r p-4">
+          <div className="bg-white w-96 border-r p-4">
             <SignatureElement />
           </div>
           <div className="relative flex-1">
@@ -108,7 +108,7 @@ const ToolbarSlotsExample: React.FC<ToolbarSlotsExampleProps> = ({
               />
             </PDFDropZone>
           </div>
-          <div className="bg-white w-96 border-l p-4">Chat</div>
+          <div className="bg-white w-[32rem] border-l p-4">Chat</div>
         </div>
       </div>
     </DndProvider>
