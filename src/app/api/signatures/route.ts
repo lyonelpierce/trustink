@@ -9,15 +9,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const { full_name, initials, font } = await request.json();
+  const { full_name } = await request.json();
 
   const supabase = createServerSupabaseClient();
 
   try {
+    const initials = full_name
+      .split(" ")
+      .map((name: string) => name[0])
+      .join("");
+
     const { error } = await supabase.from("signatures").insert({
       full_name,
       initials,
-      font,
+      font: "font-tangerine",
       user_id: userId,
     });
 
@@ -62,7 +67,12 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const { full_name, initials, font } = await request.json();
+  const { full_name } = await request.json();
+
+  const initials = full_name
+    .split(" ")
+    .map((name: string) => name[0])
+    .join("");
 
   const supabase = createServerSupabaseClient();
 
@@ -72,7 +82,7 @@ export async function PUT(request: NextRequest) {
       .update({
         full_name,
         initials,
-        font,
+        font: "font-tangerine",
       })
       .eq("id", signatureId)
       .eq("user_id", userId); // Ensure user can only update their own signatures

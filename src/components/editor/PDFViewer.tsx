@@ -2,15 +2,14 @@ import Logo from "../Logo";
 import Link from "next/link";
 import * as React from "react";
 import { XIcon } from "lucide-react";
+import PDFDropZone from "./PDFDropZone";
 import { DndProvider } from "react-dnd";
 import { Viewer } from "@react-pdf-viewer/core";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { toolbarPlugin, ToolbarSlot } from "@react-pdf-viewer/toolbar";
-
 import "@react-pdf-viewer/core/lib/styles/index.css";
+import { HTML5Backend } from "react-dnd-html5-backend";
 import "@react-pdf-viewer/toolbar/lib/styles/index.css";
 import SignatureElement from "./elements/SignatureElement";
-import PDFDropZone from "./PDFDropZone";
+import { toolbarPlugin, ToolbarSlot } from "@react-pdf-viewer/toolbar";
 
 interface ToolbarSlotsExampleProps {
   fileUrl: string;
