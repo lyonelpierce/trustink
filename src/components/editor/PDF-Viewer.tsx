@@ -150,6 +150,7 @@ export const PDFViewer = ({
             file={new Blob([documentBytes!], { type: "application/pdf" })}
             externalLinkTarget="_blank"
             className="max-w-2xl h-[80vh]"
+            // @ts-expect-error - PDFDocumentProxy is not typed
             onLoadSuccess={(d) => onDocumentLoaded(d)}
             onSourceError={() => {
               setPdfError(true);
