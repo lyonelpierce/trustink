@@ -1,10 +1,12 @@
+import Logo from "../Logo";
+import Link from "next/link";
 import * as React from "react";
+import { XIcon } from "lucide-react";
 import { Viewer } from "@react-pdf-viewer/core";
 import { toolbarPlugin, ToolbarSlot } from "@react-pdf-viewer/toolbar";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/toolbar/lib/styles/index.css";
-import Logo from "../Logo";
 
 interface ToolbarSlotsExampleProps {
   fileUrl: string;
@@ -18,12 +20,11 @@ const ToolbarSlotsExample: React.FC<ToolbarSlotsExampleProps> = ({
 
   return (
     <div className="rpv-core__viewer h-full flex flex-col">
-      <div className="flex items-center bg-white px-2 h-14 border-b">
+      <div className="flex items-center bg-white px-4 h-14 border-b">
         <Toolbar>
           {(props: ToolbarSlot) => {
             const {
               CurrentPageInput,
-              EnterFullScreen,
               GoToNextPage,
               GoToPreviousPage,
               NumberOfPages,
@@ -48,7 +49,12 @@ const ToolbarSlotsExample: React.FC<ToolbarSlotsExampleProps> = ({
                   <CurrentPageInput />
                   <NumberOfPages />
                   <GoToNextPage />
-                  <EnterFullScreen />
+                  <Link
+                    href="/dashboard/documents"
+                    className="p-2 rounded-full hover:bg-gray-100"
+                  >
+                    <XIcon />
+                  </Link>
                 </div>
               </div>
             );
