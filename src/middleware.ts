@@ -39,17 +39,17 @@ export default clerkMiddleware(async (auth, req) => {
     const hostname = host
       .replace(".localhost:3000", `.${process.env.NEXT_PUBLIC_BASE_URL}`)
       .replace("localhost:3000", process.env.NEXT_PUBLIC_BASE_URL || "")
-      .replace(/^https?:\/\//, "")
-      .replace("www.", "");
+      .replace(/^https?:\/\//, "");
 
     // Construct path with search params
     const searchParams = url.searchParams.toString();
     const path = `${url.pathname}${searchParams ? `?${searchParams}` : ""}`;
 
-    // Handle root domain
+    // Handle root domain and www subdomain
     if (
       hostname === "localhost:3000" ||
-      hostname === process.env.NEXT_PUBLIC_BASE_URL
+      hostname === process.env.NEXT_PUBLIC_BASE_URL ||
+      hostname === `www.${process.env.NEXT_PUBLIC_BASE_URL}`
     ) {
       return NextResponse.rewrite(new URL(path === "/" ? "/" : path, req.url));
     }
