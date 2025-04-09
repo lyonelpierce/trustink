@@ -18,7 +18,9 @@ export const columns: ColumnDef<
     cell: ({ row }) => {
       return (
         <div className="w-2/6">
-          <Link href={`/editor/${row.original.id}`}>{row.original.name}</Link>
+          <Link href={`/documents/${row.original.id}`}>
+            {row.original.name}
+          </Link>
         </div>
       );
     },
@@ -77,7 +79,7 @@ export const columns: ColumnDef<
       return (
         <div className="flex items-center justify-center gap-2 w-1/6">
           <Link
-            href={`/editor/${row.original.id}`}
+            href={`/documents/${row.original.id}`}
             className={buttonVariants({ variant: "ghost", size: "icon" })}
           >
             <PencilIcon className="w-4 h-4" />

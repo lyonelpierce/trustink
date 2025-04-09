@@ -5,14 +5,11 @@ export const fetchCache = "force-no-store";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import {
-  uploadDocumentFile,
-  createDocumentRecord,
   getDocumentById,
   getUserDocuments,
-  saveDocumentAnalysis,
-  getUserDocumentsWithMeta,
-  extractPdfText,
+  uploadDocumentFile,
   getDocumentAnalysis,
+  getUserDocumentsWithMeta,
 } from "@/lib/supabase";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
@@ -44,9 +41,12 @@ export async function POST(request: Request) {
 
     const name = (formData.get("name") as string) || file.name;
 
-    // Upload file to Supabase storage
-    const supabase = await createServerSupabaseClient();
+    // Get file buffer and convert to base64
     const fileBuffer = await file.arrayBuffer();
+    const base64Data = Buffer.from(fileBuffer).toString("base64");
+
+    // Upload file to Supabase storage
+    const supabase = createServerSupabaseClient();
 
     // Create a unique filename
     const timestamp = new Date().getTime();
@@ -73,57 +73,59 @@ export async function POST(request: Request) {
       );
     }
 
-    // Extract document content
-    const { sections, pageCount } = await extractPdfText(fileBuffer);
-
-    // Create document record in database
-    const { data: documentData, error: documentError } =
-      await createDocumentRecord(supabase, {
-        name,
-        path: storageData.path,
-        type: file.type,
-        size: file.size,
-        user_id: userId,
-      });
-
-    if (documentError) {
-      console.error(
-        "[API/documents] Error saving document record:",
-        documentError
-      );
+    if (file.type !== "application/pdf") {
       return NextResponse.json(
         {
-          error: "Failed to save document record",
+          error: "File must be a PDF",
+        },
+        { status: 400 }
+      );
+    }
+
+    const { data: document, error } = await supabase
+      .from("documents")
+      .insert({
+        name,
+        path: storageData.path,
+        size: file.size,
+        user_id: userId,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[API/documents] Error creating document:", error);
+      return NextResponse.json(
+        {
+          error: "Failed to create document",
         },
         { status: 500 }
       );
     }
 
-    // Save document analysis with sections
-    const { error: analysisError } = await saveDocumentAnalysis(
-      supabase,
-      documentData.id,
-      userId,
-      {
-        pageCount,
-        sections,
-        extractedAt: new Date().toISOString(),
-      }
-    );
+    const { error: documentDataError } = await supabase
+      .from("documents_data")
+      .insert({
+        document_id: document.id,
+        data: base64Data,
+        user_id: userId,
+      });
 
-    if (analysisError) {
+    if (documentDataError) {
       console.error(
-        "[API/documents] Error saving document analysis:",
-        analysisError
+        "[API/documents] Error saving document data:",
+        documentDataError
       );
-      // We'll continue even if analysis saving fails
+      return NextResponse.json(
+        {
+          error: "Failed to save document data",
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
-      id: documentData.id,
-      name: documentData.name,
-      path: documentData.path,
-      pageCount,
+      id: document.id,
       message: "Document uploaded successfully",
     });
   } catch (error) {

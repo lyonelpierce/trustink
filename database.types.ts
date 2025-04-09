@@ -162,9 +162,9 @@ export type Database = {
           path: string
           size: number
           status: string
-          type: string
           updated_at: string
           user_id: string
+          visibility: boolean
         }
         Insert: {
           created_at?: string
@@ -173,9 +173,9 @@ export type Database = {
           path: string
           size: number
           status?: string
-          type: string
           updated_at?: string
           user_id: string
+          visibility?: boolean
         }
         Update: {
           created_at?: string
@@ -184,13 +184,58 @@ export type Database = {
           path?: string
           size?: number
           status?: string
+          updated_at?: string
+          user_id?: string
+          visibility?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["clerk_id"]
+          },
+        ]
+      }
+      documents_data: {
+        Row: {
+          created_at: string
+          data: string
+          document_id: string
+          id: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          document_id: string
+          id?: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          document_id?: string
+          id?: string
           type?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "documents_user_id_fkey"
+            foreignKeyName: "documents_data_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_data_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"

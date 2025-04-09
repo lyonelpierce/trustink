@@ -1,7 +1,7 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
+import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
+import WidthWrapper from "@/components/WidthWrapper";
 
 const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
   const { userId } = await auth();
@@ -11,11 +11,10 @@ const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarTrigger />
-      <main className="w-full p-12">{children}</main>
-    </SidebarProvider>
+    <>
+      <DashboardNavbar />
+      <WidthWrapper className="pt-24">{children}</WidthWrapper>
+    </>
   );
 };
 

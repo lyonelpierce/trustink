@@ -275,6 +275,38 @@ export const createDocumentRecord = async (
   }
 };
 
+export const createDocumentDataRecord = async (
+  supabase: SupabaseClient,
+  data: {
+    document_id: string;
+    data: string;
+    user_id: string;
+  }
+) => {
+  try {
+    let result = await supabase.from("documents_data").insert(data);
+
+    if (result.error && result.error.code === "22P02") {
+      console.log(
+        "User ID format error during document data creation, trying to find UUID for Clerk ID"
+      );
+      const userUuid = await getUserIdByClerkId(supabase, data.user_id);
+
+      if (userUuid) {
+        result = await supabase.from("documents_data").insert({
+          ...data,
+          user_id: userUuid,
+        });
+      }
+
+      return result;
+    }
+  } catch (error) {
+    console.error("Error in createDocumentDataRecord:", error);
+    return { data: null, error };
+  }
+};
+
 /**
  * Get contract revisions by contract ID and status
  */
