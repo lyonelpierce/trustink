@@ -12,7 +12,7 @@ const Logo = ({
   return (
     <>
       {isMainLogo ? (
-        <Link href="/">
+        <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}`}>
           <h1 className={cn("font-semibold uppercase text-lg", className)}>
             Trust
             <span className="bg-black dark:bg-white p-0.5 text-white dark:text-black">

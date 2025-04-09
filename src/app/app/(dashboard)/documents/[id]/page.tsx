@@ -26,7 +26,7 @@ const SingleDocumentPage = async (props: {
 
   return (
     <div>
-      <PDFViewer className="max-w-2xl h-full" documentData={document} />
+      <PDFViewer className="max-w-3xl h-full" documentData={document} />
     </div>
   );
 };
