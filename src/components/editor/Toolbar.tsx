@@ -20,7 +20,7 @@ const ToolbarSlotsExample: React.FC<ToolbarSlotsExampleProps> = ({
 
   return (
     <div className="rpv-core__viewer h-full flex flex-col">
-      <div className="flex items-center bg-white px-4 h-14 border-b">
+      <div className="flex items-center bg-white px-4 h-14 border-b fixed top-0 z-50 w-full">
         <Toolbar>
           {(props: ToolbarSlot) => {
             const {
@@ -61,15 +61,14 @@ const ToolbarSlotsExample: React.FC<ToolbarSlotsExampleProps> = ({
           }}
         </Toolbar>
       </div>
-      <div className="flex-1 overflow-hidden">
-        <div className="w-72 border-r bg-white absolute left-0 z-50 h-full">
-          Sidebar
-        </div>
+      <div className="flex-1 flex overflow-hidden mt-14">
+        <div className="bg-white w-[32rem] border-r p-4">Sidebar Elements</div>
         <Viewer
           fileUrl={fileUrl}
           plugins={[toolbarPluginInstance]}
           defaultScale={1.5}
         />
+        <div className="bg-white w-[40rem] border-l p-4">Chat</div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 const EditorLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="w-full h-screen">
-      <div>{children}</div>
+      <div className="flex flex-row">{children}</div>
     </div>
   );
 };
