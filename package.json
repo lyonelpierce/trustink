@@ -45,6 +45,8 @@
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^3.4.120",
     "react": "^18.2.0",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.3.8",
     "react-feather": "^2.0.10",

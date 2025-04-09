@@ -1,4 +1,4 @@
-import PDFViewer from "@/components/editor/PDFViewer";
+import PDFViewer from "@/components/editor/PDFWrapper";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
 const getDocument = async (id: string) => {
