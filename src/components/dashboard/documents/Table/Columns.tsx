@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { EyeIcon } from "lucide-react";
+import { PencilIcon } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Database } from "../../../../../database.types";
 import { buttonVariants } from "@/components/ui/button";
@@ -80,7 +80,7 @@ export const columns: ColumnDef<
             href={`/editor/${row.original.id}`}
             className={buttonVariants({ variant: "ghost", size: "icon" })}
           >
-            <EyeIcon className="w-4 h-4" />
+            <PencilIcon className="w-4 h-4" />
           </Link>
           <DeleteDocumentAlert document={row.original} />
         </div>

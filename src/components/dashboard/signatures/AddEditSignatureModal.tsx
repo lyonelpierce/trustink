@@ -43,17 +43,21 @@ const AddEditSignatureModal = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      full_name: signature?.full_name || "",
+      full_name: type === "edit" ? signature?.full_name || "" : "",
     },
   });
 
   useEffect(() => {
-    if (signature) {
+    if (signature && type === "edit") {
       form.reset({
         full_name: signature.full_name,
       });
+    } else if (type === "add") {
+      form.reset({
+        full_name: "",
+      });
     }
-  }, [signature, form]);
+  }, [signature, form, type]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
