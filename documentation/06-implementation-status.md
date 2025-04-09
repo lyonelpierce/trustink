@@ -1,6 +1,37 @@
 # Implementation Status
 
-This document outlines the current implementation status of the TrustInk application, detailing what features are fully implemented, what's currently mocked, and what still needs to be completed.
+**⚠️ IMPORTANT: The [Project Status & Roadmap](./07-development-roadmap.md) document is now the single source of truth for implementation status ⚠️**
+
+## Why This Change?
+
+To make documentation more efficient and avoid duplication, we've consolidated the implementation status information into the Project Status & Roadmap document. This ensures that:
+
+1. Developers have one clear place to look for current status
+2. Project managers can track progress in a single document
+3. We avoid conflicts between multiple sources of information
+4. Documentation remains up-to-date
+
+## Where to Find Implementation Information
+
+All implementation status information is now maintained in the [Project Status & Roadmap](./07-development-roadmap.md) document, including:
+
+- ✅ Fully implemented features
+- 🔶 Partially implemented/mocked features
+- ❌ Features to be implemented
+- Current development priorities
+- Implementation timelines by quarter
+
+## For New Contributors
+
+If you're new to the project:
+
+1. Start with the [README.md](./README.md) for a complete documentation overview
+2. Check the [Project Status & Roadmap](./07-development-roadmap.md) to understand what's implemented and what's next
+3. Review the [System Architecture](./01-system-architecture.md) for system design details
+
+---
+
+This document is maintained for historical reference and will not be updated further.
 
 ## What's Implemented
 
