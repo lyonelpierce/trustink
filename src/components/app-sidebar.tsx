@@ -18,18 +18,18 @@ import { File, Home, LogOutIcon, Signature } from "lucide-react";
 const items = [
   {
     title: "Home",
-    url: "/dashboard",
+    url: "/",
     icon: Home,
   },
   {
     title: "Documents",
-    url: "/dashboard/documents",
+    url: "/documents",
     icon: File,
   },
 
   {
     title: "Signatures",
-    url: "/dashboard/signatures",
+    url: "/signatures",
     icon: Signature,
   },
 ];

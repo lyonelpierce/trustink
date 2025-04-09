@@ -1,63 +1,78 @@
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { clerkMiddleware } from "@clerk/nextjs/server";
-
-// Define the main domain and protected routes
-const rootDomain = "trustink.dev";
-const protectedPaths = ["/dashboard", "/profile", "/editor", "/app"];
-
-export default clerkMiddleware(async (auth, req) => {
-  const url = req.nextUrl;
-  const hostname = req.headers.get("host") || "";
-  const isLocalhost = hostname.includes("localhost");
-
-  let subdomain = "";
-  if (isLocalhost) {
-    // Handle localhost subdomains
-    const parts = hostname.split(".localhost");
-    // Only set subdomain if there's actually a subdomain
-    if (parts.length > 1) {
-      subdomain = parts[0];
-    }
-  } else if (hostname.endsWith(`.${rootDomain}`)) {
-    subdomain = hostname.replace(`.${rootDomain}`, "").toLowerCase();
-  }
-
-  // Check if the current path is protected
-  const isProtectedPath = protectedPaths.some((path) =>
-    url.pathname.startsWith(path)
-  );
-
-  // Handle authentication for protected routes
-  if (isProtectedPath) {
-    await auth.protect();
-  }
-
-  // Handle subdomain routing
-  if (subdomain && subdomain !== "www") {
-    // Protect subdomain access
-    await auth.protect();
-    // Rewrite subdomain requests to /apps/{subdomain}
-    const newUrl = new URL(`/app/`, req.url);
-    return NextResponse.rewrite(newUrl);
-  }
-
-  // Handle main domain routing
-  if (!subdomain || subdomain === "www" || hostname === rootDomain) {
-    return NextResponse.next();
-  }
-});
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder files
+     * Match all paths except for:
+     * 1. /api routes
+     * 2. /_next (Next.js internals)
+     * 3. /_static (inside /public)
+     * 4. all root files inside /public (e.g. /favicon.ico)
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-    "/api/:path*",
-    "/trpc/:path*",
+    "/((?!api/|_next/|_static/|_vercel|[\\w-]+\\.\\w+).*)",
   ],
 };
+
+const reservedSubdomains = [
+  "clkmail",
+  "clk2._domainkey",
+  "clk._domainkey",
+  "accounts",
+  "clerk",
+  "purelymail3._domainkey",
+  "purelymail2._domainkey",
+  "purelymail1._domainkey",
+  "_dmarc",
+];
+
+const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
+
+export default clerkMiddleware(async (auth, req) => {
+  try {
+    if (isDashboardRoute(req)) await auth.protect();
+
+    const url = req.nextUrl;
+    const host = req.headers.get("host") || "";
+
+    // Normalize hostname
+    const hostname = host
+      .replace(".localhost:3000", `.${process.env.NEXT_PUBLIC_BASE_URL}`)
+      .replace("localhost:3000", process.env.NEXT_PUBLIC_BASE_URL || "")
+      .replace(/^https?:\/\//, "")
+      .replace("www.", "");
+
+    // Construct path with search params
+    const searchParams = url.searchParams.toString();
+    const path = `${url.pathname}${searchParams ? `?${searchParams}` : ""}`;
+
+    // Handle root domain
+    if (
+      hostname === "localhost:3000" ||
+      hostname === process.env.NEXT_PUBLIC_BASE_URL
+    ) {
+      return NextResponse.rewrite(new URL(path === "/" ? "/" : path, req.url));
+    }
+
+    // Handle app subdomain
+    if (hostname.startsWith("app.")) {
+      return NextResponse.rewrite(new URL(`/app${path}`, req.url));
+    }
+
+    // Handle reserved subdomains
+    if (
+      reservedSubdomains.some(
+        (subdomain) =>
+          hostname === `${subdomain}.${process.env.NEXT_PUBLIC_BASE_URL}`
+      )
+    ) {
+      return NextResponse.redirect(url);
+    }
+
+    // Handle all other routes
+    return NextResponse.rewrite(new URL(`/${hostname}${path}`, req.url));
+  } catch (error) {
+    console.error("[Middleware Error]", error);
+    return NextResponse.next();
+  }
+});

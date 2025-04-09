@@ -16,7 +16,7 @@ const DocumentsPage = async () => {
   const { userId } = await auth();
 
   if (!userId) {
-    return redirect("/sign-in");
+    return redirect(`${process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL}`);
   }
 
   const documents = await getUserDocuments(userId);
