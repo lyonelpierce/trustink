@@ -42,9 +42,6 @@ export default clerkMiddleware(async (auth, req) => {
       ""
     );
 
-    console.log("normalized hostname", hostname);
-    console.log("normalized baseUrl", baseUrl);
-
     // Handle root domain and www subdomain
     if (
       hostname === "localhost" ||
@@ -59,8 +56,6 @@ export default clerkMiddleware(async (auth, req) => {
     // Construct path with search params
     const searchParams = url.searchParams.toString();
     const path = `${url.pathname}${searchParams ? `?${searchParams}` : ""}`;
-
-    console.log("path", path);
 
     // Handle app subdomain
     if (hostname.startsWith("app.")) {

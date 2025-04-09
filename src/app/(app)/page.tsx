@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils2";
+import { cn } from "@/lib/utils";
 import Hero from "@/components/landing/Hero";
 
 export default function Home() {

@@ -1,6 +1,6 @@
-import { SignedOut, SignInButton } from "@clerk/nextjs";
-import WidthWrapper from "../WidthWrapper";
 import { Button } from "../ui/button";
+import WidthWrapper from "../WidthWrapper";
+import { SignedOut, SignInButton } from "@clerk/nextjs";
 
 const Hero = () => {
   return (

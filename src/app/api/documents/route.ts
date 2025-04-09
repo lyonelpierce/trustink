@@ -39,8 +39,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const name = (formData.get("name") as string) || file.name;
-
     // Get file buffer and convert to base64
     const fileBuffer = await file.arrayBuffer();
     const base64Data = Buffer.from(fileBuffer).toString("base64");
@@ -51,7 +49,10 @@ export async function POST(request: Request) {
     // Create a unique filename
     const timestamp = new Date().getTime();
     const fileExtension = file.name.split(".").pop();
-    const fileName = `${userId}_${timestamp}.${fileExtension}`;
+    const fileName = `${file.name.replace(
+      /\s+/g,
+      ""
+    )}_${timestamp}.${fileExtension}`;
 
     // Upload the file
     const { data: storageData, error: storageError } = await uploadDocumentFile(
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
     const { data: document, error } = await supabase
       .from("documents")
       .insert({
-        name,
+        name: fileName,
         path: storageData.path,
         size: file.size,
         user_id: userId,

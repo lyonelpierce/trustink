@@ -21,8 +21,8 @@ const DeleteDocumentAlert = ({
 }: {
   document: Database["public"]["Tables"]["documents"]["Row"];
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleDelete = async () => {
     const response = await fetch(`/api/documents?id=${document.id}`, {
