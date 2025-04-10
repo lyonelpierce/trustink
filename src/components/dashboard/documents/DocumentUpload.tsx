@@ -31,7 +31,7 @@ const DocumentUpload = () => {
 
       const data = await response.json();
 
-      router.push(`/documents/${data.id}`);
+      router.push(`/editor/${data.id}`);
     } catch (error) {
       console.error(error);
       setError("Failed to upload document. Please try again.");
