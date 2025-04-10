@@ -14,6 +14,13 @@ import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
+import {
+  Calendar1Icon,
+  MailIcon,
+  SignatureIcon,
+  TypeIcon,
+  User2Icon,
+} from "lucide-react";
 
 type FieldType = Database["public"]["Enums"]["field_type"];
 
@@ -198,13 +205,7 @@ const Elements = ({
           >
             <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
-                <p
-                  className={cn(
-                    "text-muted-foreground group-data-[selected]:text-foreground w-full truncate text-3xl font-medium font-tangerine"
-                  )}
-                >
-                  {"Signature"}
-                </p>
+                <SignatureIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-center text-xs">
                   Signature
@@ -222,13 +223,7 @@ const Elements = ({
           >
             <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
-                <p
-                  className={cn(
-                    "text-muted-foreground group-data-[selected]:text-foreground text-xl font-medium"
-                  )}
-                >
-                  {"Email"}
-                </p>
+                <MailIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Email</p>
               </CardContent>
@@ -244,13 +239,7 @@ const Elements = ({
           >
             <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
-                <p
-                  className={cn(
-                    "text-muted-foreground group-data-[selected]:text-foreground text-xl font-medium"
-                  )}
-                >
-                  {"Name"}
-                </p>
+                <User2Icon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Name</p>
               </CardContent>
@@ -266,13 +255,7 @@ const Elements = ({
           >
             <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
-                <p
-                  className={cn(
-                    "text-muted-foreground group-data-[selected]:text-foreground text-xl font-medium"
-                  )}
-                >
-                  {"Date"}
-                </p>
+                <Calendar1Icon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Date</p>
               </CardContent>
@@ -288,17 +271,9 @@ const Elements = ({
           >
             <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
-                <p
-                  className={cn(
-                    "text-muted-foreground group-data-[selected]:text-foreground text-xl font-medium"
-                  )}
-                >
-                  {"Text"}
-                </p>
+                <TypeIcon className="w-6 h-6 text-muted-foreground" />
 
-                <p className="text-muted-foreground mt-2 text-xs">
-                  Custom Text
-                </p>
+                <p className="text-muted-foreground mt-2 text-xs">Text</p>
               </CardContent>
             </Card>
           </button>
