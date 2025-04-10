@@ -203,7 +203,14 @@ const Elements = ({
             onMouseDown={() => setSelectedField("signature" as FieldType)}
             data-selected={selectedField === "signature" ? true : undefined}
           >
-            <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
+            <Card
+              className={cn(
+                "group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50 transition-all duration-300 hover:bg-muted",
+                {
+                  "bg-muted": selectedField === "signature",
+                }
+              )}
+            >
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
                 <SignatureIcon className="w-6 h-6 text-muted-foreground" />
 
@@ -221,7 +228,14 @@ const Elements = ({
             onMouseDown={() => setSelectedField("email" as FieldType)}
             data-selected={selectedField === "email" ? true : undefined}
           >
-            <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
+            <Card
+              className={cn(
+                "group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50 transition-all duration-300 hover:bg-muted",
+                {
+                  "bg-muted": selectedField === "email",
+                }
+              )}
+            >
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
                 <MailIcon className="w-6 h-6 text-muted-foreground" />
 
@@ -237,7 +251,14 @@ const Elements = ({
             onMouseDown={() => setSelectedField("name" as FieldType)}
             data-selected={selectedField === "name" ? true : undefined}
           >
-            <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
+            <Card
+              className={cn(
+                "group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50 transition-all duration-300 hover:bg-muted",
+                {
+                  "bg-muted": selectedField === "name",
+                }
+              )}
+            >
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
                 <User2Icon className="w-6 h-6 text-muted-foreground" />
 
@@ -253,7 +274,14 @@ const Elements = ({
             onMouseDown={() => setSelectedField("date" as FieldType)}
             data-selected={selectedField === "date" ? true : undefined}
           >
-            <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
+            <Card
+              className={cn(
+                "group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50 transition-all duration-300 hover:bg-muted",
+                {
+                  "bg-muted": selectedField === "date",
+                }
+              )}
+            >
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
                 <Calendar1Icon className="w-6 h-6 text-muted-foreground" />
 
@@ -269,7 +297,14 @@ const Elements = ({
             onMouseDown={() => setSelectedField("text" as FieldType)}
             data-selected={selectedField === "text" ? true : undefined}
           >
-            <Card className="group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50">
+            <Card
+              className={cn(
+                "group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50 transition-all duration-300 hover:bg-muted",
+                {
+                  "bg-muted": selectedField === "text",
+                }
+              )}
+            >
               <CardContent className="flex flex-col items-center justify-center px-6 py-4">
                 <TypeIcon className="w-6 h-6 text-muted-foreground" />
 
