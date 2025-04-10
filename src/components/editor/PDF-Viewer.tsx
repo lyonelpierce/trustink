@@ -2,11 +2,12 @@
 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { base64 } from "@scure/base";
 import { Loader2Icon } from "lucide-react";
 import { PDFDocumentProxy } from "pdfjs-dist";
 import { Database } from "../../../database.types";
-import { useEffect, useState, useRef } from "react";
-import { useDocumentElement } from "@/hooks/useDocumentElement";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { Document as PDFDocument, Page as PDFPage, pdfjs } from "react-pdf";
 
 export type OnPDFViewerPageClick = (_event: {
@@ -21,11 +22,11 @@ export type OnPDFViewerPageClick = (_event: {
 
 export type LoadedPDFDocument = PDFDocumentProxy;
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
 
 const PDFLoader = () => {
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <div className="flex flex-col h-full w-full items-center justify-center">
       <Loader2Icon className="h-10 w-10 animate-spin" />
       <p className="mt-4">Loading document...</p>
     </div>
@@ -45,22 +46,59 @@ export const PDFViewer = ({
   onPageClick?: OnPDFViewerPageClick;
   [key: string]: unknown;
 }) => {
+  const $el = useRef<HTMLDivElement>(null);
+
   const [documentBytes, setDocumentBytes] = useState<Uint8Array | null>(null);
   const [isDocumentBytesLoading, setIsDocumentBytesLoading] = useState(false);
 
-  const [numPages, setNumPages] = useState(0);
   const [width, setWidth] = useState(0);
+  const [numPages, setNumPages] = useState(0);
   const [pdfError, setPdfError] = useState(false);
 
-  const $el = useRef<HTMLDivElement>(null);
+  const memoizedData = useMemo(
+    () => ({ data: documentData.data }),
+    [documentData.data]
+  );
 
   const isLoading = isDocumentBytesLoading || !documentBytes;
-
-  const { isWithinPageBounds } = useDocumentElement();
 
   const onDocumentLoaded = (doc: LoadedPDFDocument) => {
     setNumPages(doc.numPages);
     onDocumentLoad?.(doc);
+  };
+
+  const onDocumentPageClick = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    pageNumber: number
+  ) => {
+    const $el = event.target instanceof HTMLElement ? event.target : null;
+
+    if (!$el) {
+      return;
+    }
+
+    const $page = $el.closest(PDF_VIEWER_PAGE_SELECTOR);
+
+    if (!$page) {
+      return;
+    }
+
+    const { height, width, top, left } = $page.getBoundingClientRect();
+
+    const pageX = event.clientX - left;
+    const pageY = event.clientY - top;
+
+    if (onPageClick) {
+      void onPageClick({
+        pageNumber,
+        numPages,
+        originalEvent: event,
+        pageHeight: height,
+        pageWidth: width,
+        pageX,
+        pageY,
+      });
+    }
   };
 
   useEffect(() => {
@@ -90,76 +128,43 @@ export const PDFViewer = ({
       try {
         setIsDocumentBytesLoading(true);
 
-        const base64 = documentData.data;
-        const binaryString = window.atob(base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
+        const binaryData = base64.decode(memoizedData.data);
 
-        setDocumentBytes(bytes);
+        setDocumentBytes(binaryData);
         setIsDocumentBytesLoading(false);
       } catch (err) {
         console.error(err);
+
         toast.error("An error occurred while loading the document.");
         setIsDocumentBytesLoading(false);
       }
     };
 
     void fetchDocumentBytes();
-  }, [documentData.data]);
-
-  const onDocumentPageClick = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
-    pageNumber: number
-  ) => {
-    console.log("clicked");
-
-    console.log(isWithinPageBounds);
-
-    const $el = event.target instanceof HTMLElement ? event.target : null;
-
-    if (!$el) {
-      return;
-    }
-
-    const $page = $el.closest(".react-pdf__Page");
-
-    if (!$page) {
-      return;
-    }
-
-    const { height, width, top, left } = $page.getBoundingClientRect();
-
-    const pageX = event.clientX - left;
-    const pageY = event.clientY - top;
-
-    if (onPageClick) {
-      void onPageClick({
-        pageNumber,
-        numPages,
-        originalEvent: event,
-        pageHeight: height,
-        pageWidth: width,
-        pageX,
-        pageY,
-      });
-    }
-  };
+  }, [memoizedData]);
 
   return (
     <div ref={$el} className={cn("overflow-hidden", className)} {...props}>
       {isLoading ? (
-        <PDFLoader />
+        <div
+          className={cn(
+            "flex h-[80vh] max-h-[60rem] w-full flex-col items-center justify-center overflow-hidden rounded"
+          )}
+        >
+          <PDFLoader />
+        </div>
       ) : (
-        <div className="flex w-full justify-between">
+        <div className="flex w-full justify-between z-0">
           <PDFDocument
-            file={new Blob([documentBytes!], { type: "application/pdf" })}
+            file={
+              new File([documentBytes], "document.pdf", {
+                type: "application/pdf",
+              })
+            }
             externalLinkTarget="_blank"
             className={cn("w-full overflow-hidden rounded", {
               "h-[80vh] max-h-[60rem]": numPages === 0,
             })}
-            // @ts-expect-error - PDFDocumentProxy is not typed
             onLoadSuccess={(d) => onDocumentLoaded(d)}
             onSourceError={() => {
               setPdfError(true);
@@ -168,12 +173,12 @@ export const PDFViewer = ({
               <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
                 {pdfError ? (
                   <div className="text-muted-foreground text-center">
-                    <p>
+                    <div>
                       <p>Something went wrong while loading the document.</p>
-                    </p>
-                    <p className="mt-1 text-sm">
+                    </div>
+                    <div className="mt-1 text-sm">
                       <p>Please try again or contact our support.</p>
-                    </p>
+                    </div>
                   </div>
                 ) : (
                   <PDFLoader />
@@ -183,12 +188,12 @@ export const PDFViewer = ({
             error={
               <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
                 <div className="text-muted-foreground text-center">
-                  <p>
+                  <div>
                     <p>Something went wrong while loading the document.</p>
-                  </p>
-                  <p className="mt-1 text-sm">
+                  </div>
+                  <div className="mt-1 text-sm">
                     <p>Please try again or contact our support.</p>
-                  </p>
+                  </div>
                 </div>
               </div>
             }
