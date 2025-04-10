@@ -4,11 +4,15 @@ import { ErrorInfo } from 'react';
 /**
  * Options for error handling
  */
+export interface ErrorContext {
+  [key: string]: string | number | boolean | undefined;
+}
+
 export interface ErrorHandlerOptions {
   /**
    * Context where the error occurred for better error identification
    */
-  context?: string;
+  context?: ErrorContext;
   
   /**
    * Whether to show a toast notification for this error
@@ -55,7 +59,7 @@ export interface ErrorHandlerOptions {
  * Default error options
  */
 const defaultOptions: ErrorHandlerOptions = {
-  context: 'Application',
+  context: { location: 'Application' },
   showToast: true,
   logToConsole: true
 };
@@ -81,33 +85,35 @@ export interface ExtendedError extends Error {
  * @param options Options for how to handle the error
  * @returns The original error for potential chaining
  */
-export function handleError(error: unknown, options?: ErrorHandlerOptions): Error {
-  const opts = { ...defaultOptions, ...options };
-  const { context, showToast, toastMessage, logToConsole, metadata, errorInfo } = opts;
+export function handleError(error: unknown, options: ErrorHandlerOptions = {}): Error {
+  const { customMessage, suppressErrors = false, onError, context } = options;
   
-  // Ensure error is an Error object
-  const err = error instanceof Error ? error : new Error(String(error));
-  const extErr = err as ExtendedError;
+  // Convert error to standard format
+  const standardError = error instanceof Error ? error : new Error(String(error));
   
-  // Generate a user-friendly error message
-  const userMessage = toastMessage || getErrorMessage(extErr);
-  
-  // Log to console if enabled
-  if (logToConsole) {
-    console.error(`[${context}] ${err.message}`, {
-      error: err,
-      stack: err.stack,
-      metadata,
-      errorInfo
-    });
+  // Add context to error
+  if (context) {
+    (standardError as any).context = context;
   }
   
-  // Show toast notification if enabled
-  if (showToast) {
-    toast.error(userMessage);
+  // Log error
+  console.error('Error:', {
+    message: standardError.message,
+    context,
+    stack: standardError.stack
+  });
+  
+  // Show toast if not suppressed
+  if (!suppressErrors) {
+    toast.error(customMessage || standardError.message);
   }
   
-  return err;
+  // Call error callback if provided
+  if (onError) {
+    onError(standardError);
+  }
+  
+  return standardError;
 }
 
 /**
@@ -194,6 +200,19 @@ export async function safeAsync<T>(promise: Promise<T>): Promise<[T | null, Erro
   } catch (error) {
     return [null, error instanceof Error ? error : new Error(String(error))];
   }
+}
+
+export function handleApiError(error: unknown, options: ErrorHandlerOptions = {}) {
+  const standardError = handleError(error, {
+    ...options,
+    suppressErrors: true // Don't show toast for API errors
+  });
+  
+  return {
+    error: options.customMessage || standardError.message,
+    details: standardError.message,
+    context: (standardError as any).context
+  };
 }
 
 export default handleError;

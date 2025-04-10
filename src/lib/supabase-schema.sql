@@ -1,5 +1,8 @@
 -- Schema for DocuSign 2.0 Application
 
+-- Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
 -- Users table (extended from Clerk user data)
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,6 +26,44 @@ CREATE TABLE documents (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Document embeddings table
+CREATE TABLE document_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+  section_id TEXT NOT NULL,
+  content TEXT NOT NULL,
+  embedding vector(1536),
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Function to match document sections by embedding similarity
+CREATE OR REPLACE FUNCTION match_document_sections(
+  query_embedding vector(1536),
+  match_threshold float DEFAULT 0.78,
+  match_count int DEFAULT 10
+) RETURNS TABLE (
+  section_id TEXT,
+  content TEXT,
+  metadata JSONB,
+  similarity float
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    document_embeddings.section_id,
+    document_embeddings.content,
+    document_embeddings.metadata,
+    1 - (document_embeddings.embedding <=> query_embedding) as similarity
+  FROM document_embeddings
+  WHERE 1 - (document_embeddings.embedding <=> query_embedding) > match_threshold
+  ORDER BY similarity DESC
+  LIMIT match_count;
+END;
+$$;
 
 -- Document analyses table
 CREATE TABLE document_analyses (
@@ -154,19 +195,19 @@ ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own documents" 
   ON documents FOR SELECT
-  USING (user_id = auth.uid());
+  USING (user_id = auth.uid()::uuid);
   
 CREATE POLICY "Users can insert their own documents" 
   ON documents FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id = auth.uid()::uuid);
   
 CREATE POLICY "Users can update their own documents" 
   ON documents FOR UPDATE
-  USING (user_id = auth.uid());
+  USING (user_id = auth.uid()::uuid);
   
 CREATE POLICY "Users can delete their own documents" 
   ON documents FOR DELETE
-  USING (user_id = auth.uid());
+  USING (user_id = auth.uid()::uuid);
 
 -- Apply similar RLS policies to other tables...
 
@@ -215,6 +256,36 @@ CREATE POLICY "Users can insert their own templates"
   ON templates FOR INSERT
   WITH CHECK (user_id = auth.uid());
   
+-- Document Embeddings RLS
+ALTER TABLE document_embeddings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view document embeddings for their documents" 
+  ON document_embeddings FOR SELECT
+  USING (
+    document_id IN (
+      SELECT id FROM documents WHERE user_id = auth.uid()::uuid
+    )
+  );
+
+CREATE POLICY "Users can insert document embeddings for their documents" 
+  ON document_embeddings FOR INSERT
+  WITH CHECK (
+    document_id IN (
+      SELECT id FROM documents WHERE user_id = auth.uid()::uuid
+    )
+  );
+
+CREATE POLICY "Users can delete document embeddings for their documents" 
+  ON document_embeddings FOR DELETE
+  USING (
+    document_id IN (
+      SELECT id FROM documents WHERE user_id = auth.uid()::uuid
+    )
+  );
+
+-- Create index for similarity search
+CREATE INDEX ON document_embeddings USING ivfflat (embedding vector_cosine_ops);
+
 -- Create functions and triggers for updated_at
 CREATE OR REPLACE FUNCTION update_modified_column()
 RETURNS TRIGGER AS $$

@@ -11,6 +11,7 @@ import { mockDocument } from "@/mocks/document-mock";
 import { handleError } from "@/lib/error-handler";
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/state";
 import { useAuth } from "@clerk/nextjs";
+import { ErrorLocations } from "@/types/error";
 
 interface DocumentAnalysisLayoutProps {
   documentId: string;
@@ -137,7 +138,8 @@ export function DocumentAnalysisLayout({
       } catch (error) {
         // Use standardized error handling
         const errorObj = handleError(error, {
-          context: 'Document Analysis Layout',
+          customMessage: 'Failed to load document analysis',
+          context: { location: ErrorLocations.DOCUMENT_ANALYSIS },
           showToast: true,
           logToConsole: true
         });

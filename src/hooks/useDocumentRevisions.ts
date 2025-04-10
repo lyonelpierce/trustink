@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDocumentStore } from '@/store/zustand';
 import { SectionRevision, RiskLevel } from '@/types';
+import { ErrorLocations } from '@/types/error';
 import { useDemoMode } from '@/contexts/DemoModeContext';
 import { toast } from 'sonner';
 import { handleError } from '@/lib/error-handler';
@@ -135,6 +136,12 @@ export function useDocumentRevisions(documentId?: string): UseDocumentRevisionsR
         console.log('[useDocumentRevisions] Falling back to mock revisions');
         // Mock data already in store
       }
+      
+      handleError(error, {
+        customMessage: 'Failed to fetch document revisions',
+        context: { location: ErrorLocations.DOCUMENT_REVISIONS },
+        showToast: true
+      });
     } finally {
       setIsLoading(false);
     }
@@ -306,7 +313,8 @@ export function useDocumentRevisions(documentId?: string): UseDocumentRevisionsR
       
       // Use standardized error handling
       handleError(error, {
-        context: 'Document Revisions',
+        customMessage: 'Failed to propose document revision',
+        context: { location: ErrorLocations.DOCUMENT_REVISIONS },
         showToast: true
       });
     }

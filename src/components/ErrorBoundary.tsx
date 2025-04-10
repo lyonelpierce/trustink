@@ -4,6 +4,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { handleError } from '@/lib/error-handler';
+import { ErrorLocations } from '@/types/error';
 
 interface ErrorBoundaryProps {
   /**
@@ -73,11 +74,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     
     // Log the error using our error handler
     handleError(error, {
-      context,
-      showToast: showToasts,
-      logToConsole: true,
-      metadata: { componentStack: errorInfo.componentStack },
-      errorInfo
+      customMessage: 'An unexpected error occurred',
+      context: { location: ErrorLocations.ERROR_BOUNDARY },
+      suppressErrors: true
     });
     
     // Update state with error details

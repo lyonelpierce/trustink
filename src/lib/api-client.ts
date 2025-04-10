@@ -1,6 +1,7 @@
 import { config } from '@/config';
 import { handleError } from '@/lib/error-handler';
 import { SectionRevision } from '@/types';
+import { ErrorLocations } from '@/types/error';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -173,11 +174,9 @@ export async function apiRequest<T = unknown>(
     
     // Handle the error
     handleError(err, {
-      context: `API Request: ${method} ${url}`,
-      showToast: showErrorToast,
-      logToConsole: true,
-      // If the API client is configured not to throw, we handle it here
-      onError: onError || undefined,
+      customMessage: `API request failed: ${method} ${url}`,
+      context: { location: ErrorLocations.API_REQUEST },
+      showToast: true
     });
 
     // Either throw the error or return a response with the error

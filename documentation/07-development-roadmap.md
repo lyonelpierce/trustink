@@ -19,7 +19,8 @@ This document outlines the development roadmap for TrustInk, highlighting upcomi
 | User Authentication | ✅ | Implemented with Clerk |
 | Document Upload | ✅ | Supports PDF files |
 | Document Viewing | ✅ | Section-based display |
-| Document Analysis | 🔶 | Basic implementation with mock AI |
+| Document Analysis | ✅ | Using OpenAI for embeddings, Together AI for analysis |
+| Vector Search | ✅ | Implemented with pgvector and OpenAI embeddings |
 | Voice Assistant | 🔶 | Implemented with Web Speech API |
 | Revision Management | ✅ | Complete implementation |
 | User Dashboard | ✅ | Lists user documents |
@@ -28,12 +29,32 @@ This document outlines the development roadmap for TrustInk, highlighting upcomi
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Supabase Integration | ✅ | Complete with ORM |
+| Supabase Integration | ✅ | Complete with ORM and pgvector |
 | Error Handling | ✅ | Standardized across app |
 | Testing Framework | 🔶 | Some components tested |
-| Database Schema | ✅ | Complete implementation |
+| Database Schema | ✅ | Complete with vector support |
 | API Structure | ✅ | REST endpoints for all features |
 | UI Components | 🔶 | Some components missing |
+
+## AI Integration Architecture
+
+TrustInk uses a dual AI approach for optimal performance:
+
+1. **OpenAI (text-embedding-ada-002)**
+   - Used for generating document embeddings
+   - Powers semantic search functionality
+   - Optimized for vector similarity search
+
+2. **Together AI (Llama 3.1)**
+   - Used for document understanding and analysis
+   - Powers conversational responses
+   - Integrated with ElevenLabs for voice interaction
+
+This split allows us to:
+- Use the best tool for each specific task
+- Optimize costs (embeddings vs. chat completions)
+- Maintain high accuracy in semantic search
+- Provide natural conversational interactions
 
 ## Q2 2025 Roadmap
 

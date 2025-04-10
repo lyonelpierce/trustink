@@ -6,6 +6,7 @@ import { SectionRevision } from '@/types';
 import { useDocumentStore } from '@/store/zustand';
 import { handleError, safeAsync } from '@/lib/error-handler';
 import { acceptRevision, rejectRevision, getRevisionsByDocument } from '@/lib/api-client';
+import { ErrorLocations } from '@/types/error';
 
 export interface RevisionGroup {
   sectionId: string;
@@ -91,7 +92,8 @@ export function useRevisionPanel(options: UseRevisionPanelOptions = {}) {
       const error = err instanceof Error ? err : new Error('Failed to fetch revisions');
       setError(error);
       handleError(error, {
-        context: 'useRevisionPanel.fetchRevisions',
+        customMessage: 'Failed to fetch revisions',
+        context: { location: ErrorLocations.REVISION_PANEL },
         showToast: true
       });
     } finally {
@@ -182,7 +184,8 @@ export function useRevisionPanel(options: UseRevisionPanelOptions = {}) {
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to accept revision');
       handleError(error, {
-        context: 'useRevisionPanel.handleAcceptRevision',
+        customMessage: 'Failed to accept revision',
+        context: { location: ErrorLocations.REVISION_PANEL },
         showToast: true
       });
     } finally {
@@ -236,7 +239,8 @@ export function useRevisionPanel(options: UseRevisionPanelOptions = {}) {
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to reject revision');
       handleError(error, {
-        context: 'useRevisionPanel.handleRejectRevision',
+        customMessage: 'Failed to reject revision',
+        context: { location: ErrorLocations.REVISION_PANEL },
         showToast: true
       });
     } finally {

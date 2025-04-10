@@ -327,4 +327,20 @@ The `content` field is a structured JSON object containing:
 - `pageCount`: Number of pages in the document
 - `sections`: Array of extracted document sections
 - `analysis`: Results from AI processing
-- `extractedAt`: Timestamp when extraction occurred 
+- `extractedAt`: Timestamp when extraction occurred
+
+#### `document_embeddings`
+
+Stores vector embeddings for document sections to enable semantic search.
+
+| Column       | Type         | Description                                 |
+|--------------|--------------|---------------------------------------------|
+| id           | UUID         | Primary key                                 |
+| document_id  | UUID         | Reference to documents.id                   |
+| section_id   | String       | ID of the document section                  |
+| content      | Text         | The text content of the section            |
+| embedding    | vector(1536) | OpenAI embedding vector                     |
+| metadata     | JSONB        | Additional section metadata                 |
+| created_at   | Timestamp    | Creation timestamp                         |
+
+The table uses the `pgvector` extension to store and query embeddings. The `match_document_sections` function provides similarity search capabilities using cosine similarity. 
