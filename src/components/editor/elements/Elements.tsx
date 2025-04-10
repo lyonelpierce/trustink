@@ -24,7 +24,7 @@ const Elements = ({
 }) => {
   const { getPage, isWithinPageBounds } = useDocumentElement();
 
-  const { control, handleSubmit } = useForm<TAddFieldsFormSchema>({
+  const { control } = useForm<TAddFieldsFormSchema>({
     defaultValues: {
       fields:
         fields?.map((field) => ({
@@ -51,14 +51,13 @@ const Elements = ({
     },
   });
 
-  const { append, fields: localFields } = useFieldArray({
+  const { append } = useFieldArray({
     control,
     name: "fields",
   });
 
   const [selectedField, setSelectedField] = useState<FieldType | null>(null);
   const [isFieldWithinBounds, setIsFieldWithinBounds] = useState(false);
-  const [isFieldsDisabled, setIsFieldsDisabled] = useState(false);
   const [coords, setCoords] = useState({
     x: 0,
     y: 0,
@@ -164,7 +163,7 @@ const Elements = ({
               "bg-field-card/80 pointer-events-none fixed z-50 cursor-pointer border-2 backdrop-blur-[1px]",
               {
                 "border-field-card-border": isFieldWithinBounds,
-                "opacity-50": !isFieldWithinBounds,
+                "opacity-50 -rotate-12": !isFieldWithinBounds,
               }
             )}
             style={{
@@ -174,17 +173,22 @@ const Elements = ({
               width: fieldBounds.current.width,
             }}
           >
-            <CardContent className="text-field-card-foreground flex h-full w-full items-center justify-center p-2">
+            <CardContent
+              className={cn(
+                "text-field-card-foreground flex w-20 font-medium h-6 text-xs rounded-3xl items-center justify-center p-2 transition-all duration-300",
+                {
+                  "border border-red-500": !isFieldWithinBounds,
+                  "border border-green-500 scale-115": isFieldWithinBounds,
+                }
+              )}
+            >
               {FRIENDLY_FIELD_TYPE[selectedField]}
             </CardContent>
           </Card>
         )}
       </div>
       <div className="flex-1 overflow-y-auto px-2">
-        <fieldset
-          disabled={isFieldsDisabled}
-          className="grid grid-cols-2 w-full gap-4"
-        >
+        <fieldset className="grid grid-cols-2 w-full gap-4">
           <button
             type="button"
             className="group h-full w-full"
