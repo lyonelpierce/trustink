@@ -148,19 +148,17 @@ export const PDFViewer = ({
   };
 
   return (
-    <div
-      ref={$el}
-      className={cn("max-w-3xl h-full relative", className)}
-      {...props}
-    >
+    <div ref={$el} className={cn("overflow-hidden", className)} {...props}>
       {isLoading ? (
         <PDFLoader />
       ) : (
-        <>
+        <div className="flex w-full justify-between">
           <PDFDocument
             file={new Blob([documentBytes!], { type: "application/pdf" })}
             externalLinkTarget="_blank"
-            className="max-w-3xl h-[80vh]"
+            className={cn("w-full overflow-hidden rounded", {
+              "h-[80vh] max-h-[60rem]": numPages === 0,
+            })}
             // @ts-expect-error - PDFDocumentProxy is not typed
             onLoadSuccess={(d) => onDocumentLoaded(d)}
             onSourceError={() => {
@@ -217,7 +215,7 @@ export const PDFViewer = ({
                 </div>
               ))}
           </PDFDocument>
-        </>
+        </div>
       )}
     </div>
   );
