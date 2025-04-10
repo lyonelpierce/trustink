@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { PDFViewer } from "@/components/editor/PDF-Viewer";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { LazyPDFViewerNoLoader } from "@/components/editor/LazyPDFViewer";
 
 const getDocument = async (supabase: SupabaseClient, id: string) => {
   const { data, error } = await supabase
@@ -26,7 +26,7 @@ const SingleDocumentPage = async (props: {
 
   return (
     <div>
-      <PDFViewer className="max-w-3xl h-full" documentData={document} />
+      <LazyPDFViewerNoLoader documentData={document} />
     </div>
   );
 };

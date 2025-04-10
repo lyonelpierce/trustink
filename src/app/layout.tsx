@@ -2,7 +2,6 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
@@ -28,7 +27,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <ErrorBoundary>{children}</ErrorBoundary>
+            {children}
             <Toaster position="bottom-right" richColors />
           </ThemeProvider>
         </body>

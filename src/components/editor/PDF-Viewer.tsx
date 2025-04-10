@@ -6,6 +6,7 @@ import { Loader2Icon } from "lucide-react";
 import { PDFDocumentProxy } from "pdfjs-dist";
 import { Database } from "../../../database.types";
 import { useEffect, useState, useRef } from "react";
+import { useDocumentElement } from "../../hooks/use-document-element";
 import { Document as PDFDocument, Page as PDFPage, pdfjs } from "react-pdf";
 
 export type OnPDFViewerPageClick = (_event: {
@@ -54,6 +55,8 @@ export const PDFViewer = ({
   const $el = useRef<HTMLDivElement>(null);
 
   const isLoading = isDocumentBytesLoading || !documentBytes;
+
+  const { isWithinPageBounds } = useDocumentElement();
 
   const onDocumentLoaded = (doc: LoadedPDFDocument) => {
     setNumPages(doc.numPages);
@@ -110,6 +113,10 @@ export const PDFViewer = ({
     event: React.MouseEvent<HTMLDivElement, MouseEvent>,
     pageNumber: number
   ) => {
+    console.log("clicked");
+
+    console.log(isWithinPageBounds);
+
     const $el = event.target instanceof HTMLElement ? event.target : null;
 
     if (!$el) {
@@ -141,11 +148,15 @@ export const PDFViewer = ({
   };
 
   return (
-    <div ref={$el} className={cn("w-full h-full", className)} {...props}>
+    <div
+      ref={$el}
+      className={cn("max-w-3xl h-full relative", className)}
+      {...props}
+    >
       {isLoading ? (
         <PDFLoader />
       ) : (
-        <div>
+        <>
           <PDFDocument
             file={new Blob([documentBytes!], { type: "application/pdf" })}
             externalLinkTarget="_blank"
@@ -206,7 +217,7 @@ export const PDFViewer = ({
                 </div>
               ))}
           </PDFDocument>
-        </div>
+        </>
       )}
     </div>
   );

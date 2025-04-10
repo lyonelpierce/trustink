@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 
-import { getBoundingClientRect } from "./get-bounding-blient-rect";
+import { getBoundingClientRect } from "./get-bounding-client-rect";
 
 export const useDocumentElement = () => {
   /**
