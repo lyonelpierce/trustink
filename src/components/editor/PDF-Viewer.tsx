@@ -6,7 +6,7 @@ import { Loader2Icon } from "lucide-react";
 import { PDFDocumentProxy } from "pdfjs-dist";
 import { Database } from "../../../database.types";
 import { useEffect, useState, useRef } from "react";
-import { useDocumentElement } from "../../hooks/use-document-element";
+import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { Document as PDFDocument, Page as PDFPage, pdfjs } from "react-pdf";
 
 export type OnPDFViewerPageClick = (_event: {
