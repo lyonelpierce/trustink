@@ -157,9 +157,10 @@ export const FieldItem = ({
       >
         <CardContent
           className={cn(
-            "text-field-card-foreground flex flex-col items-center justify-center p-2 border-2 font-tangerine border-green-500 w-28 h-8 rounded-md text-3xl font-medium",
+            "text-field-card-foreground flex flex-col items-center justify-center p-2 border-2 bg-white border-green-500 w-28 h-8 rounded-md text-sm font-medium",
             {
               "text-field-card-foreground/50": disabled,
+              "font-tangerine text-3xl h-12": field.type === "signature",
             }
           )}
         >
