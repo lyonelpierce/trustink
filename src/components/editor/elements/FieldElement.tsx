@@ -114,7 +114,7 @@ export const FieldItem = ({
   return createPortal(
     <Rnd
       key={coords.pageX + coords.pageY + coords.pageHeight + coords.pageWidth}
-      className={cn("z-20", {
+      className={cn("z-20 group", {
         "pointer-events-none": passive,
         "pointer-events-none opacity-75": disabled,
         "z-10": !active || disabled,
@@ -141,7 +141,7 @@ export const FieldItem = ({
     >
       {!disabled && (
         <button
-          className="text-muted-foreground/50 hover:text-muted-foreground/80 bg-background absolute -right-2 -top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full border"
+          className="w-8 h-8 cursor-pointer text-muted-foreground/50 hover:text-muted-foreground/80 bg-background absolute -right-2 top-6 z-20 flex items-center justify-center rounded-full border"
           onClick={() => onRemove?.()}
           onTouchEnd={() => onRemove?.()}
         >
