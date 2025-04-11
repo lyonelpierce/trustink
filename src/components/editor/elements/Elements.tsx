@@ -21,6 +21,7 @@ import {
   TypeIcon,
   User2Icon,
 } from "lucide-react";
+import { FieldItem } from "./FieldElement";
 
 type FieldType = Database["public"]["Enums"]["field_type"];
 
@@ -29,7 +30,8 @@ const Elements = ({
 }: {
   fields: Database["public"]["Tables"]["fields"]["Row"][];
 }) => {
-  const { getPage, isWithinPageBounds } = useDocumentElement();
+  const { getPage, isWithinPageBounds, getFieldPosition } =
+    useDocumentElement();
 
   const { control } = useForm<TAddFieldsFormSchema>({
     defaultValues: {
@@ -58,7 +60,12 @@ const Elements = ({
     },
   });
 
-  const { append } = useFieldArray({
+  const {
+    append,
+    update,
+    remove,
+    fields: localFields,
+  } = useFieldArray({
     control,
     name: "fields",
   });
@@ -149,6 +156,59 @@ const Elements = ({
     [append, isWithinPageBounds, selectedField, getPage]
   );
 
+  const onFieldResize = useCallback(
+    (node: HTMLElement, index: number) => {
+      const field = localFields[index];
+
+      const $page = window.document.querySelector<HTMLElement>(
+        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.pageNumber}"]`
+      );
+
+      if (!$page) {
+        return;
+      }
+
+      const {
+        x: pageX,
+        y: pageY,
+        width: pageWidth,
+        height: pageHeight,
+      } = getFieldPosition($page, node);
+
+      update(index, {
+        ...field,
+        pageX,
+        pageY,
+        pageWidth,
+        pageHeight,
+      });
+    },
+    [getFieldPosition, localFields, update]
+  );
+
+  const onFieldMove = useCallback(
+    (node: HTMLElement, index: number) => {
+      const field = localFields[index];
+
+      const $page = window.document.querySelector<HTMLElement>(
+        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.pageNumber}"]`
+      );
+
+      if (!$page) {
+        return;
+      }
+
+      const { x: pageX, y: pageY } = getFieldPosition($page, node);
+
+      update(index, {
+        ...field,
+        pageX,
+        pageY,
+      });
+    },
+    [getFieldPosition, localFields, update]
+  );
+
   useEffect(() => {
     if (selectedField) {
       window.addEventListener("mousemove", onMouseMove);
@@ -163,6 +223,19 @@ const Elements = ({
 
   return (
     <>
+      {localFields.map((field, index) => (
+        <FieldItem
+          key={index}
+          field={field}
+          // disabled={selectedSigner?.email !== field.signerEmail || hasSelectedSignerBeenSent}
+          minHeight={fieldBounds.current.height}
+          minWidth={fieldBounds.current.width}
+          passive={isFieldWithinBounds && !!selectedField}
+          onResize={(options) => onFieldResize(options, index)}
+          onMove={(options) => onFieldMove(options, index)}
+          onRemove={() => remove(index)}
+        />
+      ))}
       <div>
         {selectedField && (
           <Card
