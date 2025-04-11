@@ -157,7 +157,7 @@ export const FieldItem = ({
       >
         <CardContent
           className={cn(
-            "text-field-card-foreground flex h-full w-full flex-col items-center justify-center p-2",
+            "text-field-card-foreground flex flex-col items-center justify-center p-2 border-2 font-tangerine border-green-500 w-28 h-8 rounded-md text-3xl font-medium",
             {
               "text-field-card-foreground/50": disabled,
             }

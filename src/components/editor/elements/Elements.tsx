@@ -255,10 +255,11 @@ const Elements = ({
           >
             <CardContent
               className={cn(
-                "text-field-card-foreground flex w-20 font-medium h-6 text-xs rounded-3xl items-center justify-center p-2 transition-all duration-300",
+                "text-field-card-foreground flex w-20 font-medium h-6 text-xs rounded-md items-center justify-center p-2 transition-all duration-300",
                 {
                   "border border-red-500": !isFieldWithinBounds,
                   "border border-green-500 scale-115": isFieldWithinBounds,
+                  "font-tangerine text-base": selectedField === "signature",
                 }
               )}
             >

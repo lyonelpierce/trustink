@@ -13,8 +13,13 @@ const EditorLayout = ({ children }: { children: React.ReactNode }) => {
       <EditorNavbar />
       <div className="flex">
         <div className="w-1/6 fixed left-0 top-0 border-r h-full pt-14 z-50">
-          <Accordion type="single" collapsible className="border-b">
-            <AccordionItem value="item-1">
+          <Accordion
+            type="single"
+            defaultValue="fields"
+            collapsible
+            className="border-b"
+          >
+            <AccordionItem value="fields">
               <AccordionTrigger className="cursor-pointer px-4 hover:no-underline border-b rounded-none">
                 Fields
               </AccordionTrigger>
