@@ -16,6 +16,9 @@ import {
   User2Icon,
   Calendar1Icon,
   SignatureIcon,
+  CaseUpperIcon,
+  CircleDotIcon,
+  SquareCheckIcon,
 } from "lucide-react";
 import { FieldItem } from "./FieldElement";
 import { useSession } from "@clerk/nextjs";
@@ -414,6 +417,31 @@ const Elements = ({
           <button
             type="button"
             className="group h-full w-full"
+            onClick={() => setSelectedField("initials" as FieldType)}
+            onMouseDown={() => setSelectedField("initials" as FieldType)}
+            data-selected={selectedField === "initials" ? true : undefined}
+          >
+            <Card
+              className={cn(
+                "group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50 transition-all duration-300 hover:bg-muted",
+                {
+                  "bg-muted": selectedField === "initials",
+                }
+              )}
+            >
+              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+                <CaseUpperIcon className="w-6 h-6 text-muted-foreground" />
+
+                <p className="text-muted-foreground mt-2 text-center text-xs">
+                  Initials
+                </p>
+              </CardContent>
+            </Card>
+          </button>
+
+          <button
+            type="button"
+            className="group h-full w-full"
             onClick={() => setSelectedField("email" as FieldType)}
             onMouseDown={() => setSelectedField("email" as FieldType)}
             data-selected={selectedField === "email" ? true : undefined}
@@ -499,6 +527,52 @@ const Elements = ({
                 <TypeIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Text</p>
+              </CardContent>
+            </Card>
+          </button>
+
+          <button
+            type="button"
+            className="group h-full w-full"
+            onClick={() => setSelectedField("radio" as FieldType)}
+            onMouseDown={() => setSelectedField("radio" as FieldType)}
+            data-selected={selectedField === "radio" ? true : undefined}
+          >
+            <Card
+              className={cn(
+                "group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50 transition-all duration-300 hover:bg-muted",
+                {
+                  "bg-muted": selectedField === "radio",
+                }
+              )}
+            >
+              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+                <CircleDotIcon className="w-6 h-6 text-muted-foreground" />
+
+                <p className="text-muted-foreground mt-2 text-xs">Radio</p>
+              </CardContent>
+            </Card>
+          </button>
+
+          <button
+            type="button"
+            className="group h-full w-full"
+            onClick={() => setSelectedField("checkbox" as FieldType)}
+            onMouseDown={() => setSelectedField("checkbox" as FieldType)}
+            data-selected={selectedField === "checkbox" ? true : undefined}
+          >
+            <Card
+              className={cn(
+                "group-data-[selected]:border-documenso h-full w-full cursor-pointer group-disabled:opacity-50 transition-all duration-300 hover:bg-muted",
+                {
+                  "bg-muted": selectedField === "checkbox",
+                }
+              )}
+            >
+              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+                <SquareCheckIcon className="w-6 h-6 text-muted-foreground" />
+
+                <p className="text-muted-foreground mt-2 text-xs">Checkbox</p>
               </CardContent>
             </Card>
           </button>

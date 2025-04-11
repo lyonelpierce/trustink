@@ -25,9 +25,8 @@ const EditorWrapper = ({
     <div className="flex">
       <div className="w-1/6 fixed left-0 top-0 border-r h-full pt-14 z-50">
         <Accordion
-          type="single"
-          defaultValue="fields"
-          collapsible
+          type="multiple"
+          defaultValue={["fields"]}
           className="border-b"
         >
           <AccordionItem value="fields">
@@ -40,6 +39,14 @@ const EditorWrapper = ({
                 documentId={document.document_id}
                 isDocumentPdfLoaded={isDocumentPdfLoaded}
               />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="advanced">
+            <AccordionTrigger className="cursor-pointer px-4 hover:no-underline border-b rounded-none">
+              Advanced
+            </AccordionTrigger>
+            <AccordionContent className="p-4">
+              <div>Advanced</div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
