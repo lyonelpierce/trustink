@@ -78,8 +78,8 @@ const Elements = ({
   });
 
   const fieldBounds = useRef({
-    height: 0,
-    width: 0,
+    height: 24,
+    width: 80,
   });
 
   const onMouseMove = useCallback(
@@ -242,8 +242,8 @@ const Elements = ({
             className={cn(
               "bg-field-card/80 pointer-events-none fixed z-50 cursor-pointer border-2 backdrop-blur-[1px]",
               {
-                "border-field-card-border": isFieldWithinBounds,
-                "opacity-50 -rotate-12": !isFieldWithinBounds,
+                "border-green-500": isFieldWithinBounds,
+                "border-red-500 opacity-50 -rotate-12": !isFieldWithinBounds,
               }
             )}
             style={{
@@ -256,11 +256,7 @@ const Elements = ({
             <CardContent
               className={cn(
                 "text-field-card-foreground flex w-20 font-medium h-6 text-xs rounded-md items-center justify-center p-2 transition-all duration-300",
-                {
-                  "border border-red-500": !isFieldWithinBounds,
-                  "border border-green-500 scale-115": isFieldWithinBounds,
-                  "font-tangerine text-base": selectedField === "signature",
-                }
+                selectedField === "signature" && "font-tangerine text-2xl"
               )}
             >
               {FRIENDLY_FIELD_TYPE[selectedField]}
