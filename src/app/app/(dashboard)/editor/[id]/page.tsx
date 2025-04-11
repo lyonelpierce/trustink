@@ -5,7 +5,14 @@ import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   const { data, error } = await supabase
     .from("documents_data")
-    .select("*")
+    .select(
+      `
+      *,
+      documents (
+        name
+      )
+    `
+    )
     .eq("document_id", id)
     .single();
 
@@ -40,11 +47,7 @@ const SingleDocumentPage = async (props: {
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
 
-  return (
-    <div>
-      <EditorWrapper document={document} fields={fields} />
-    </div>
-  );
+  return <EditorWrapper document={document} fields={fields} />;
 };
 
 export default SingleDocumentPage;

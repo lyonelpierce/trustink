@@ -7,7 +7,6 @@ import { auth } from "@clerk/nextjs/server";
 import {
   getDocumentById,
   getUserDocuments,
-  uploadDocumentFile,
   getDocumentAnalysis,
   getUserDocumentsWithMeta,
 } from "@/lib/supabase";
@@ -54,25 +53,28 @@ export async function POST(request: Request) {
       ""
     )}_${timestamp}.${fileExtension}`;
 
+    const documentName = file.name.replace(/\.[^/.]+$/, "");
     // Upload the file
-    const { data: storageData, error: storageError } = await uploadDocumentFile(
-      fileName,
-      fileBuffer,
-      file.type
-    );
+    // const { data: storageData, error: storageError } = await uploadDocumentFile(
+    //   fileName,
+    //   fileBuffer,
+    //   file.type
+    // );
 
-    if (storageError) {
-      console.error(
-        "[API/documents] Error uploading to storage:",
-        storageError
-      );
-      return NextResponse.json(
-        {
-          error: "Failed to upload document",
-        },
-        { status: 500 }
-      );
-    }
+    // if (storageError) {
+    //   console.error(
+    //     "[API/documents] Error uploading to storage:",
+    //     storageError
+    //   );
+
+    //   console.log("STORAGE ERROR", storageError);
+    //   return NextResponse.json(
+    //     {
+    //       error: "Failed to upload document",
+    //     },
+    //     { status: 500 }
+    //   );
+    // }
 
     if (file.type !== "application/pdf") {
       return NextResponse.json(
@@ -86,8 +88,8 @@ export async function POST(request: Request) {
     const { data: document, error } = await supabase
       .from("documents")
       .insert({
-        name: fileName,
-        path: storageData.path,
+        name: documentName,
+        path: fileName,
         size: file.size,
         user_id: userId,
       })
@@ -240,37 +242,37 @@ export async function DELETE(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
 
-    // First get the document to get its storage path
-    const { data: document, error: fetchError } = await supabase
-      .from("documents")
-      .select("path")
-      .eq("id", id)
-      .single();
+    // // First get the document to get its storage path
+    // const { data: document, error: fetchError } = await supabase
+    //   .from("documents")
+    //   .select("path")
+    //   .eq("id", id)
+    //   .single();
 
-    if (fetchError) {
-      return NextResponse.json(
-        {
-          error: "Failed to fetch document",
-        },
-        { status: 500 }
-      );
-    }
+    // if (fetchError) {
+    //   return NextResponse.json(
+    //     {
+    //       error: "Failed to fetch document",
+    //     },
+    //     { status: 500 }
+    //   );
+    // }
 
-    // Delete from storage bucket if path exists
-    if (document?.path) {
-      const { error: storageError } = await supabase.storage
-        .from("documents")
-        .remove([document.path]);
+    // // Delete from storage bucket if path exists
+    // if (document?.path) {
+    //   const { error: storageError } = await supabase.storage
+    //     .from("documents")
+    //     .remove([document.path]);
 
-      if (storageError) {
-        return NextResponse.json(
-          {
-            error: "Failed to delete document from storage",
-          },
-          { status: 500 }
-        );
-      }
-    }
+    //   if (storageError) {
+    //     return NextResponse.json(
+    //       {
+    //         error: "Failed to delete document from storage",
+    //       },
+    //       { status: 500 }
+    //     );
+    //   }
+    // }
 
     // Delete the database record
     const { error: deleteError } = await supabase
