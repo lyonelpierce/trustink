@@ -35,12 +35,6 @@ const Elements = ({
   documentId: string;
   isDocumentPdfLoaded: boolean;
 }) => {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const { session } = useSession();
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
@@ -98,49 +92,21 @@ const Elements = ({
     width: 80,
   });
 
-  const [pdfReady, setPdfReady] = useState(false);
+  // Add a state to track if fields should be rendered
+  const [shouldRenderFields, setShouldRenderFields] = useState(false);
 
+  // Add useEffect to delay field rendering until PDF is loaded
   useEffect(() => {
-    if (!isDocumentPdfLoaded) {
-      setPdfReady(false);
-      return;
+    if (isDocumentPdfLoaded) {
+      // Small delay to ensure PDF is fully rendered
+      const timer = setTimeout(() => {
+        setShouldRenderFields(true);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    } else {
+      setShouldRenderFields(false);
     }
-
-    // Function to check if pages are ready
-    const checkPagesReady = () => {
-      const pages = document.querySelectorAll(PDF_VIEWER_PAGE_SELECTOR);
-      if (pages.length === 0) return false;
-
-      return Array.from(pages).every((page) => {
-        const rect = page.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0;
-      });
-    };
-
-    // Initial check
-    if (checkPagesReady()) {
-      setPdfReady(true);
-      return;
-    }
-
-    // If not ready, set up mutation observer to watch for changes
-    const observer = new MutationObserver(() => {
-      if (checkPagesReady()) {
-        setPdfReady(true);
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-    });
-
-    return () => {
-      observer.disconnect();
-      setPdfReady(false);
-    };
   }, [isDocumentPdfLoaded]);
 
   const onMouseMove = useCallback(
@@ -199,6 +165,11 @@ const Elements = ({
       // And center it based on the bounds
       pageX -= fieldPageWidth / 2;
       pageY -= fieldPageHeight / 2;
+
+      console.log("pageX", pageX);
+      console.log("pageY", pageY);
+      console.log("fieldPageWidth", fieldPageWidth);
+      console.log("fieldPageHeight", fieldPageHeight);
 
       try {
         const { data, error } = await client
@@ -372,13 +343,9 @@ const Elements = ({
     };
   }, [onMouseClick, onMouseMove, selectedField]);
 
-  if (!isMounted) {
-    return null;
-  }
-
   return (
     <div className="flex flex-col">
-      {isDocumentPdfLoaded && pdfReady && (
+      {isDocumentPdfLoaded && shouldRenderFields && (
         <div>
           {localFields.map((field, index) => (
             <FieldItem
