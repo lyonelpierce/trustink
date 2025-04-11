@@ -24,6 +24,20 @@ const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   return data;
 };
 
+export const generateMetadata = async ({
+  params,
+}: {
+  params: { id: string };
+}) => {
+  const supabase = createServerSupabaseClient();
+  const document = await getDocumentData(supabase, params.id);
+
+  return {
+    title: document.documents.name,
+    description: document.documents.name,
+  };
+};
+
 const getDocumentFields = async (supabase: SupabaseClient, id: string) => {
   const { data, error } = await supabase
     .from("fields")
@@ -47,7 +61,9 @@ const SingleDocumentPage = async (props: {
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
 
-  return <EditorWrapper document={document} fields={fields} />;
+  return (
+    <EditorWrapper document={document} key={document.id} fields={fields} />
+  );
 };
 
 export default SingleDocumentPage;
