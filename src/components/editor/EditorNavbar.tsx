@@ -1,9 +1,10 @@
+import Logo from "../Logo";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import UnderlineText from "../ui/underlineText";
 import { SendIcon, ChevronLeftIcon } from "lucide-react";
 
-const EditorNavbar = ({ documentName }: { documentName: string }) => {
+const EditorNavbar = () => {
   return (
     <div className="h-14 flex items-center justify-between px-4 fixed top-0 z-[60] w-full backdrop-blur-3xl border-b">
       <div className="flex items-center gap-2">
@@ -16,7 +17,7 @@ const EditorNavbar = ({ documentName }: { documentName: string }) => {
           className="flex items-center gap-2"
         />
       </div>
-      <p className="text-sm">{documentName}</p>
+      <Logo isMainLogo={false} />
       <Button className="w-24">
         <SendIcon />
         Send
