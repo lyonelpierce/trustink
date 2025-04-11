@@ -1,13 +1,24 @@
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 import { Textarea } from "@/components/ui/textarea";
 import EditorNavbar from "@/components/editor/EditorNavbar";
 import Elements from "@/components/editor/elements/Elements";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-const EditorLayout = ({ children }: { children: React.ReactNode }) => {
+
+const EditorLayout = async ({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ id: string }>;
+}) => {
+  const { id } = await params;
+
+  if (!id) return null;
+
   return (
     <>
       <EditorNavbar />
@@ -24,7 +35,7 @@ const EditorLayout = ({ children }: { children: React.ReactNode }) => {
                 Fields
               </AccordionTrigger>
               <AccordionContent className="p-4">
-                <Elements fields={[]} />
+                <Elements fields={[]} documentId={id} />
               </AccordionContent>
             </AccordionItem>
           </Accordion>

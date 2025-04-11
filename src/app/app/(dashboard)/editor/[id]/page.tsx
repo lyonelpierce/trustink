@@ -10,6 +10,7 @@ const getDocument = async (supabase: SupabaseClient, id: string) => {
     .single();
 
   if (error) {
+    console.error(error);
     throw new Error(error.message);
   }
 

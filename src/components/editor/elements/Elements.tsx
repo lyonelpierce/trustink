@@ -15,23 +15,43 @@ import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import {
-  Calendar1Icon,
   MailIcon,
-  SignatureIcon,
   TypeIcon,
   User2Icon,
+  Calendar1Icon,
+  SignatureIcon,
 } from "lucide-react";
 import { FieldItem } from "./FieldElement";
+import { useSession } from "@clerk/nextjs";
+import { createClient } from "@supabase/supabase-js";
 
 type FieldType = Database["public"]["Enums"]["field_type"];
 
 const Elements = ({
   fields,
+  documentId,
 }: {
   fields: Database["public"]["Tables"]["fields"]["Row"][];
+  documentId: string;
 }) => {
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
+
+  const { session } = useSession();
+
+  function createClerkSupabaseClient() {
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        async accessToken() {
+          return session?.getToken() ?? null;
+        },
+      }
+    );
+  }
+
+  const client = createClerkSupabaseClient();
 
   const { control } = useForm<TAddFieldsFormSchema>({
     defaultValues: {
@@ -102,7 +122,7 @@ const Elements = ({
   );
 
   const onMouseClick = useCallback(
-    (event: MouseEvent) => {
+    async (event: MouseEvent) => {
       if (!selectedField) return;
 
       const $page = getPage(event, PDF_VIEWER_PAGE_SELECTOR);
@@ -139,21 +159,42 @@ const Elements = ({
       pageX -= fieldPageWidth / 2;
       pageY -= fieldPageHeight / 2;
 
-      append({
-        formId: nanoid(12),
-        type: selectedField,
-        pageNumber,
-        pageX,
-        pageY,
-        pageWidth: fieldPageWidth,
-        pageHeight: fieldPageHeight,
-        signerEmail: "",
-      });
+      const fieldId = nanoid(12);
 
-      setIsFieldWithinBounds(false);
-      setSelectedField(null);
+      try {
+        const { error } = await client.from("fields").insert({
+          type: selectedField,
+          user_id: session?.user.id,
+          document_id: documentId,
+          page: pageNumber,
+          position_x: pageX,
+          position_y: pageY,
+          width: fieldPageWidth,
+          height: fieldPageHeight,
+        });
+
+        if (error) throw error;
+
+        append({
+          formId: fieldId,
+          nativeId: parseInt(fieldId, 10),
+          type: selectedField,
+          pageNumber,
+          pageX,
+          pageY,
+          pageWidth: fieldPageWidth,
+          pageHeight: fieldPageHeight,
+          signerEmail: "",
+        });
+
+        setIsFieldWithinBounds(false);
+        setSelectedField(null);
+      } catch (error) {
+        console.error("Error saving field:", error);
+        // You might want to show an error toast here
+      }
     },
-    [append, isWithinPageBounds, selectedField, getPage]
+    [append, isWithinPageBounds, selectedField, getPage, client]
   );
 
   const onFieldResize = useCallback(
