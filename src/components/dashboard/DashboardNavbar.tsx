@@ -1,10 +1,10 @@
 import Logo from "../Logo";
-import Link from "next/link";
 import WidthWrapper from "../WidthWrapper";
 import UserDropdown from "../UserDropdown";
 import { ModeToggle } from "../theme-toggle";
 import { Button } from "@/components/ui/button";
 import { SignedOut, SignInButton, SignedIn } from "@clerk/nextjs";
+import UnderlineText from "../ui/underlineText";
 
 const links = [
   {
@@ -25,12 +25,7 @@ const DashboardNavbar = () => {
         <div className="flex gap-8 items-center">
           <Logo isMainLogo={true} />
           {links.map((link) => (
-            <div key={link.id} className="group relative">
-              <Link href={link.href} className="text-base font-medium">
-                {link.label}
-              </Link>
-              <div className="group-hover:w-full w-0 bg-black absolute h-0.5 bottom-0 left-0 transition-all duration-300 -z-10" />
-            </div>
+            <UnderlineText key={link.id} text={link.label} link={link.href} />
           ))}
         </div>
         <div className="flex items-center gap-4">
