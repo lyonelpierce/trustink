@@ -1,13 +1,27 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import EditorWrapper from "@/components/editor/EditorWrapper";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
-import { LazyPDFViewerNoLoader } from "@/components/editor/LazyPDFViewer";
 
-const getDocument = async (supabase: SupabaseClient, id: string) => {
+const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   const { data, error } = await supabase
     .from("documents_data")
     .select("*")
     .eq("document_id", id)
     .single();
+
+  if (error) {
+    console.error(error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+const getDocumentFields = async (supabase: SupabaseClient, id: string) => {
+  const { data, error } = await supabase
+    .from("fields")
+    .select("*")
+    .eq("document_id", id);
 
   if (error) {
     console.error(error);
@@ -23,11 +37,12 @@ const SingleDocumentPage = async (props: {
   const { id } = await props.params;
   const supabase = createServerSupabaseClient();
 
-  const document = await getDocument(supabase, id);
+  const document = await getDocumentData(supabase, id);
+  const fields = await getDocumentFields(supabase, id);
 
   return (
     <div>
-      <LazyPDFViewerNoLoader documentData={document} />
+      <EditorWrapper document={document} fields={fields} />
     </div>
   );
 };

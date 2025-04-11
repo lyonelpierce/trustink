@@ -4,16 +4,12 @@ import {
   FRIENDLY_FIELD_TYPE,
   TAddFieldsFormSchema,
 } from "@/constants/FieldTypes";
-import { nanoid } from "nanoid";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { CardContent } from "@/components/ui/card";
 import { Database } from "../../../../database.types";
 import { useFieldArray, useForm } from "react-hook-form";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-import { useDocumentElement } from "@/hooks/useDocumentElement";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import {
   MailIcon,
   TypeIcon,
@@ -24,20 +20,24 @@ import {
 import { FieldItem } from "./FieldElement";
 import { useSession } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
+import { useDocumentElement } from "@/hooks/useDocumentElement";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 
 type FieldType = Database["public"]["Enums"]["field_type"];
 
 const Elements = ({
   fields,
   documentId,
+  isDocumentPdfLoaded,
 }: {
   fields: Database["public"]["Tables"]["fields"]["Row"][];
   documentId: string;
+  isDocumentPdfLoaded: boolean;
 }) => {
+  const { session } = useSession();
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
-
-  const { session } = useSession();
 
   function createClerkSupabaseClient() {
     return createClient(
@@ -57,23 +57,13 @@ const Elements = ({
     defaultValues: {
       fields:
         fields?.map((field) => ({
-          formId: `${field.id}`,
+          formId: field.secondary_id ?? "",
           nativeId: field.id,
-          type: field.type as
-            | "signature"
-            | "email"
-            | "name"
-            | "date"
-            | "text"
-            | "number"
-            | "initials"
-            | "radio"
-            | "checkbox"
-            | "dropdown",
+          type: field.type as FieldType,
           signerEmail: "",
           pageNumber: field.page,
-          pageX: field.positionX,
-          pageY: field.positionY,
+          pageX: field.position_x,
+          pageY: field.position_y,
           pageWidth: field.width,
           pageHeight: field.height,
         })) || [],
@@ -101,6 +91,23 @@ const Elements = ({
     height: 24,
     width: 80,
   });
+
+  // Add a state to track if fields should be rendered
+  const [shouldRenderFields, setShouldRenderFields] = useState(false);
+
+  // Add useEffect to delay field rendering until PDF is loaded
+  useEffect(() => {
+    if (isDocumentPdfLoaded) {
+      // Small delay to ensure PDF is fully rendered
+      const timer = setTimeout(() => {
+        setShouldRenderFields(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } else {
+      setShouldRenderFields(false);
+    }
+  }, [isDocumentPdfLoaded]);
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -159,25 +166,34 @@ const Elements = ({
       pageX -= fieldPageWidth / 2;
       pageY -= fieldPageHeight / 2;
 
-      const fieldId = nanoid(12);
+      console.log("pageX", pageX);
+      console.log("pageY", pageY);
+      console.log("fieldPageWidth", fieldPageWidth);
+      console.log("fieldPageHeight", fieldPageHeight);
 
       try {
-        const { error } = await client.from("fields").insert({
-          type: selectedField,
-          user_id: session?.user.id,
-          document_id: documentId,
-          page: pageNumber,
-          position_x: pageX,
-          position_y: pageY,
-          width: fieldPageWidth,
-          height: fieldPageHeight,
-        });
+        const { data, error } = await client
+          .from("fields")
+          .insert({
+            type: selectedField,
+            user_id: session?.user.id,
+            document_id: documentId,
+            page: pageNumber,
+            position_x: pageX,
+            position_y: pageY,
+            height: fieldPageHeight,
+            width: fieldPageWidth,
+          })
+          .select();
 
         if (error) throw error;
+        if (!data || data.length === 0) throw new Error("No data returned");
+
+        const insertedField = data[0];
 
         append({
-          formId: fieldId,
-          nativeId: parseInt(fieldId, 10),
+          formId: insertedField.secondary_id,
+          nativeId: insertedField.id,
           type: selectedField,
           pageNumber,
           pageX,
@@ -194,11 +210,19 @@ const Elements = ({
         // You might want to show an error toast here
       }
     },
-    [append, isWithinPageBounds, selectedField, getPage, client]
+    [
+      append,
+      isWithinPageBounds,
+      selectedField,
+      getPage,
+      client,
+      documentId,
+      session?.user.id,
+    ]
   );
 
   const onFieldResize = useCallback(
-    (node: HTMLElement, index: number) => {
+    async (node: HTMLElement, index: number) => {
       const field = localFields[index];
 
       const $page = window.document.querySelector<HTMLElement>(
@@ -216,19 +240,37 @@ const Elements = ({
         height: pageHeight,
       } = getFieldPosition($page, node);
 
-      update(index, {
-        ...field,
-        pageX,
-        pageY,
-        pageWidth,
-        pageHeight,
-      });
+      try {
+        // Update the database
+        const { error } = await client
+          .from("fields")
+          .update({
+            position_x: pageX,
+            position_y: pageY,
+            width: pageWidth,
+            height: pageHeight,
+          })
+          .eq("id", field.nativeId);
+
+        if (error) throw error;
+
+        // Update local state
+        update(index, {
+          ...field,
+          pageX,
+          pageY,
+          pageWidth,
+          pageHeight,
+        });
+      } catch (error) {
+        console.error("Error updating field position and size:", error);
+      }
     },
-    [getFieldPosition, localFields, update]
+    [getFieldPosition, localFields, update, client]
   );
 
   const onFieldMove = useCallback(
-    (node: HTMLElement, index: number) => {
+    async (node: HTMLElement, index: number) => {
       const field = localFields[index];
 
       const $page = window.document.querySelector<HTMLElement>(
@@ -241,13 +283,52 @@ const Elements = ({
 
       const { x: pageX, y: pageY } = getFieldPosition($page, node);
 
-      update(index, {
-        ...field,
-        pageX,
-        pageY,
-      });
+      try {
+        // Update the database
+        const { error } = await client
+          .from("fields")
+          .update({
+            position_x: pageX,
+            position_y: pageY,
+          })
+          .eq("id", field.nativeId);
+
+        if (error) throw error;
+
+        // Update local state
+        update(index, {
+          ...field,
+          pageX,
+          pageY,
+        });
+      } catch (error) {
+        console.error("Error updating field position:", error);
+      }
     },
-    [getFieldPosition, localFields, update]
+    [getFieldPosition, localFields, update, client]
+  );
+
+  // Add new handler for field removal
+  const handleFieldRemove = useCallback(
+    async (index: number) => {
+      const field = localFields[index];
+
+      try {
+        const { error } = await client
+          .from("fields")
+          .delete()
+          .eq("id", field.nativeId);
+
+        if (error) throw error;
+
+        // Remove from local state after successful DB deletion
+        remove(index);
+      } catch (error) {
+        console.error("Error removing field:", error);
+        // You might want to show an error toast here
+      }
+    },
+    [client, localFields, remove]
   );
 
   useEffect(() => {
@@ -263,20 +344,23 @@ const Elements = ({
   }, [onMouseClick, onMouseMove, selectedField]);
 
   return (
-    <>
-      {localFields.map((field, index) => (
-        <FieldItem
-          key={index}
-          field={field}
-          // disabled={selectedSigner?.email !== field.signerEmail || hasSelectedSignerBeenSent}
-          minHeight={fieldBounds.current.height}
-          minWidth={fieldBounds.current.width}
-          passive={isFieldWithinBounds && !!selectedField}
-          onResize={(options) => onFieldResize(options, index)}
-          onMove={(options) => onFieldMove(options, index)}
-          onRemove={() => remove(index)}
-        />
-      ))}
+    <div className="flex flex-col">
+      {isDocumentPdfLoaded && shouldRenderFields && (
+        <div>
+          {localFields.map((field, index) => (
+            <FieldItem
+              key={field.nativeId}
+              field={field}
+              minHeight={fieldBounds.current.height}
+              minWidth={fieldBounds.current.width}
+              passive={isFieldWithinBounds && !!selectedField}
+              onResize={(node) => onFieldResize(node, index)}
+              onMove={(node) => onFieldMove(node, index)}
+              onRemove={() => handleFieldRemove(index)}
+            />
+          ))}
+        </div>
+      )}
       <div>
         {selectedField && (
           <Card
@@ -425,7 +509,7 @@ const Elements = ({
           </button>
         </fieldset>
       </div>
-    </>
+    </div>
   );
 };
 

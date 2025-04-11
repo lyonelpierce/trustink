@@ -28,15 +28,15 @@ const FIELD_TYPES = [
 export const ZAddFieldsFormSchema = z.object({
   fields: z.array(
     z.object({
-      formId: z.string().min(1),
-      nativeId: z.number().optional(),
-      type: z.enum(FIELD_TYPES),
-      signerEmail: z.string().min(1),
-      pageNumber: z.number().min(1),
-      pageX: z.number().min(0),
-      pageY: z.number().min(0),
-      pageWidth: z.number().min(0),
-      pageHeight: z.number().min(0),
+      formId: z.string().min(1), // matches secondary_id
+      nativeId: z.number().optional(), // matches id
+      type: z.enum(FIELD_TYPES), // matches type
+      signerEmail: z.string(), // Not required since it can be empty
+      pageNumber: z.number().min(1), // matches page
+      pageX: z.number(), // matches position_x
+      pageY: z.number(), // matches position_y
+      pageWidth: z.number(), // matches width
+      pageHeight: z.number(), // matches height
     })
   ),
 });
