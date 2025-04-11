@@ -11,7 +11,7 @@ const EditorNavbar = ({ documentName }: { documentName: string }) => {
         <Link href="/documents" className="flex items-center gap-2">
           <ChevronLeftIcon />
         </Link>
-        <Logo isMainLogo={false} />
+        <Logo isMainLogo={false} href="/documents" />
       </div>
       <DocumentName documentName={documentName} />
       <Button className="w-24">
