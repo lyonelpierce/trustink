@@ -28,7 +28,7 @@ const EditorWrapper = ({
 
   return (
     <>
-      <EditorNavbar />
+      <EditorNavbar documentName={document.documents.name} />
 
       <div className="flex">
         <div className="w-1/6 fixed left-0 top-0 border-r h-full pt-14 z-50">
