@@ -240,7 +240,7 @@ const Elements = ({
         {selectedField && (
           <Card
             className={cn(
-              "bg-field-card/80 pointer-events-none fixed z-50 cursor-pointer border-2 backdrop-blur-[1px]",
+              "bg-field-card/80 pointer-events-none fixed z-50 cursor-pointer border-2 backdrop-blur-[1px] transition-transform transition-discrete duration-300 ease-in-out",
               {
                 "border-green-500": isFieldWithinBounds,
                 "border-red-500 opacity-50 -rotate-12": !isFieldWithinBounds,
