@@ -141,7 +141,7 @@ export const FieldItem = ({
     >
       {!disabled && (
         <button
-          className="w-8 h-8 cursor-pointer text-muted-foreground/50 hover:text-muted-foreground/80 bg-background absolute -right-2 top-6 z-20 flex items-center justify-center rounded-full border"
+          className="w-8 h-8 text-muted-foreground/50 hover:text-muted-foreground/80 bg-background absolute -right-2 top-6 z-20 flex cursor-pointer items-center justify-center rounded-full border"
           onClick={() => onRemove?.()}
           onTouchEnd={() => onRemove?.()}
         >
@@ -157,10 +157,10 @@ export const FieldItem = ({
       >
         <CardContent
           className={cn(
-            "text-field-card-foreground flex flex-col items-center justify-center p-2 border-2 bg-white border-green-500 w-28 h-8 rounded-md text-sm font-medium",
+            "text-field-card-foreground flex flex-col items-center justify-center p-2 bg-white w-full h-full rounded-md text-sm font-medium",
             {
               "text-field-card-foreground/50": disabled,
-              "font-tangerine text-3xl h-12": field.type === "signature",
+              "font-tangerine text-3xl": field.type === "signature",
             }
           )}
         >
