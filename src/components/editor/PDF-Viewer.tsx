@@ -155,12 +155,8 @@ export const PDFViewer = ({
         </div>
       ) : (
         <PDFDocument
-          file={
-            new File([documentBytes], "document.pdf", {
-              type: "application/pdf",
-            })
-          }
-          externalLinkTarget="_blank"
+          // @ts-expect-error - TODO: FIX THIS
+          file={documentBytes.buffer}
           className={cn("w-full overflow-hidden rounded", {
             "h-[80vh] max-h-[60rem]": numPages === 0,
           })}
@@ -168,6 +164,7 @@ export const PDFViewer = ({
           onSourceError={() => {
             setPdfError(true);
           }}
+          externalLinkTarget="_blank"
           loading={
             <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
               {pdfError ? (
@@ -200,7 +197,7 @@ export const PDFViewer = ({
           {Array(numPages)
             .fill(null)
             .map((_, i) => (
-              <div key={i} className="last:-mb-2">
+              <div key={i}>
                 <div className="border-border overflow-hidden rounded border will-change-transform">
                   <PDFPage
                     pageNumber={i + 1}
