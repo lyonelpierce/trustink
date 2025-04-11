@@ -154,39 +154,23 @@ export const PDFViewer = ({
           <PDFLoader />
         </div>
       ) : (
-        <div className="flex w-full justify-between z-0">
-          <PDFDocument
-            file={
-              new File([documentBytes], "document.pdf", {
-                type: "application/pdf",
-              })
-            }
-            externalLinkTarget="_blank"
-            className={cn("w-full overflow-hidden rounded", {
-              "h-[80vh] max-h-[60rem]": numPages === 0,
-            })}
-            onLoadSuccess={(d) => onDocumentLoaded(d)}
-            onSourceError={() => {
-              setPdfError(true);
-            }}
-            loading={
-              <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
-                {pdfError ? (
-                  <div className="text-muted-foreground text-center">
-                    <div>
-                      <p>Something went wrong while loading the document.</p>
-                    </div>
-                    <div className="mt-1 text-sm">
-                      <p>Please try again or contact our support.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <PDFLoader />
-                )}
-              </div>
-            }
-            error={
-              <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
+        <PDFDocument
+          file={
+            new File([documentBytes], "document.pdf", {
+              type: "application/pdf",
+            })
+          }
+          externalLinkTarget="_blank"
+          className={cn("w-full overflow-hidden rounded", {
+            "h-[80vh] max-h-[60rem]": numPages === 0,
+          })}
+          onLoadSuccess={(d) => onDocumentLoaded(d)}
+          onSourceError={() => {
+            setPdfError(true);
+          }}
+          loading={
+            <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
+              {pdfError ? (
                 <div className="text-muted-foreground text-center">
                   <div>
                     <p>Something went wrong while loading the document.</p>
@@ -195,32 +179,46 @@ export const PDFViewer = ({
                     <p>Please try again or contact our support.</p>
                   </div>
                 </div>
-              </div>
-            }
-          >
-            {Array(numPages)
-              .fill(null)
-              .map((_, i) => (
-                <div key={i} className="last:-mb-2">
-                  <div className="border-border overflow-hidden rounded border will-change-transform">
-                    <PDFPage
-                      pageNumber={i + 1}
-                      width={width}
-                      renderAnnotationLayer={false}
-                      renderTextLayer={false}
-                      loading={() => ""}
-                      onClick={(e) => onDocumentPageClick(e, i + 1)}
-                    />
-                  </div>
-                  <p className="text-muted-foreground/80 my-2 text-center text-[11px]">
-                    <span>
-                      Page {i + 1} of {numPages}
-                    </span>
-                  </p>
+              ) : (
+                <PDFLoader />
+              )}
+            </div>
+          }
+          error={
+            <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
+              <div className="text-muted-foreground text-center">
+                <div>
+                  <p>Something went wrong while loading the document.</p>
                 </div>
-              ))}
-          </PDFDocument>
-        </div>
+                <div className="mt-1 text-sm">
+                  <p>Please try again or contact our support.</p>
+                </div>
+              </div>
+            </div>
+          }
+        >
+          {Array(numPages)
+            .fill(null)
+            .map((_, i) => (
+              <div key={i} className="last:-mb-2">
+                <div className="border-border overflow-hidden rounded border will-change-transform">
+                  <PDFPage
+                    pageNumber={i + 1}
+                    width={width}
+                    renderAnnotationLayer={false}
+                    renderTextLayer={false}
+                    loading={() => ""}
+                    onClick={(e) => onDocumentPageClick(e, i + 1)}
+                  />
+                </div>
+                <p className="text-muted-foreground/80 my-2 text-center text-[11px]">
+                  <span>
+                    Page {i + 1} of {numPages}
+                  </span>
+                </p>
+              </div>
+            ))}
+        </PDFDocument>
       )}
     </div>
   );

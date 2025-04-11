@@ -39,6 +39,21 @@ const Elements = ({
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
 
+  const [selectedField, setSelectedField] = useState<FieldType | null>(null);
+  const [isFieldWithinBounds, setIsFieldWithinBounds] = useState(false);
+  const [coords, setCoords] = useState({
+    x: 0,
+    y: 0,
+  });
+
+  const fieldBounds = useRef({
+    height: 24,
+    width: 80,
+  });
+
+  // Add a state to track if fields should be rendered
+  const [shouldRenderFields, setShouldRenderFields] = useState(false);
+
   function createClerkSupabaseClient() {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -80,28 +95,13 @@ const Elements = ({
     name: "fields",
   });
 
-  const [selectedField, setSelectedField] = useState<FieldType | null>(null);
-  const [isFieldWithinBounds, setIsFieldWithinBounds] = useState(false);
-  const [coords, setCoords] = useState({
-    x: 0,
-    y: 0,
-  });
-
-  const fieldBounds = useRef({
-    height: 24,
-    width: 80,
-  });
-
-  // Add a state to track if fields should be rendered
-  const [shouldRenderFields, setShouldRenderFields] = useState(false);
-
   // Add useEffect to delay field rendering until PDF is loaded
   useEffect(() => {
     if (isDocumentPdfLoaded) {
       // Small delay to ensure PDF is fully rendered
       const timer = setTimeout(() => {
         setShouldRenderFields(true);
-      }, 100);
+      }, 300);
 
       return () => clearTimeout(timer);
     } else {
@@ -165,11 +165,6 @@ const Elements = ({
       // And center it based on the bounds
       pageX -= fieldPageWidth / 2;
       pageY -= fieldPageHeight / 2;
-
-      console.log("pageX", pageX);
-      console.log("pageY", pageY);
-      console.log("fieldPageWidth", fieldPageWidth);
-      console.log("fieldPageHeight", fieldPageHeight);
 
       try {
         const { data, error } = await client
