@@ -20,6 +20,8 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useCallback, useState } from "react";
 import { UserPlus2Icon, CircleMinusIcon } from "lucide-react";
+import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -39,6 +41,9 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
       email: "",
     },
   });
+
+  const { selectedRecipient, setSelectedRecipient } =
+    useSelectedRecipientStore();
 
   const createClerkSupabaseClient = useCallback(() => {
     return createClient(
@@ -179,6 +184,16 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
     }
   };
 
+  const handleRecipientClick = (
+    recipient: Database["public"]["Tables"]["recipients"]["Row"]
+  ) => {
+    if (selectedRecipient?.id === recipient.id) {
+      setSelectedRecipient(null);
+    } else {
+      setSelectedRecipient(recipient);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Form {...form}>
@@ -226,8 +241,12 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
       </Form>
       {recipients.map((recipient) => (
         <div
-          className="flex items-center justify-between gap-2 p-4 border rounded-lg shadow-sm bg-white"
+          className={cn(
+            "flex items-center justify-between gap-2 p-4 border rounded-lg shadow-sm bg-white cursor-pointer transition-all ease-in-out",
+            selectedRecipient?.id === recipient.id && "ring-2 ring-black"
+          )}
           key={recipient.id}
+          onClick={() => handleRecipientClick(recipient)}
         >
           <div className="flex items-center gap-2">
             <Avatar className="w-10 h-10">
@@ -245,7 +264,10 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleDelete(recipient.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(recipient.id);
+            }}
             className="group"
           >
             <CircleMinusIcon className="size-6 transition-all ease-in-out group-hover:text-red-500" />
