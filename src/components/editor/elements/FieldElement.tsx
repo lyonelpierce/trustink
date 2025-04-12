@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { Database } from "../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
-import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 
 type Field = {
   pageNumber: number;
@@ -68,8 +67,6 @@ export const FieldItem = ({
   });
   const [settingsActive, setSettingsActive] = useState(false);
   const $el = useRef(null);
-
-  const { selectedRecipient } = useSelectedRecipientStore();
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
