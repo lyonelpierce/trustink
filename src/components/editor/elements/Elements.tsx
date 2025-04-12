@@ -14,6 +14,7 @@ import {
   FRIENDLY_FIELD_TYPE,
   TAddFieldsFormSchema,
 } from "@/constants/FieldTypes";
+import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
@@ -28,6 +29,7 @@ import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
+import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 
 const MIN_HEIGHT_PX = 12;
 const MIN_WIDTH_PX = 36;
@@ -47,7 +49,7 @@ export type FieldFormType = {
   pageY: number;
   pageWidth: number;
   pageHeight: number;
-  signerEmail: string;
+  recipient_id: string;
 };
 
 const Elements = ({
@@ -62,6 +64,8 @@ const Elements = ({
   const { session } = useSession();
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
+
+  const { selectedRecipient } = useSelectedRecipientStore();
 
   const [selectedField, setSelectedField] = useState<FieldType | null>(null);
 
@@ -109,7 +113,7 @@ const Elements = ({
           pageY: field.position_y,
           pageWidth: field.width,
           pageHeight: field.height,
-          signerEmail: "",
+          recipient_id: selectedRecipient?.id,
         })) || [],
     },
   });
@@ -190,7 +194,7 @@ const Elements = ({
         pageY,
         pageWidth: fieldPageWidth,
         pageHeight: fieldPageHeight,
-        signerEmail: "",
+        recipient_id: selectedRecipient?.id ?? "",
       };
 
       append(field);
@@ -208,6 +212,7 @@ const Elements = ({
             position_y: pageY,
             height: fieldPageHeight,
             width: fieldPageWidth,
+            recipient_id: selectedRecipient?.id,
           })
           .select();
 
@@ -217,6 +222,7 @@ const Elements = ({
         setIsFieldWithinBounds(false);
         setSelectedField(null);
       } catch (error) {
+        toast.error("Error saving field");
         console.error("Error saving field:", error);
         // You might want to show an error toast here
       }
@@ -229,6 +235,7 @@ const Elements = ({
       client,
       documentId,
       session?.user.id,
+      selectedRecipient?.id,
     ]
   );
 
@@ -415,12 +422,15 @@ const Elements = ({
       )}
 
       {isDocumentPdfLoaded && isPdfReady && (
-        <div>
+        <>
           {localFields.map((field, index) => (
             <FieldItem
               key={index}
               field={field}
-              disabled={false}
+              disabled={
+                !selectedRecipient ||
+                field.recipient_id !== selectedRecipient.id
+              }
               minHeight={MIN_HEIGHT_PX}
               minWidth={MIN_WIDTH_PX}
               defaultHeight={DEFAULT_HEIGHT_PX}
@@ -432,10 +442,13 @@ const Elements = ({
               onRemove={() => handleFieldRemove(index)}
             />
           ))}
-        </div>
+        </>
       )}
       <div className="flex-1 overflow-y-auto px-2">
-        <fieldset className="flex flex-col w-full gap-4">
+        <fieldset
+          className="flex flex-col w-full gap-4"
+          disabled={!selectedRecipient}
+        >
           <button
             type="button"
             className="group h-full w-full"

@@ -10,6 +10,7 @@ import {
 } from "../ui/form";
 import { z } from "zod";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
@@ -18,14 +19,26 @@ import { useAuth, useSession } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { UserPlus2Icon, Trash2Icon } from "lucide-react";
 import { useEffect, useCallback, useState } from "react";
-import { UserPlus2Icon, CircleMinusIcon } from "lucide-react";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
-import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   email: z.string().email(),
 });
+
+const RECIPIENT_COLORS = [
+  "#FF6B6B",
+  "#4ECDC4",
+  "#45B7D1",
+  "#96CEB4",
+  "#FFEEAD",
+  "#D4A5A5",
+  "#9B59B6",
+  "#3498DB",
+  "#E74C3C",
+  "#2ECC71",
+] as const;
 
 const RecipientsForm = ({ documentId }: { documentId: string }) => {
   const { userId } = useAuth();
@@ -71,12 +84,21 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
           filter: `document_id=eq.${documentId}`,
         },
         (payload) => {
-          console.log("Change received!", payload);
-          fetchDocumentRecipients();
+          if (payload.eventType === "INSERT") {
+            setRecipients((prev) => [
+              ...prev,
+              payload.new as Database["public"]["Tables"]["recipients"]["Row"],
+            ]);
+          } else if (payload.eventType === "DELETE") {
+            setRecipients((prev) =>
+              prev.filter((recipient) => recipient.id !== payload.old.id)
+            );
+          }
         }
       )
       .subscribe();
 
+    // Initial fetch of recipients
     const fetchDocumentRecipients = async () => {
       const { data, error } = await supabase
         .from("recipients")
@@ -86,11 +108,11 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
       if (error) {
         toast.error("Failed to fetch document recipients");
         console.log(error);
+        return;
       }
 
       if (data) {
         setRecipients(data);
-        console.log(data);
       }
     };
 
@@ -112,42 +134,53 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
       }
 
       // Check if recipient already exists
-      const { data: existingRecipient } = await supabase
+      const { data: existingRecipients, error: existingError } = await supabase
         .from("recipients")
         .select("*")
         .eq("document_id", documentId)
-        .eq("email", values.email)
-        .single();
+        .eq("email", values.email);
 
-      if (existingRecipient) {
+      if (existingError) {
+        toast.error("Failed to check existing recipients");
+        console.log(existingError);
+        return;
+      }
+
+      if (existingRecipients && existingRecipients.length > 0) {
         toast.error("This recipient has already been added");
         return;
       }
 
       // Check if user exists with this email
-      const { data: existingUser } = await supabase
+      const { data: existingUsers, error: existingUserError } = await supabase
         .from("users")
         .select("clerk_id")
-        .eq("email", values.email)
-        .single();
+        .eq("email", values.email);
+
+      if (existingUserError) {
+        toast.error("Failed to check existing users");
+        console.log(existingUserError);
+        return;
+      }
+
+      // Get currently used colors
+      const usedColors = new Set(
+        recipients.map((recipient) => recipient.color)
+      );
+
+      // Filter out used colors and pick a random one from remaining
+      const availableColors = RECIPIENT_COLORS.filter(
+        (color) => !usedColors.has(color)
+      );
+      const randomColor =
+        availableColors[Math.floor(Math.random() * availableColors.length)];
 
       const { error } = await supabase.from("recipients").insert({
         email: values.email,
         document_id: documentId,
         user_id: userId ?? "",
-        recipient_id: existingUser?.clerk_id ?? null,
-        color: [
-          "#FF6B6B",
-          "#4ECDC4",
-          "#45B7D1",
-          "#96CEB4",
-          "#FFEEAD",
-          "#D4A5A5",
-          "#9B59B6",
-          "#3498DB",
-          "#E74C3C",
-          "#2ECC71",
-        ][Math.floor(Math.random() * 10)],
+        account_id: existingUsers?.[0]?.clerk_id ?? null,
+        color: randomColor,
       });
 
       if (error) {
@@ -166,6 +199,14 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
 
   const handleDelete = async (recipientId: string) => {
     try {
+      // Optimistically update UI
+      setRecipients((prev) => prev.filter((r) => r.id !== recipientId));
+
+      // If this recipient was selected, deselect it
+      if (selectedRecipient?.id === recipientId) {
+        setSelectedRecipient(null);
+      }
+
       const supabase = createClerkSupabaseClient();
       const { error } = await supabase
         .from("recipients")
@@ -173,11 +214,21 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
         .eq("id", recipientId);
 
       if (error) {
+        // Revert optimistic update on error
+        const supabase = createClerkSupabaseClient();
+        const { data } = await supabase
+          .from("recipients")
+          .select("*")
+          .eq("document_id", documentId);
+
+        if (data) {
+          setRecipients(data);
+        }
         toast.error("Failed to delete signer");
         console.log(error);
+      } else {
+        toast.success("Signer deleted successfully");
       }
-
-      toast.success("Signer deleted successfully");
     } catch (error) {
       console.log(error);
       toast.error("Failed to delete signer");
@@ -270,7 +321,7 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
             }}
             className="group"
           >
-            <CircleMinusIcon className="size-6 transition-all ease-in-out group-hover:text-red-500" />
+            <Trash2Icon className="size-5 text-muted-foreground transition-all ease-in-out group-hover:text-red-500" />
           </Button>
         </div>
       ))}

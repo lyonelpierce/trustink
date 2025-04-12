@@ -37,7 +37,7 @@ export const ZAddFieldsFormSchema = z.object({
       nativeId: z.number().optional(),
       type: z.enum(FIELD_TYPES),
       secondary_id: z.string().min(1),
-      signerEmail: z.string(),
+      recipient_id: z.string(),
       pageNumber: z.number().min(1),
       pageX: z.number(),
       pageY: z.number(),
@@ -53,11 +53,11 @@ export type TAddFieldsFormSchema = {
     formId: string;
     nativeId?: number;
     secondary_id: string;
-    signerEmail: string;
     pageNumber: number;
     pageX: number;
     pageY: number;
     pageWidth: number;
     pageHeight: number;
+    recipient_id: string;
   }[];
 };

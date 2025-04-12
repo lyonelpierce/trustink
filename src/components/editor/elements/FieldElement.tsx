@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Database } from "../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
+import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 
 type Field = {
   pageNumber: number;
@@ -67,6 +68,8 @@ export const FieldItem = ({
   });
   const [settingsActive, setSettingsActive] = useState(false);
   const $el = useRef(null);
+
+  const { selectedRecipient } = useSelectedRecipientStore();
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
@@ -187,7 +190,7 @@ export const FieldItem = ({
       <Card
         className={cn("bg-field-card/80 h-full w-full backdrop-blur-[1px]", {
           "border-field-card-border": !disabled,
-          "border-field-card-border/80": active,
+          "border-none": active,
         })}
         onClick={(e) => {
           e.stopPropagation();
