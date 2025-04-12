@@ -290,41 +290,47 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
           </Button>
         </form>
       </Form>
-      {recipients.map((recipient) => (
-        <div
-          className={cn(
-            "flex items-center justify-between gap-2 p-4 border rounded-lg shadow-sm bg-white cursor-pointer transition-all ease-in-out",
-            selectedRecipient?.id === recipient.id && "ring-2 ring-black"
-          )}
-          key={recipient.id}
-          onClick={() => handleRecipientClick(recipient)}
-        >
-          <div className="flex items-center gap-2">
-            <Avatar className="w-10 h-10">
-              <AvatarFallback
-                className="uppercase"
-                style={{ backgroundColor: recipient.color }}
-              >
-                {recipient.email.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <p className="font-medium text-sm">{recipient.email}</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(recipient.id);
-            }}
-            className="group"
-          >
-            <Trash2Icon className="size-5 text-muted-foreground transition-all ease-in-out group-hover:text-red-500" />
-          </Button>
+      <div className="flex flex-col gap-4 ">
+        <div className="flex flex-col gap-0">
+          <p className="text-lg font-medium">Select a signer</p>
+          <p className="text-xs text-gray-500">Select a signer to add fields</p>
         </div>
-      ))}
+        {recipients.map((recipient) => (
+          <div
+            className={cn(
+              "flex items-center justify-between gap-2 p-4 border rounded-lg shadow-sm bg-white cursor-pointer transition-all ease-in-out",
+              selectedRecipient?.id === recipient.id && "ring-2 ring-black"
+            )}
+            key={recipient.id}
+            onClick={() => handleRecipientClick(recipient)}
+          >
+            <div className="flex items-center gap-2">
+              <Avatar className="w-10 h-10">
+                <AvatarFallback
+                  className="uppercase"
+                  style={{ backgroundColor: recipient.color }}
+                >
+                  {recipient.email.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <p className="font-medium text-sm">{recipient.email}</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(recipient.id);
+              }}
+              className="group"
+            >
+              <Trash2Icon className="size-5 text-muted-foreground transition-all ease-in-out group-hover:text-red-500" />
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
