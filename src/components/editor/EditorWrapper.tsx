@@ -29,7 +29,7 @@ const EditorWrapper = ({
         <div className="flex gap-4 justify-center pt-20 relative p-4">
           <div className="sticky top-20 z-[60] w-96 h-min rounded-lg">
             <div className="flex flex-col gap-2 border bg-white rounded-lg p-4">
-              <p className="text-lg font-medium">Add Signers</p>
+              <p className="text-base font-medium">Add Signers</p>
               <div className="flex flex-row gap-2">
                 <Input placeholder="Email" className="w-3/5" />
                 <Input placeholder="Name" className="w-2/5" />
