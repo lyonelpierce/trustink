@@ -76,11 +76,11 @@ const Elements = ({
     width: 0,
   });
 
-  // Add a state to track if fields should be rendered
-  const [shouldRenderFields, setShouldRenderFields] = useState(false);
-
   // Add a state to track if a field is being deleted
   const [isDeletingField, setIsDeletingField] = useState(false);
+
+  // Add this new state to track PDF readiness
+  const [isPdfReady, setIsPdfReady] = useState(false);
 
   function createClerkSupabaseClient() {
     return createClient(
@@ -123,20 +123,6 @@ const Elements = ({
     control,
     name: "fields",
   });
-
-  // Add useEffect to delay field rendering until PDF is loaded
-  useEffect(() => {
-    if (isDocumentPdfLoaded) {
-      // Small delay to ensure PDF is fully rendered
-      const timer = setTimeout(() => {
-        setShouldRenderFields(true);
-      }, 300);
-
-      return () => clearTimeout(timer);
-    } else {
-      setShouldRenderFields(false);
-    }
-  }, [isDocumentPdfLoaded]);
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -380,15 +366,22 @@ const Elements = ({
         return;
       }
 
-      fieldBounds.current = {
-        height: Math.max(DEFAULT_HEIGHT_PX),
-        width: Math.max(DEFAULT_WIDTH_PX),
-      };
+      // Check if the PDF page has actual dimensions
+      const { height, width } = $page.getBoundingClientRect();
+      if (height > 0 && width > 0) {
+        setIsPdfReady(true);
+
+        fieldBounds.current = {
+          height: Math.max(DEFAULT_HEIGHT_PX),
+          width: Math.max(DEFAULT_WIDTH_PX),
+        };
+      }
     });
 
     observer.observe(document.body, {
       childList: true,
       subtree: true,
+      attributes: true, // Also observe attribute changes
     });
 
     return () => {
@@ -421,7 +414,7 @@ const Elements = ({
         </div>
       )}
 
-      {isDocumentPdfLoaded && shouldRenderFields && (
+      {isDocumentPdfLoaded && isPdfReady && (
         <div>
           {localFields.map((field, index) => (
             <FieldItem
