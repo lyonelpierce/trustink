@@ -1,16 +1,6 @@
 "use client";
 
 import {
-  FRIENDLY_FIELD_TYPE,
-  TAddFieldsFormSchema,
-} from "@/constants/FieldTypes";
-import { cn } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
-import { CardContent } from "@/components/ui/card";
-import { Database } from "../../../../database.types";
-import { useFieldArray, useForm } from "react-hook-form";
-import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-import {
   MailIcon,
   TypeIcon,
   User2Icon,
@@ -20,14 +10,45 @@ import {
   CircleDotIcon,
   SquareCheckIcon,
 } from "lucide-react";
+import {
+  FRIENDLY_FIELD_TYPE,
+  TAddFieldsFormSchema,
+} from "@/constants/FieldTypes";
+import { nanoid } from "nanoid";
+import { cn } from "@/lib/utils";
+import { v4 as uuidv4 } from "uuid";
 import { FieldItem } from "./FieldElement";
 import { useSession } from "@clerk/nextjs";
+import { Card } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { createClient } from "@supabase/supabase-js";
+import { Database } from "../../../../database.types";
+import { useFieldArray, useForm } from "react-hook-form";
+import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 
+const MIN_HEIGHT_PX = 12;
+const MIN_WIDTH_PX = 36;
+
+const DEFAULT_HEIGHT_PX = MIN_HEIGHT_PX * 2.5;
+const DEFAULT_WIDTH_PX = MIN_WIDTH_PX * 2.5;
+
 type FieldType = Database["public"]["Enums"]["field_type"];
+
+export type FieldFormType = {
+  nativeId?: number;
+  formId: string;
+  secondary_id: string;
+  pageNumber: number;
+  type: FieldType;
+  pageX: number;
+  pageY: number;
+  pageWidth: number;
+  pageHeight: number;
+  signerEmail: string;
+};
 
 const Elements = ({
   fields,
@@ -43,6 +64,7 @@ const Elements = ({
     useDocumentElement();
 
   const [selectedField, setSelectedField] = useState<FieldType | null>(null);
+
   const [isFieldWithinBounds, setIsFieldWithinBounds] = useState(false);
   const [coords, setCoords] = useState({
     x: 0,
@@ -50,12 +72,15 @@ const Elements = ({
   });
 
   const fieldBounds = useRef({
-    height: 24,
-    width: 80,
+    height: 0,
+    width: 0,
   });
 
   // Add a state to track if fields should be rendered
   const [shouldRenderFields, setShouldRenderFields] = useState(false);
+
+  // Add a state to track if a field is being deleted
+  const [isDeletingField, setIsDeletingField] = useState(false);
 
   function createClerkSupabaseClient() {
     return createClient(
@@ -75,15 +100,16 @@ const Elements = ({
     defaultValues: {
       fields:
         fields?.map((field) => ({
-          formId: field.secondary_id ?? "",
           nativeId: field.id,
-          type: field.type as FieldType,
-          signerEmail: "",
+          formId: `${field.id}-${field.document_id}`,
+          secondary_id: field.secondary_id || uuidv4(),
           pageNumber: field.page,
+          type: field.type as FieldType,
           pageX: field.position_x,
           pageY: field.position_y,
           pageWidth: field.width,
           pageHeight: field.height,
+          signerEmail: "",
         })) || [],
     },
   });
@@ -169,10 +195,25 @@ const Elements = ({
       pageX -= fieldPageWidth / 2;
       pageY -= fieldPageHeight / 2;
 
+      const field = {
+        secondary_id: uuidv4(),
+        formId: nanoid(12),
+        type: selectedField,
+        pageNumber,
+        pageX,
+        pageY,
+        pageWidth: fieldPageWidth,
+        pageHeight: fieldPageHeight,
+        signerEmail: "",
+      };
+
+      append(field);
+
       try {
         const { data, error } = await client
           .from("fields")
           .insert({
+            secondary_id: field.secondary_id,
             type: selectedField,
             user_id: session?.user.id,
             document_id: documentId,
@@ -186,20 +227,6 @@ const Elements = ({
 
         if (error) throw error;
         if (!data || data.length === 0) throw new Error("No data returned");
-
-        const insertedField = data[0];
-
-        append({
-          formId: insertedField.secondary_id,
-          nativeId: insertedField.id,
-          type: selectedField,
-          pageNumber,
-          pageX,
-          pageY,
-          pageWidth: fieldPageWidth,
-          pageHeight: fieldPageHeight,
-          signerEmail: "",
-        });
 
         setIsFieldWithinBounds(false);
         setSelectedField(null);
@@ -248,7 +275,7 @@ const Elements = ({
             width: pageWidth,
             height: pageHeight,
           })
-          .eq("id", field.nativeId);
+          .eq("secondary_id", field.secondary_id);
 
         if (error) throw error;
 
@@ -289,7 +316,7 @@ const Elements = ({
             position_x: pageX,
             position_y: pageY,
           })
-          .eq("id", field.nativeId);
+          .eq("secondary_id", field.secondary_id);
 
         if (error) throw error;
 
@@ -309,24 +336,28 @@ const Elements = ({
   // Add new handler for field removal
   const handleFieldRemove = useCallback(
     async (index: number) => {
+      if (isDeletingField) return; // Prevent multiple simultaneous deletions
+
       const field = localFields[index];
 
       try {
+        setIsDeletingField(true);
+
         const { error } = await client
           .from("fields")
           .delete()
-          .eq("id", field.nativeId);
+          .eq("secondary_id", field.secondary_id);
 
         if (error) throw error;
 
-        // Remove from local state after successful DB deletion
         remove(index);
       } catch (error) {
         console.error("Error removing field:", error);
-        // You might want to show an error toast here
+      } finally {
+        setIsDeletingField(false);
       }
     },
-    [client, localFields, remove]
+    [client, localFields, remove, isDeletingField]
   );
 
   useEffect(() => {
@@ -341,17 +372,68 @@ const Elements = ({
     };
   }, [onMouseClick, onMouseMove, selectedField]);
 
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const $page = document.querySelector(PDF_VIEWER_PAGE_SELECTOR);
+
+      if (!$page) {
+        return;
+      }
+
+      fieldBounds.current = {
+        height: Math.max(DEFAULT_HEIGHT_PX),
+        width: Math.max(DEFAULT_WIDTH_PX),
+      };
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <div className="flex flex-col">
+      {selectedField && (
+        <div
+          className={cn(
+            "text-muted-foreground border-2 rounded-md dark:text-muted-background pointer-events-none fixed z-50 flex cursor-pointer flex-col items-center justify-center bg-white transition transition-discrete duration-200 [container-type:size]",
+            {
+              "-rotate-6 scale-90 rounded-md border-red-500 opacity-50 dark:bg-black/20":
+                !isFieldWithinBounds,
+              "dark:text-black/60 border-green-500": isFieldWithinBounds,
+            }
+          )}
+          style={{
+            top: coords.y,
+            left: coords.x,
+            height: fieldBounds.current.height,
+            width: fieldBounds.current.width,
+          }}
+        >
+          <span className="text-[clamp(0.425rem,25cqw,0.825rem)]">
+            {FRIENDLY_FIELD_TYPE[selectedField as FieldType]}
+          </span>
+        </div>
+      )}
+
       {isDocumentPdfLoaded && shouldRenderFields && (
         <div>
           {localFields.map((field, index) => (
             <FieldItem
-              key={field.nativeId}
+              key={index}
               field={field}
-              minHeight={fieldBounds.current.height}
-              minWidth={fieldBounds.current.width}
+              disabled={false}
+              minHeight={MIN_HEIGHT_PX}
+              minWidth={MIN_WIDTH_PX}
+              defaultHeight={DEFAULT_HEIGHT_PX}
+              defaultWidth={DEFAULT_WIDTH_PX}
               passive={isFieldWithinBounds && !!selectedField}
+              active={selectedField === field.formId}
               onResize={(node) => onFieldResize(node, index)}
               onMove={(node) => onFieldMove(node, index)}
               onRemove={() => handleFieldRemove(index)}
@@ -359,34 +441,6 @@ const Elements = ({
           ))}
         </div>
       )}
-      <div>
-        {selectedField && (
-          <Card
-            className={cn(
-              "bg-field-card/80 pointer-events-none fixed z-50 cursor-pointer border-2 backdrop-blur-[1px] transition-transform transition-discrete duration-300 ease-in-out",
-              {
-                "border-green-500": isFieldWithinBounds,
-                "border-red-500 opacity-50 -rotate-12": !isFieldWithinBounds,
-              }
-            )}
-            style={{
-              top: coords.y,
-              left: coords.x,
-              height: fieldBounds.current.height,
-              width: fieldBounds.current.width,
-            }}
-          >
-            <CardContent
-              className={cn(
-                "text-field-card-foreground flex w-20 font-medium h-6 text-xs rounded-md items-center justify-center p-2 transition-all duration-300",
-                selectedField === "signature" && "font-tangerine text-2xl"
-              )}
-            >
-              {FRIENDLY_FIELD_TYPE[selectedField]}
-            </CardContent>
-          </Card>
-        )}
-      </div>
       <div className="flex-1 overflow-y-auto px-2">
         <fieldset className="grid grid-cols-2 w-full gap-4">
           <button

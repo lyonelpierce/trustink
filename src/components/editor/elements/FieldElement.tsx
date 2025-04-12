@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Rnd } from "react-rnd";
 import { Trash } from "lucide-react";
@@ -20,6 +20,7 @@ type Field = {
   pageHeight: number;
   pageWidth: number;
   type: Database["public"]["Enums"]["field_type"][number];
+  nativeId?: number;
   // Add other field properties as needed
 };
 
@@ -29,32 +30,43 @@ export type FieldItemProps = {
   disabled?: boolean;
   minHeight?: number;
   minWidth?: number;
+  defaultHeight?: number;
+  defaultWidth?: number;
   onResize?: (_node: HTMLElement) => void;
   onMove?: (_node: HTMLElement) => void;
   onRemove?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  active?: boolean;
+  onFieldDeactivate?: () => void;
+  onFieldActivate?: () => void;
 };
 
 export const FieldItem = ({
   field,
   passive,
   disabled,
+  minHeight,
+  minWidth,
+  defaultHeight,
+  defaultWidth,
+  active,
   onResize,
   onMove,
   onRemove,
+  onFieldDeactivate,
+  onFieldActivate,
+  onBlur,
+  onFocus,
 }: FieldItemProps) => {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const [active, setActive] = useState(false);
   const [coords, setCoords] = useState({
     pageX: 0,
     pageY: 0,
-    pageHeight: 0,
-    pageWidth: 0,
+    pageHeight: defaultHeight || 0,
+    pageWidth: defaultWidth || 0,
   });
+  const [settingsActive, setSettingsActive] = useState(false);
+  const $el = useRef(null);
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
@@ -107,17 +119,42 @@ export const FieldItem = ({
     };
   }, [calculateCoords]);
 
-  if (!isMounted) {
-    return null;
-  }
+  useEffect(() => {
+    const onClickOutsideOfField = (event: MouseEvent) => {
+      const isOutsideOfField =
+        $el.current && !event.composedPath().includes($el.current);
+
+      setSettingsActive((active) => {
+        if (active && isOutsideOfField) {
+          return false;
+        }
+
+        return active;
+      });
+
+      if (isOutsideOfField) {
+        setSettingsActive(false);
+        onFieldDeactivate?.();
+        onBlur?.();
+      }
+    };
+
+    document.body.addEventListener("click", onClickOutsideOfField);
+
+    return () => {
+      document.body.removeEventListener("click", onClickOutsideOfField);
+    };
+  }, [onBlur, onFieldDeactivate]);
 
   return createPortal(
     <Rnd
       key={coords.pageX + coords.pageY + coords.pageHeight + coords.pageWidth}
-      className={cn("z-20 group", {
+      className={cn("group", {
         "pointer-events-none": passive,
-        "pointer-events-none opacity-75": disabled,
-        "z-10": !active || disabled,
+        "pointer-events-none cursor-not-allowed opacity-75": disabled,
+        "z-50": active && !disabled,
+        "z-20": !active && !disabled,
+        "z-10": disabled,
       })}
       // minHeight={minHeight}
       // minWidth={minWidth}
@@ -127,33 +164,39 @@ export const FieldItem = ({
         height: coords.pageHeight,
         width: coords.pageWidth,
       }}
+      minHeight={minHeight || "auto"}
+      minWidth={minWidth || "auto"}
       bounds={`${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.pageNumber}"]`}
-      onDragStart={() => setActive(true)}
-      onResizeStart={() => setActive(true)}
+      onDragStart={() => onFieldActivate?.()}
+      onResizeStart={() => onFieldActivate?.()}
       onResizeStop={(_e, _d, ref) => {
-        setActive(false);
+        onFieldDeactivate?.();
         onResize?.(ref);
       }}
       onDragStop={(_e, d) => {
-        setActive(false);
+        onFieldDeactivate?.();
         onMove?.(d.node);
       }}
+      resizeHandleStyles={{
+        bottom: { bottom: -8, cursor: "ns-resize" },
+        top: { top: -8, cursor: "ns-resize" },
+        left: { cursor: "ew-resize" },
+        right: { cursor: "ew-resize" },
+      }}
     >
-      {!disabled && (
-        <button
-          className="w-8 h-8 text-muted-foreground/50 hover:text-muted-foreground/80 bg-background absolute -right-2 top-6 z-20 flex cursor-pointer items-center justify-center rounded-full border"
-          onClick={() => onRemove?.()}
-          onTouchEnd={() => onRemove?.()}
-        >
-          <Trash className="h-4 w-4" />
-        </button>
-      )}
-
       <Card
         className={cn("bg-field-card/80 h-full w-full backdrop-blur-[1px]", {
           "border-field-card-border": !disabled,
           "border-field-card-border/80": active,
         })}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSettingsActive((prev) => !prev);
+          onFieldActivate?.();
+          onFocus?.();
+        }}
+        ref={$el}
+        data-field-id={field.nativeId}
       >
         <CardContent
           className={cn(
@@ -171,6 +214,20 @@ export const FieldItem = ({
           </p> */}
         </CardContent>
       </Card>
+
+      {!disabled && settingsActive && (
+        <div className="z-[60] mt-1 flex justify-center">
+          <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
+            <button
+              className="dark:text-muted-foreground/50 dark:hover:text-muted-foreground dark:hover:bg-foreground/10 rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
+              onClick={onRemove}
+              onTouchEnd={onRemove}
+            >
+              <Trash className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      )}
     </Rnd>,
     document.body
   );
