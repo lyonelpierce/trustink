@@ -24,13 +24,13 @@ const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   return data;
 };
 
-export const generateMetadata = async ({
-  params,
-}: {
-  params: { id: string };
+export const generateMetadata = async (props: {
+  params: Promise<{ id: string }>;
 }) => {
+  const { id } = await props.params;
+
   const supabase = createServerSupabaseClient();
-  const document = await getDocumentData(supabase, params.id);
+  const document = await getDocumentData(supabase, id);
 
   return {
     title: document.documents.name,

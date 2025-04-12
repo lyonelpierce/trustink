@@ -22,10 +22,7 @@ export type OnPDFViewerPageClick = (_event: {
 
 export type LoadedPDFDocument = PDFDocumentProxy;
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.js",
-  import.meta.url
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 
 const PDFLoader = () => {
   return (
