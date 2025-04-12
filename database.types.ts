@@ -303,6 +303,83 @@ export type Database = {
           },
         ]
       }
+      recipients: {
+        Row: {
+          color: string
+          created_at: string
+          deleted_at: string
+          document_id: string
+          email: string
+          id: string
+          is_read: boolean
+          is_send: boolean
+          is_signed: boolean
+          recipient_id: string | null
+          signature_id: string | null
+          signed_at: string
+          user_id: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          deleted_at?: string
+          document_id: string
+          email: string
+          id?: string
+          is_read?: boolean
+          is_send?: boolean
+          is_signed?: boolean
+          recipient_id?: string | null
+          signature_id?: string | null
+          signed_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          deleted_at?: string
+          document_id?: string
+          email?: string
+          id?: string
+          is_read?: boolean
+          is_send?: boolean
+          is_signed?: boolean
+          recipient_id?: string | null
+          signature_id?: string | null
+          signed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipients_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipients_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["clerk_id"]
+          },
+          {
+            foreignKeyName: "recipients_signature_id_fkey"
+            columns: ["signature_id"]
+            isOneToOne: false
+            referencedRelation: "signatures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["clerk_id"]
+          },
+        ]
+      }
       revision_comments: {
         Row: {
           comment: string

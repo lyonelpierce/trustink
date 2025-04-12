@@ -62,7 +62,9 @@ const SingleDocumentPage = async (props: {
   const fields = await getDocumentFields(supabase, id);
 
   return (
-    <EditorWrapper document={document} key={document.id} fields={fields} />
+    <div className="bg-gray-50">
+      <EditorWrapper document={document} key={document.id} fields={fields} />
+    </div>
   );
 };
 
