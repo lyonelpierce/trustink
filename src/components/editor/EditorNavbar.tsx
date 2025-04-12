@@ -1,12 +1,12 @@
-import Logo from "../Logo";
+import Logo from "@/components/Logo";
 import Link from "next/link";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import DocumentName from "./DocumentName";
 import { SendIcon, ChevronLeftIcon } from "lucide-react";
 
 const EditorNavbar = ({ documentName }: { documentName: string }) => {
   return (
-    <div className="h-14 flex items-center justify-between px-4 fixed top-0 z-[60] w-full backdrop-blur-3xl border-b">
+    <div className="h-14 flex items-center justify-between px-4 fixed top-0 z-[60] w-full backdrop-blur-3xl border-b bg-white/40">
       <div className="flex items-center gap-2">
         <Link href="/documents" className="flex items-center gap-2">
           <ChevronLeftIcon />

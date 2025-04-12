@@ -1,17 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
 import EditorNavbar from "./EditorNavbar";
 import { Database } from "../../../database.types";
-import { Textarea } from "@/components/ui/textarea";
 import Elements from "@/components/editor/elements/Elements";
 import { LazyPDFViewerNoLoader } from "@/components/editor/LazyPDFViewer";
+import { Button } from "../ui/button";
+import { UserPlus2Icon } from "lucide-react";
+import { Input } from "../ui/input";
 
 const EditorWrapper = ({
   document,
@@ -29,48 +25,34 @@ const EditorWrapper = ({
   return (
     <>
       <EditorNavbar documentName={document.documents.name} />
-
-      <div className="flex">
-        <div className="w-1/6 fixed left-0 top-0 border-r h-full pt-14 z-50">
-          <Accordion
-            type="multiple"
-            defaultValue={["fields"]}
-            className="border-b"
-          >
-            <AccordionItem value="fields">
-              <AccordionTrigger className="cursor-pointer px-4 hover:no-underline border-b rounded-none">
-                Fields
-              </AccordionTrigger>
-              <AccordionContent className="p-4">
-                <Elements
-                  fields={fields}
-                  documentId={document.document_id}
-                  isDocumentPdfLoaded={isDocumentPdfLoaded}
-                />
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="advanced">
-              <AccordionTrigger className="cursor-pointer px-4 hover:no-underline border-b rounded-none">
-                Advanced
-              </AccordionTrigger>
-              <AccordionContent className="p-4">
-                <div>Advanced</div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-        <div className="flex-1 flex items-center justify-center pt-20">
-          <div className="w-1/6" />
-          <div className="w-2/5">
+      <div className="mx-auto max-w-[90rem]">
+        <div className="flex gap-4 justify-center pt-20 relative p-4">
+          <div className="sticky top-20 z-[60] w-96 h-min rounded-lg">
+            <div className="flex flex-col gap-2 border bg-white rounded-lg p-4">
+              <p className="text-lg font-medium">Add Signers</p>
+              <div className="flex flex-row gap-2">
+                <Input placeholder="Email" className="w-3/5" />
+                <Input placeholder="Name" className="w-2/5" />
+              </div>
+              <Button className="w-full rounded-lg">
+                <UserPlus2Icon />
+                Add Signer
+              </Button>
+            </div>
+          </div>
+          <div className="w-3/5">
             <LazyPDFViewerNoLoader
               documentData={document}
               onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
             />
           </div>
-          <div className="w-1/6" />
-        </div>
-        <div className="fixed right-0 border-l h-full top-0 w-1/6 p-4 pt-20 z-50">
-          <Textarea />
+          <div className="sticky top-20 z-[60] w-96 h-min">
+            <Elements
+              fields={fields}
+              documentId={document.document_id}
+              isDocumentPdfLoaded={isDocumentPdfLoaded}
+            />
+          </div>
         </div>
       </div>
     </>

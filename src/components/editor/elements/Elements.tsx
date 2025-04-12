@@ -435,7 +435,7 @@ const Elements = ({
         </div>
       )}
       <div className="flex-1 overflow-y-auto px-2">
-        <fieldset className="grid grid-cols-2 w-full gap-4">
+        <fieldset className="flex flex-col w-full gap-4">
           <button
             type="button"
             className="group h-full w-full"

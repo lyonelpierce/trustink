@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 
 import { cn } from "@/lib/utils";
-import { Database } from "../../../../database.types";
+import { Database } from "../../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 
