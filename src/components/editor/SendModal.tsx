@@ -37,7 +37,13 @@ const formSchema = z.object({
   access: z.enum(["public", "private"]),
 });
 
-const SendModal = ({ documentName }: { documentName: string }) => {
+const SendModal = ({
+  documentName,
+  documentId,
+}: {
+  documentName: string;
+  documentId: string;
+}) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,7 +59,7 @@ const SendModal = ({ documentName }: { documentName: string }) => {
     try {
       setIsLoading(true);
 
-      const response = await fetch("/api/send-document", {
+      const response = await fetch(`/api/documents/${documentId}/send`, {
         method: "POST",
         body: JSON.stringify(data),
       });

@@ -28,7 +28,10 @@ const EditorWrapper = ({
 
   return (
     <>
-      <EditorNavbar documentName={document.documents.name} />
+      <EditorNavbar
+        documentName={document.documents.name}
+        documentId={document.document_id}
+      />
       <div className="mx-auto max-w-[90rem] bg-gray-50">
         <div className="flex gap-4 justify-center pt-20 relative p-4">
           <div className="sticky top-20 z-[50] w-96 h-min rounded-lg">
