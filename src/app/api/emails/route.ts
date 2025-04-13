@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
   try {
-    const { emails } = await req.json();
+    const { emails, documentName } = await req.json();
 
     if (!Array.isArray(emails) || emails.length === 0) {
       return NextResponse.json(
@@ -18,12 +18,12 @@ export async function POST(req: NextRequest) {
       resend.emails.send({
         from: "Trustink <no-reply@trustink.dev>",
         to: email,
-        subject: `Document for Signature: [INSERT DOCUMENT NAME]`,
+        subject: `Document for Signature: ${documentName}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2>Document Ready for Signature</h2>
             <p>Hello,</p>
-            <p>You have received a new document to sign: <strong>[INSERT DOCUMENT NAME]</strong></p>
+            <p>You have received a new document to sign: <strong>${documentName}</strong></p>
             <p>Please log in to your Trustink account to review and sign the document.</p>
             <p>If you have any questions, please don't hesitate to contact support.</p>
             <p>Best regards,<br>The Trustink Team</p>

@@ -28,7 +28,8 @@ export async function POST(
         visibility: isPublic,
       })
       .eq("id", id)
-      .select();
+      .select()
+      .single();
 
     if (error) {
       console.error(error);
@@ -52,7 +53,7 @@ export async function POST(
           method: "POST",
           body: JSON.stringify({
             emails: recipients.map((recipient) => recipient.email),
-            document: document,
+            documentName: document.name,
           }),
         }
       );
