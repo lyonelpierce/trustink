@@ -31,7 +31,7 @@ const EditorWrapper = ({
       <EditorNavbar documentName={document.documents.name} />
       <div className="mx-auto max-w-[90rem] bg-gray-50">
         <div className="flex gap-4 justify-center pt-20 relative p-4">
-          <div className="sticky top-20 z-[60] w-96 h-min rounded-lg">
+          <div className="sticky top-20 z-[50] w-96 h-min rounded-lg">
             <RecipientsForm documentId={document.document_id} />
           </div>
           <div className="w-3/5">
@@ -40,7 +40,7 @@ const EditorWrapper = ({
               onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
             />
           </div>
-          <div className="sticky top-20 z-[60] w-96 h-min">
+          <div className="sticky top-20 z-[50] w-96 h-min">
             <Elements
               fields={fields}
               documentId={document.document_id}

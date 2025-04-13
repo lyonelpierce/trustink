@@ -1,12 +1,12 @@
 import Link from "next/link";
+import SendModal from "./SendModal";
 import Logo from "@/components/Logo";
 import DocumentName from "./DocumentName";
-import { Button } from "@/components/ui/button";
-import { SendIcon, ChevronLeftIcon } from "lucide-react";
+import { ChevronLeftIcon } from "lucide-react";
 
 const EditorNavbar = ({ documentName }: { documentName: string }) => {
   return (
-    <div className="h-14 flex items-center justify-between px-4 fixed top-0 z-[60] w-full backdrop-blur-3xl border-b bg-white/40">
+    <div className="h-14 flex items-center justify-between px-4 fixed top-0 z-[50] w-full backdrop-blur-3xl border-b bg-white/40">
       <div className="flex items-center justify-start gap-2 w-1/3">
         <Link href="/documents" className="flex items-center gap-2">
           <ChevronLeftIcon />
@@ -17,10 +17,7 @@ const EditorNavbar = ({ documentName }: { documentName: string }) => {
         <DocumentName documentName={documentName} />
       </div>
       <div className="w-1/3 flex justify-end items-center">
-        <Button className="w-24">
-          <SendIcon />
-          Send
-        </Button>
+        <SendModal documentName={documentName} />
       </div>
     </div>
   );
