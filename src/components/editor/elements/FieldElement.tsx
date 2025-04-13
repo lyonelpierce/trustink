@@ -13,19 +13,8 @@ import { Database } from "../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 
-type Field = {
-  pageNumber: number;
-  pageX: number;
-  pageY: number;
-  pageHeight: number;
-  pageWidth: number;
-  type: Database["public"]["Enums"]["field_type"][number];
-  nativeId?: number;
-  // Add other field properties as needed
-};
-
 export type FieldItemProps = {
-  field: Field;
+  field: Database["public"]["Tables"]["fields"]["Row"];
   passive?: boolean;
   disabled?: boolean;
   minHeight?: number;
@@ -70,7 +59,7 @@ export const FieldItem = ({
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
-      `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.pageNumber}"]`
+      `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
     );
 
     if (!$page) {
@@ -83,11 +72,11 @@ export const FieldItem = ({
     const left = $page.getBoundingClientRect().left + window.scrollX;
 
     // X and Y are percentages of the page's height and width
-    const pageX = (field.pageX / 100) * width + left;
-    const pageY = (field.pageY / 100) * height + top;
+    const pageX = (field.position_x / 100) * width + left;
+    const pageY = (field.position_y / 100) * height + top;
 
-    const pageHeight = (field.pageHeight / 100) * height;
-    const pageWidth = (field.pageWidth / 100) * width;
+    const pageHeight = (field.height / 100) * height;
+    const pageWidth = (field.width / 100) * width;
 
     setCoords({
       pageX: pageX,
@@ -96,11 +85,11 @@ export const FieldItem = ({
       pageWidth: pageWidth,
     });
   }, [
-    field.pageHeight,
-    field.pageNumber,
-    field.pageWidth,
-    field.pageX,
-    field.pageY,
+    field.height,
+    field.width,
+    field.page,
+    field.position_x,
+    field.position_y,
   ]);
 
   useEffect(() => {
@@ -166,7 +155,7 @@ export const FieldItem = ({
       }}
       minHeight={minHeight || "auto"}
       minWidth={minWidth || "auto"}
-      bounds={`${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.pageNumber}"]`}
+      bounds={`${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`}
       onDragStart={() => onFieldActivate?.()}
       onResizeStart={() => onFieldActivate?.()}
       onResizeStop={(_e, _d, ref) => {
@@ -196,7 +185,7 @@ export const FieldItem = ({
           onFocus?.();
         }}
         ref={$el}
-        data-field-id={field.nativeId}
+        data-field-id={field.id}
       >
         <CardContent
           className={cn(

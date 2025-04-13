@@ -252,6 +252,7 @@ export type Database = {
           page: number
           position_x: number
           position_y: number
+          recipient_id: string | null
           secondary_id: string | null
           type: Database["public"]["Enums"]["field_type"]
           updated_at: string
@@ -266,6 +267,7 @@ export type Database = {
           page: number
           position_x?: number
           position_y?: number
+          recipient_id?: string | null
           secondary_id?: string | null
           type?: Database["public"]["Enums"]["field_type"]
           updated_at?: string
@@ -280,6 +282,7 @@ export type Database = {
           page?: number
           position_x?: number
           position_y?: number
+          recipient_id?: string | null
           secondary_id?: string | null
           type?: Database["public"]["Enums"]["field_type"]
           updated_at?: string
@@ -295,6 +298,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fields_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "recipients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fields_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -305,6 +315,7 @@ export type Database = {
       }
       recipients: {
         Row: {
+          account_id: string | null
           color: string
           created_at: string
           deleted_at: string
@@ -314,12 +325,12 @@ export type Database = {
           is_read: boolean
           is_send: boolean
           is_signed: boolean
-          recipient_id: string | null
           signature_id: string | null
           signed_at: string
           user_id: string
         }
         Insert: {
+          account_id?: string | null
           color: string
           created_at?: string
           deleted_at?: string
@@ -329,12 +340,12 @@ export type Database = {
           is_read?: boolean
           is_send?: boolean
           is_signed?: boolean
-          recipient_id?: string | null
           signature_id?: string | null
           signed_at?: string
           user_id: string
         }
         Update: {
+          account_id?: string | null
           color?: string
           created_at?: string
           deleted_at?: string
@@ -344,25 +355,24 @@ export type Database = {
           is_read?: boolean
           is_send?: boolean
           is_signed?: boolean
-          recipient_id?: string | null
           signature_id?: string | null
           signed_at?: string
           user_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "recipients_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["clerk_id"]
+          },
+          {
             foreignKeyName: "recipients_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipients_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["clerk_id"]
           },
           {
             foreignKeyName: "recipients_signature_id_fkey"

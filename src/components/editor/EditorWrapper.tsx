@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import EditorNavbar from "./EditorNavbar";
+import RecipientsForm from "./RecipientsForm";
 import { Database } from "../../../database.types";
 import Elements from "@/components/editor/elements/Elements";
 import { LazyPDFViewerNoLoader } from "@/components/editor/LazyPDFViewer";
-import RecipientsForm from "./RecipientsForm";
 
 const EditorWrapper = ({
   document,

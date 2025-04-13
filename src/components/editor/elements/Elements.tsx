@@ -10,21 +10,15 @@ import {
   CircleDotIcon,
   SquareCheckIcon,
 } from "lucide-react";
-import {
-  FRIENDLY_FIELD_TYPE,
-  TAddFieldsFormSchema,
-} from "@/constants/FieldTypes";
+import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 import { toast } from "sonner";
-import { nanoid } from "nanoid";
 import { cn } from "@/lib/utils";
-import { v4 as uuidv4 } from "uuid";
 import { FieldItem } from "./FieldElement";
 import { useSession } from "@clerk/nextjs";
 import { Card } from "@/components/ui/card";
 import { CardContent } from "@/components/ui/card";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../../../database.types";
-import { useFieldArray, useForm } from "react-hook-form";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -65,6 +59,9 @@ const Elements = ({
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
 
+  const [currentFields, setCurrentFields] =
+    useState<Database["public"]["Tables"]["fields"]["Row"][]>(fields);
+
   const { selectedRecipient } = useSelectedRecipientStore();
 
   const [selectedField, setSelectedField] = useState<FieldType | null>(null);
@@ -86,7 +83,7 @@ const Elements = ({
   // Add this new state to track PDF readiness
   const [isPdfReady, setIsPdfReady] = useState(false);
 
-  function createClerkSupabaseClient() {
+  const createClerkSupabaseClient = useCallback(() => {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -96,37 +93,50 @@ const Elements = ({
         },
       }
     );
-  }
+  }, [session]);
 
   const client = createClerkSupabaseClient();
 
-  const { control } = useForm<TAddFieldsFormSchema>({
-    defaultValues: {
-      fields:
-        fields?.map((field) => ({
-          nativeId: field.id,
-          formId: `${field.id}-${field.document_id}`,
-          secondary_id: field.secondary_id || uuidv4(),
-          pageNumber: field.page,
-          type: field.type as FieldType,
-          pageX: field.position_x,
-          pageY: field.position_y,
-          pageWidth: field.width,
-          pageHeight: field.height,
-          recipient_id: selectedRecipient?.id,
-        })) || [],
-    },
-  });
+  useEffect(() => {
+    const client = createClerkSupabaseClient();
 
-  const {
-    append,
-    update,
-    remove,
-    fields: localFields,
-  } = useFieldArray({
-    control,
-    name: "fields",
-  });
+    const channel = client
+      .channel("fields")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "fields",
+          filter: `document_id=eq.${documentId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setCurrentFields((prev) => [
+              ...prev,
+              payload.new as Database["public"]["Tables"]["fields"]["Row"],
+            ]);
+          } else if (payload.eventType === "DELETE") {
+            setCurrentFields((prev) =>
+              prev.filter((field) => field.id !== payload.old.id)
+            );
+          } else if (payload.eventType === "UPDATE") {
+            setCurrentFields((prev) =>
+              prev.map((field) =>
+                field.id === payload.new.id
+                  ? (payload.new as Database["public"]["Tables"]["fields"]["Row"])
+                  : field
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [documentId, createClerkSupabaseClient]);
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -185,25 +195,10 @@ const Elements = ({
       pageX -= fieldPageWidth / 2;
       pageY -= fieldPageHeight / 2;
 
-      const field = {
-        secondary_id: uuidv4(),
-        formId: nanoid(12),
-        type: selectedField,
-        pageNumber,
-        pageX,
-        pageY,
-        pageWidth: fieldPageWidth,
-        pageHeight: fieldPageHeight,
-        recipient_id: selectedRecipient?.id ?? "",
-      };
-
-      append(field);
-
       try {
         const { data, error } = await client
           .from("fields")
           .insert({
-            secondary_id: field.secondary_id,
             type: selectedField,
             user_id: session?.user.id,
             document_id: documentId,
@@ -228,7 +223,6 @@ const Elements = ({
       }
     },
     [
-      append,
       isWithinPageBounds,
       selectedField,
       getPage,
@@ -241,10 +235,10 @@ const Elements = ({
 
   const onFieldResize = useCallback(
     async (node: HTMLElement, index: number) => {
-      const field = localFields[index];
+      const field = currentFields[index];
 
       const $page = window.document.querySelector<HTMLElement>(
-        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.pageNumber}"]`
+        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
       );
 
       if (!$page) {
@@ -273,26 +267,19 @@ const Elements = ({
         if (error) throw error;
 
         // Update local state
-        update(index, {
-          ...field,
-          pageX,
-          pageY,
-          pageWidth,
-          pageHeight,
-        });
       } catch (error) {
         console.error("Error updating field position and size:", error);
       }
     },
-    [getFieldPosition, localFields, update, client]
+    [getFieldPosition, client, currentFields]
   );
 
   const onFieldMove = useCallback(
     async (node: HTMLElement, index: number) => {
-      const field = localFields[index];
+      const field = currentFields[index];
 
       const $page = window.document.querySelector<HTMLElement>(
-        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.pageNumber}"]`
+        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
       );
 
       if (!$page) {
@@ -314,16 +301,11 @@ const Elements = ({
         if (error) throw error;
 
         // Update local state
-        update(index, {
-          ...field,
-          pageX,
-          pageY,
-        });
       } catch (error) {
         console.error("Error updating field position:", error);
       }
     },
-    [getFieldPosition, localFields, update, client]
+    [getFieldPosition, client, currentFields]
   );
 
   // Add new handler for field removal
@@ -331,7 +313,7 @@ const Elements = ({
     async (index: number) => {
       if (isDeletingField) return; // Prevent multiple simultaneous deletions
 
-      const field = localFields[index];
+      const field = currentFields[index];
 
       try {
         setIsDeletingField(true);
@@ -342,15 +324,13 @@ const Elements = ({
           .eq("secondary_id", field.secondary_id);
 
         if (error) throw error;
-
-        remove(index);
       } catch (error) {
         console.error("Error removing field:", error);
       } finally {
         setIsDeletingField(false);
       }
     },
-    [client, localFields, remove, isDeletingField]
+    [client, currentFields, isDeletingField]
   );
 
   useEffect(() => {
@@ -423,7 +403,7 @@ const Elements = ({
 
       {isDocumentPdfLoaded && isPdfReady && (
         <>
-          {localFields.map((field, index) => (
+          {currentFields.map((field, index) => (
             <FieldItem
               key={index}
               field={field}
@@ -436,7 +416,7 @@ const Elements = ({
               defaultHeight={DEFAULT_HEIGHT_PX}
               defaultWidth={DEFAULT_WIDTH_PX}
               passive={isFieldWithinBounds && !!selectedField}
-              active={selectedField === field.formId}
+              active={selectedField === field.type}
               onResize={(node) => onFieldResize(node, index)}
               onMove={(node) => onFieldMove(node, index)}
               onRemove={() => handleFieldRemove(index)}
