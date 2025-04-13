@@ -11,7 +11,13 @@ import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type FieldItemProps = {
-  field: Database["public"]["Tables"]["fields"]["Row"];
+  field: Database["public"]["Tables"]["fields"]["Row"] & {
+    recipients: {
+      id: string;
+      email: string;
+      color: string;
+    };
+  };
   passive?: boolean;
   disabled?: boolean;
   minHeight?: number;
@@ -142,8 +148,6 @@ export const FieldItem = ({
         "z-20": !active && !disabled,
         "z-10": disabled,
       })}
-      // minHeight={minHeight}
-      // minWidth={minWidth}
       default={{
         x: coords.pageX,
         y: coords.pageY,
@@ -171,10 +175,13 @@ export const FieldItem = ({
       }}
     >
       <Card
-        className={cn("bg-field-card/80 h-full w-full backdrop-blur-[1px]", {
-          "border-field-card-border": !disabled,
-          "border-none": active,
-        })}
+        className={cn(
+          "bg-field-card/80 h-full w-full backdrop-blur-[1px] group overflow-hidden transition-all ease-in-out",
+          {
+            "border-field-card-border": !disabled,
+            "border-none": active,
+          }
+        )}
         onClick={(e) => {
           e.stopPropagation();
           setSettingsActive((prev) => !prev);
@@ -184,12 +191,14 @@ export const FieldItem = ({
         ref={$el}
         data-field-id={field.id}
         style={{
-          boxShadow: field.color ? `0 0 0 2px ${field.color}` : "none",
+          border: field.recipients.color
+            ? `2px solid ${field.recipients.color}`
+            : "none",
         }}
       >
         <CardContent
           className={cn(
-            "text-field-card-foreground flex flex-col items-center justify-center p-2 bg-white w-full h-full rounded-md text-sm font-medium transition-all duration-300 ease-in-out",
+            "text-field-card-foreground rounded-b-none select-none flex flex-col items-center justify-center p-2 bg-white w-full h-full text-sm font-medium transition-all duration-300 ease-in-out",
             {
               "text-field-card-foreground/50": disabled,
               "font-tangerine text-3xl": field.type === "signature",
@@ -197,15 +206,12 @@ export const FieldItem = ({
           )}
         >
           {FRIENDLY_FIELD_TYPE[field.type]}
-
-          {/* <p className="w-full truncate text-center text-xs">
-            {field.signerEmail}
-          </p> */}
+          <p className="text-xs hidden">{field.recipients.email}</p>
         </CardContent>
       </Card>
 
       {!disabled && settingsActive && (
-        <div className="z-[60] mt-1 flex justify-center">
+        <div className="z-[60] flex justify-center items-center">
           <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
             <button
               className="cursor-pointer dark:text-muted-foreground/50 dark:hover:text-muted-foreground dark:hover:bg-foreground/10 rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"

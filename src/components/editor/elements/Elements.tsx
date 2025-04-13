@@ -51,7 +51,13 @@ const Elements = ({
   documentId,
   isDocumentPdfLoaded,
 }: {
-  fields: Database["public"]["Tables"]["fields"]["Row"][];
+  fields: (Database["public"]["Tables"]["fields"]["Row"] & {
+    recipients: {
+      id: string;
+      email: string;
+      color: string;
+    };
+  })[];
   documentId: string;
   isDocumentPdfLoaded: boolean;
 }) => {
@@ -59,8 +65,15 @@ const Elements = ({
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
 
-  const [currentFields, setCurrentFields] =
-    useState<Database["public"]["Tables"]["fields"]["Row"][]>(fields);
+  const [currentFields, setCurrentFields] = useState<
+    (Database["public"]["Tables"]["fields"]["Row"] & {
+      recipients: {
+        id: string;
+        email: string;
+        color: string;
+      };
+    })[]
+  >(fields);
 
   const { selectedRecipient } = useSelectedRecipientStore();
 
@@ -110,23 +123,51 @@ const Elements = ({
           table: "fields",
           filter: `document_id=eq.${documentId}`,
         },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setCurrentFields((prev) => [
-              ...prev,
-              payload.new as Database["public"]["Tables"]["fields"]["Row"],
-            ]);
+        async (payload) => {
+          if (
+            payload.eventType === "INSERT" ||
+            payload.eventType === "UPDATE"
+          ) {
+            // Fetch the full field data including recipients
+            const { data: fieldWithRecipient } = (await client
+              .from("fields")
+              .select(
+                `
+                *,
+                recipients:fields_recipient_id_fkey (
+                  id,
+                  email,
+                  color
+                )
+              `
+              )
+              .eq("id", payload.new.id)
+              .single()) as unknown as {
+              data: Database["public"]["Tables"]["fields"]["Row"] & {
+                recipients: {
+                  id: string;
+                  email: string;
+                  color: string;
+                };
+              };
+            };
+
+            if (fieldWithRecipient) {
+              if (payload.eventType === "INSERT") {
+                setCurrentFields((prev) => [...prev, fieldWithRecipient]);
+              } else {
+                setCurrentFields((prev) =>
+                  prev.map((field) =>
+                    field.id === fieldWithRecipient.id
+                      ? fieldWithRecipient
+                      : field
+                  )
+                );
+              }
+            }
           } else if (payload.eventType === "DELETE") {
             setCurrentFields((prev) =>
               prev.filter((field) => field.id !== payload.old.id)
-            );
-          } else if (payload.eventType === "UPDATE") {
-            setCurrentFields((prev) =>
-              prev.map((field) =>
-                field.id === payload.new.id
-                  ? (payload.new as Database["public"]["Tables"]["fields"]["Row"])
-                  : field
-              )
             );
           }
         }
@@ -208,7 +249,6 @@ const Elements = ({
             height: fieldPageHeight,
             width: fieldPageWidth,
             recipient_id: selectedRecipient?.id,
-            color: selectedRecipient?.color,
           })
           .select();
 
@@ -231,7 +271,6 @@ const Elements = ({
       documentId,
       session?.user.id,
       selectedRecipient?.id,
-      selectedRecipient?.color,
     ]
   );
 
@@ -379,7 +418,15 @@ const Elements = ({
   }, []);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
+        <p className="text-lg font-medium">Fields</p>
+        <p className="text-xs text-gray-500">
+          {!selectedRecipient
+            ? "Select a recipient to add fields for them."
+            : "Add fields to the document to collect information from the signers."}
+        </p>
+      </div>
       {selectedField && (
         <div
           className={cn(

@@ -245,7 +245,6 @@ export type Database = {
       }
       fields: {
         Row: {
-          color: string
           created_at: string
           document_id: string
           height: number
@@ -261,7 +260,6 @@ export type Database = {
           width: number
         }
         Insert: {
-          color: string
           created_at?: string
           document_id: string
           height?: number
@@ -277,7 +275,6 @@ export type Database = {
           width?: number
         }
         Update: {
-          color?: string
           created_at?: string
           document_id?: string
           height?: number
@@ -293,13 +290,6 @@ export type Database = {
           width?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "fields_color_fkey"
-            columns: ["color"]
-            isOneToOne: false
-            referencedRelation: "recipients"
-            referencedColumns: ["color"]
-          },
           {
             foreignKeyName: "fields_document_id_fkey"
             columns: ["document_id"]

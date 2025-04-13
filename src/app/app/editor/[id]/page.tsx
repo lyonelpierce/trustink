@@ -41,7 +41,16 @@ export const generateMetadata = async (props: {
 const getDocumentFields = async (supabase: SupabaseClient, id: string) => {
   const { data, error } = await supabase
     .from("fields")
-    .select("*")
+    .select(
+      `
+      *,
+      recipients!fields_recipient_id_fkey (
+        id,
+        email,
+        color
+      )
+    `
+    )
     .eq("document_id", id);
 
   if (error) {

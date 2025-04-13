@@ -16,7 +16,13 @@ const EditorWrapper = ({
       name: string;
     };
   };
-  fields: Database["public"]["Tables"]["fields"]["Row"][];
+  fields: (Database["public"]["Tables"]["fields"]["Row"] & {
+    recipients: {
+      id: string;
+      email: string;
+      color: string;
+    };
+  })[];
 }) => {
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
 
