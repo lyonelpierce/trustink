@@ -28,16 +28,15 @@ const formSchema = z.object({
 });
 
 const RECIPIENT_COLORS = [
-  "#FF6B6B",
-  "#4ECDC4",
-  "#45B7D1",
-  "#96CEB4",
-  "#FFEEAD",
-  "#D4A5A5",
-  "#9B59B6",
-  "#3498DB",
-  "#E74C3C",
-  "#2ECC71",
+  "#34C759", // Green
+  "#007AFF", // Blue
+  "#FF9500", // Orange
+  "#AF52DE", // Purple
+  "#FFD60A", // Yellow
+  "#5856D6", // Indigo
+  "#00BCD4", // Cyan
+  "#FF2D55", // Pink
+  "#64DD17", // Lime
 ] as const;
 
 const RecipientsForm = ({ documentId }: { documentId: string }) => {
@@ -248,17 +247,16 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
   return (
     <div className="flex flex-col gap-4">
       <Form {...form}>
+        <div className="flex flex-col">
+          <p className="text-lg font-medium">Add Signers</p>
+          <p className="text-xs text-gray-500">
+            Who needs to sign the document? (Max 5)
+          </p>
+        </div>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="border bg-white rounded-lg p-4 flex flex-col gap-4"
         >
-          <div className="flex flex-col">
-            <p className="text-lg font-medium">Add Signers</p>
-            <p className="text-xs text-gray-500">
-              Who needs to sign the document? (Maximum 5 signers)
-            </p>
-          </div>
-
           <FormField
             control={form.control}
             name="email"
@@ -302,8 +300,14 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
             <div
               className={cn(
                 "flex items-center justify-between gap-2 p-4 border rounded-lg shadow-sm bg-white cursor-pointer transition-all ease-in-out",
-                selectedRecipient?.id === recipient.id && "ring-2 ring-black"
+                selectedRecipient?.id === recipient.id && "ring-2"
               )}
+              style={{
+                boxShadow:
+                  selectedRecipient?.id === recipient.id
+                    ? `0 0 0 2px ${recipient.color}`
+                    : "none",
+              }}
               key={recipient.id}
               onClick={() => handleRecipientClick(recipient)}
             >

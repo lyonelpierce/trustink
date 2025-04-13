@@ -1,17 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-
 import { Rnd } from "react-rnd";
+import { cn } from "@/lib/utils";
 import { Trash } from "lucide-react";
 import { createPortal } from "react-dom";
-
-import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-
-import { cn } from "@/lib/utils";
 import { Database } from "../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
+import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type FieldItemProps = {
   field: Database["public"]["Tables"]["fields"]["Row"];
@@ -186,10 +183,13 @@ export const FieldItem = ({
         }}
         ref={$el}
         data-field-id={field.id}
+        style={{
+          boxShadow: field.color ? `0 0 0 2px ${field.color}` : "none",
+        }}
       >
         <CardContent
           className={cn(
-            "text-field-card-foreground flex flex-col items-center justify-center p-2 bg-white w-full h-full rounded-md text-sm font-medium",
+            "text-field-card-foreground flex flex-col items-center justify-center p-2 bg-white w-full h-full rounded-md text-sm font-medium transition-all duration-300 ease-in-out",
             {
               "text-field-card-foreground/50": disabled,
               "font-tangerine text-3xl": field.type === "signature",

@@ -208,6 +208,7 @@ const Elements = ({
             height: fieldPageHeight,
             width: fieldPageWidth,
             recipient_id: selectedRecipient?.id,
+            color: selectedRecipient?.color,
           })
           .select();
 
@@ -230,6 +231,7 @@ const Elements = ({
       documentId,
       session?.user.id,
       selectedRecipient?.id,
+      selectedRecipient?.color,
     ]
   );
 
@@ -385,7 +387,7 @@ const Elements = ({
             {
               "-rotate-6 scale-90 rounded-md border-red-500 opacity-50 dark:bg-black/20":
                 !isFieldWithinBounds,
-              "dark:text-black/60 border-green-500": isFieldWithinBounds,
+              "dark:text-black/60": isFieldWithinBounds,
             }
           )}
           style={{
@@ -393,6 +395,9 @@ const Elements = ({
             left: coords.x,
             height: fieldBounds.current.height,
             width: fieldBounds.current.width,
+            ...(isFieldWithinBounds && selectedRecipient?.color
+              ? { border: `2px solid ${selectedRecipient.color}` }
+              : {}),
           }}
         >
           <span className="text-[clamp(0.425rem,25cqw,0.825rem)]">

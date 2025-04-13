@@ -245,6 +245,7 @@ export type Database = {
       }
       fields: {
         Row: {
+          color: string
           created_at: string
           document_id: string
           height: number
@@ -253,13 +254,14 @@ export type Database = {
           position_x: number
           position_y: number
           recipient_id: string | null
-          secondary_id: string | null
+          secondary_id: string
           type: Database["public"]["Enums"]["field_type"]
           updated_at: string
           user_id: string
           width: number
         }
         Insert: {
+          color: string
           created_at?: string
           document_id: string
           height?: number
@@ -268,13 +270,14 @@ export type Database = {
           position_x?: number
           position_y?: number
           recipient_id?: string | null
-          secondary_id?: string | null
+          secondary_id?: string
           type?: Database["public"]["Enums"]["field_type"]
           updated_at?: string
           user_id: string
           width?: number
         }
         Update: {
+          color?: string
           created_at?: string
           document_id?: string
           height?: number
@@ -283,13 +286,20 @@ export type Database = {
           position_x?: number
           position_y?: number
           recipient_id?: string | null
-          secondary_id?: string | null
+          secondary_id?: string
           type?: Database["public"]["Enums"]["field_type"]
           updated_at?: string
           user_id?: string
           width?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fields_color_fkey"
+            columns: ["color"]
+            isOneToOne: false
+            referencedRelation: "recipients"
+            referencedColumns: ["color"]
+          },
           {
             foreignKeyName: "fields_document_id_fkey"
             columns: ["document_id"]
