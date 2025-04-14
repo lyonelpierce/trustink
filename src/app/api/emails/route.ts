@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     const emailPromises = emails.map((email) =>
       resend.emails.send({
-        from: "Trustink <no-reply@trustink.dev>",
+        from: "Trustink <no-reply@trustink.ai>",
         to: email,
         subject: `Document for Signature: ${documentName}`,
         html: `
