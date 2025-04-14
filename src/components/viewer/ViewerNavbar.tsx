@@ -9,11 +9,7 @@ const ViewerNavbar = async () => {
       <div className="flex items-center justify-start gap-2 w-1/3">
         <Logo
           isMainLogo={false}
-          href={
-            userId
-              ? "/documents"
-              : `${process.env.NEXT_PUBLIC_BASE_URL}/sign/${userId}`
-          }
+          href={userId ? "/documents" : `${process.env.NEXT_PUBLIC_BASE_URL}`}
         />
       </div>
       <div className="w-1/3 flex justify-center items-center"></div>

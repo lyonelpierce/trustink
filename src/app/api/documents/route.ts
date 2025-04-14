@@ -8,15 +8,16 @@ import {
   getDocumentAnalysis,
   getUserDocumentsWithMeta,
 } from "@/lib/supabase";
-import OpenAI from "openai";
+import { embed } from "ai";
 import pdfParse from "pdf-parse";
 import { auth } from "@clerk/nextjs/server";
 import { Tiktoken } from "js-tiktoken/lite";
+import { createOpenAI } from "@ai-sdk/openai";
 import { after, NextResponse } from "next/server";
 import o200k_base from "js-tiktoken/ranks/o200k_base";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
-const openai = new OpenAI({
+const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -224,16 +225,16 @@ export async function POST(request: Request) {
         // Generate embeddings for each chunk
         const embeddings = await Promise.all(
           textChunks.map(async (chunk, index) => {
-            const embedding = await openai.embeddings.create({
-              input: chunk,
-              model: "text-embedding-3-small",
+            const { embedding } = await embed({
+              model: openai.embedding("text-embedding-3-small"),
+              value: chunk,
             });
 
             return {
               document_id: document.id,
               user_id: userId,
               content: chunk,
-              embedding: embedding.data[0].embedding,
+              embedding: embedding,
               chunk_index: index,
             };
           })
