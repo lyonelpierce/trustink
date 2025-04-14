@@ -1,10 +1,9 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import ViewerWrapper from "@/components/viewer/ViewerWrapper";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { notFound } from "next/navigation";
 
 const getDocumentData = async (supabase: SupabaseClient, id: string) => {
-  console.log("[ID]", id);
-
   const { data, error } = await supabase
     .from("documents_data")
     .select(
@@ -18,6 +17,9 @@ const getDocumentData = async (supabase: SupabaseClient, id: string) => {
     .eq("document_id", id)
     .single();
 
+  if (!data) {
+    return notFound();
+  }
   if (error) {
     console.error(error);
     throw new Error(error.message);

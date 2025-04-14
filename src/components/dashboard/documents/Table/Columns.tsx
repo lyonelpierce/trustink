@@ -53,24 +53,6 @@ export const columns: ColumnDef<
     },
   },
   {
-    accessorKey: "updated_at",
-    header: "Updated At",
-    cell: ({ row }) => {
-      const date = new Date(row.original.updated_at);
-      return (
-        <div className="w-1/6 text-center">
-          {date.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          })}
-        </div>
-      );
-    },
-  },
-  {
     accessorKey: "actions",
     header: "Actions",
     cell: ({ row }) => {

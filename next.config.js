@@ -25,6 +25,7 @@ const nextConfig = {
         canvas: "./empty-module.ts",
       },
     },
+    serverComponentsExternalPackages: ["pdf-parse"],
   },
 };
 

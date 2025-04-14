@@ -1,16 +1,75 @@
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import {
   getDocumentById,
   getUserDocuments,
+  uploadDocumentFile,
   getDocumentAnalysis,
   getUserDocumentsWithMeta,
 } from "@/lib/supabase";
+import OpenAI from "openai";
+import pdfParse from "pdf-parse";
+import { auth } from "@clerk/nextjs/server";
+import { Tiktoken } from "js-tiktoken/lite";
+import { after, NextResponse } from "next/server";
+import o200k_base from "js-tiktoken/ranks/o200k_base";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const encoder = new Tiktoken(o200k_base);
+
+function countTokens(text: string): number {
+  const tokens = encoder.encode(text);
+  return tokens.length;
+}
+
+function chunkText(text: string, maxChunkSize: number = 500): string[] {
+  const chunks: string[] = [];
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+  let currentChunk = "";
+
+  for (let i = 0; i < sentences.length; i++) {
+    const sentence = sentences[i].trim();
+    if (!sentence) continue;
+
+    // If the sentence itself is too large, split it by words
+    if (sentence.length > maxChunkSize) {
+      if (currentChunk) {
+        chunks.push(currentChunk.trim());
+        currentChunk = "";
+      }
+      const words = sentence.split(" ");
+      let longSentenceChunk = "";
+
+      for (const word of words) {
+        if (countTokens(longSentenceChunk + " " + word) > 1536) {
+          chunks.push(longSentenceChunk.trim());
+          longSentenceChunk = word;
+        } else {
+          longSentenceChunk += (longSentenceChunk ? " " : "") + word;
+        }
+      }
+
+      if (longSentenceChunk) chunks.push(longSentenceChunk.trim());
+      continue;
+    }
+
+    // Try to add sentence to current chunk
+    if (countTokens(currentChunk + " " + sentence) > 1536) {
+      chunks.push(currentChunk.trim());
+      currentChunk = sentence;
+    } else {
+      currentChunk += (currentChunk ? " " : "") + sentence;
+    }
+  }
+
+  if (currentChunk) chunks.push(currentChunk.trim());
+  return chunks;
+}
 
 export async function POST(request: Request) {
   try {
@@ -55,26 +114,26 @@ export async function POST(request: Request) {
 
     const documentName = file.name.replace(/\.[^/.]+$/, "");
     // Upload the file
-    // const { data: storageData, error: storageError } = await uploadDocumentFile(
-    //   fileName,
-    //   fileBuffer,
-    //   file.type
-    // );
+    const { data: storageData, error: storageError } = await uploadDocumentFile(
+      fileName,
+      fileBuffer,
+      file.type
+    );
 
-    // if (storageError) {
-    //   console.error(
-    //     "[API/documents] Error uploading to storage:",
-    //     storageError
-    //   );
+    if (storageError) {
+      console.error(
+        "[API/documents] Error uploading to storage:",
+        storageError
+      );
 
-    //   console.log("STORAGE ERROR", storageError);
-    //   return NextResponse.json(
-    //     {
-    //       error: "Failed to upload document",
-    //     },
-    //     { status: 500 }
-    //   );
-    // }
+      console.log("STORAGE ERROR", storageError);
+      return NextResponse.json(
+        {
+          error: "Failed to upload document",
+        },
+        { status: 500 }
+      );
+    }
 
     if (file.type !== "application/pdf") {
       return NextResponse.json(
@@ -89,7 +148,7 @@ export async function POST(request: Request) {
       .from("documents")
       .insert({
         name: documentName,
-        path: fileName,
+        path: storageData.path,
         size: file.size,
         user_id: userId,
       })
@@ -126,6 +185,50 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    after(async () => {
+      try {
+        const cleanBase64 = base64Data.split(",")[1] || base64Data;
+        const pdfBuffer = Buffer.from(cleanBase64, "base64");
+        const data = await pdfParse(pdfBuffer);
+
+        // Chunk the extracted text
+        const textChunks = chunkText(data.text);
+
+        // Generate embeddings for each chunk
+        const embeddings = await Promise.all(
+          textChunks.map(async (chunk, index) => {
+            const embedding = await openai.embeddings.create({
+              input: chunk,
+              model: "text-embedding-3-small",
+            });
+
+            return {
+              document_id: document.id,
+              user_id: userId,
+              content: chunk,
+              embedding: embedding.data[0].embedding,
+              chunk_index: index,
+            };
+          })
+        );
+        // Store embeddings in Supabase
+        const { error } = await supabase
+          .from("document_embeddings")
+          .insert(embeddings);
+
+        if (error) throw error;
+
+        return NextResponse.json(
+          {
+            message: "Document analized successfully",
+          },
+          { status: 200 }
+        );
+      } catch (error) {
+        console.error("[API/documents] Error analyzing document:", error);
+      }
+    });
 
     return NextResponse.json({
       id: document.id,
@@ -242,37 +345,37 @@ export async function DELETE(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
 
-    // // First get the document to get its storage path
-    // const { data: document, error: fetchError } = await supabase
-    //   .from("documents")
-    //   .select("path")
-    //   .eq("id", id)
-    //   .single();
+    // First get the document to get its storage path
+    const { data: document, error: fetchError } = await supabase
+      .from("documents")
+      .select("path")
+      .eq("id", id)
+      .single();
 
-    // if (fetchError) {
-    //   return NextResponse.json(
-    //     {
-    //       error: "Failed to fetch document",
-    //     },
-    //     { status: 500 }
-    //   );
-    // }
+    if (fetchError) {
+      return NextResponse.json(
+        {
+          error: "Failed to fetch document",
+        },
+        { status: 500 }
+      );
+    }
 
-    // // Delete from storage bucket if path exists
-    // if (document?.path) {
-    //   const { error: storageError } = await supabase.storage
-    //     .from("documents")
-    //     .remove([document.path]);
+    // Delete from storage bucket if path exists
+    if (document?.path) {
+      const { error: storageError } = await supabase.storage
+        .from("documents")
+        .remove([document.path]);
 
-    //   if (storageError) {
-    //     return NextResponse.json(
-    //       {
-    //         error: "Failed to delete document from storage",
-    //       },
-    //       { status: 500 }
-    //     );
-    //   }
-    // }
+      if (storageError) {
+        return NextResponse.json(
+          {
+            error: "Failed to delete document from storage",
+          },
+          { status: 500 }
+        );
+      }
+    }
 
     // Delete the database record
     const { error: deleteError } = await supabase

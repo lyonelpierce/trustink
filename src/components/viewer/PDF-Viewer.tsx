@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { base64 } from "@scure/base";
+import "react-pdf/dist/Page/TextLayer.css";
 import { Loader2Icon } from "lucide-react";
 import { PDFDocumentProxy } from "pdfjs-dist";
 import { Database } from "../../../database.types";
@@ -203,7 +204,7 @@ export const PDFViewer = ({
                     pageNumber={i + 1}
                     width={width}
                     renderAnnotationLayer={false}
-                    renderTextLayer={false}
+                    renderTextLayer={true}
                     loading={() => ""}
                     onClick={(e) => onDocumentPageClick(e, i + 1)}
                   />
