@@ -36,39 +36,65 @@ function chunkText(text: string, maxChunkSize: number = 500): string[] {
     const sentence = sentences[i].trim();
     if (!sentence) continue;
 
-    // If the sentence itself is too large, split it by words
-    if (sentence.length > maxChunkSize) {
+    // First check if adding this sentence would exceed the limit
+    if (countTokens(currentChunk + " " + sentence) > 1536) {
       if (currentChunk) {
         chunks.push(currentChunk.trim());
         currentChunk = "";
       }
-      const words = sentence.split(" ");
-      let longSentenceChunk = "";
 
-      for (const word of words) {
-        if (countTokens(longSentenceChunk + " " + word) > 1536) {
-          chunks.push(longSentenceChunk.trim());
-          longSentenceChunk = word;
-        } else {
-          longSentenceChunk += (longSentenceChunk ? " " : "") + word;
+      // Now handle the sentence itself
+      if (countTokens(sentence) > 1536) {
+        // Split into words and create smaller chunks
+        const words = sentence.split(" ");
+        let longSentenceChunk = "";
+
+        for (const word of words) {
+          const potentialChunk =
+            longSentenceChunk + (longSentenceChunk ? " " : "") + word;
+          if (countTokens(potentialChunk) > 1536) {
+            if (longSentenceChunk) {
+              chunks.push(longSentenceChunk.trim());
+            }
+            // If a single word is too long, split it into characters
+            if (countTokens(word) > 1536) {
+              let charChunk = "";
+              for (const char of word) {
+                if (countTokens(charChunk + char) > 1536) {
+                  chunks.push(charChunk);
+                  charChunk = char;
+                } else {
+                  charChunk += char;
+                }
+              }
+              if (charChunk) chunks.push(charChunk);
+            } else {
+              longSentenceChunk = word;
+            }
+          } else {
+            longSentenceChunk = potentialChunk;
+          }
         }
+        if (longSentenceChunk) chunks.push(longSentenceChunk.trim());
+      } else {
+        currentChunk = sentence;
       }
-
-      if (longSentenceChunk) chunks.push(longSentenceChunk.trim());
-      continue;
-    }
-
-    // Try to add sentence to current chunk
-    if (countTokens(currentChunk + " " + sentence) > 1536) {
-      chunks.push(currentChunk.trim());
-      currentChunk = sentence;
     } else {
       currentChunk += (currentChunk ? " " : "") + sentence;
     }
   }
 
-  if (currentChunk) chunks.push(currentChunk.trim());
-  return chunks;
+  if (currentChunk) {
+    chunks.push(currentChunk.trim());
+  }
+
+  // Final verification - split any chunks that somehow ended up too large
+  return chunks.flatMap((chunk) => {
+    if (countTokens(chunk) > 1536) {
+      return chunkText(chunk, maxChunkSize); // Recursively split if still too large
+    }
+    return [chunk];
+  });
 }
 
 export async function POST(request: Request) {

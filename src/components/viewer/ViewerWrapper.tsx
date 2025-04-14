@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ResizablePanel } from "../ui/resizable";
-import { ResizableHandle } from "../ui/resizable";
+import { useAuth } from "@clerk/nextjs";
 import { Database } from "../../../database.types";
-import { ResizablePanelGroup } from "../ui/resizable";
 import Elements from "@/components/viewer/elements/Elements";
 import { LazyPDFViewerNoLoader } from "@/components/viewer/LazyPDFViewer";
 
@@ -25,38 +23,36 @@ const ViewerWrapper = ({
     };
   })[];
 }) => {
+  const { userId } = useAuth();
+
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
 
   return (
     <>
-      <ResizablePanelGroup direction="horizontal">
-        <ResizablePanel defaultSize={80} minSize={80} maxSize={80}>
-          <div className="mx-auto max-w-[90rem] bg-gray-50">
-            <div className="flex gap-4 justify-center pt-20 relative p-4">
-              <div className="w-3/5">
-                <LazyPDFViewerNoLoader
-                  documentData={document}
-                  onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
-                />
-              </div>
-              <div className="sticky top-20 z-40 w-96 h-min">
-                {isDocumentPdfLoaded && (
-                  <Elements
-                    fields={fields}
-                    documentId={document.document_id}
-                    isDocumentPdfLoaded={isDocumentPdfLoaded}
-                  />
-                )}
-              </div>
-            </div>
+      <div className="mx-auto max-w-[90rem] bg-gray-50">
+        <div className="flex gap-4 justify-center pt-20 relative p-4">
+          <div className="w-3/5">
+            <LazyPDFViewerNoLoader
+              documentData={document}
+              onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
+            />
           </div>
-        </ResizablePanel>
-        <ResizableHandle />
-
+          <div className="sticky top-20 z-40 w-96 h-min">
+            {isDocumentPdfLoaded && (
+              <Elements
+                fields={fields}
+                documentId={document.document_id}
+                isDocumentPdfLoaded={isDocumentPdfLoaded}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+      {userId === document.user_id && (
         <div className="fixed top-0 right-0 bg-white h-screen w-[30rem] border-l pt-16 px-4">
           <p>Hello</p>
         </div>
-      </ResizablePanelGroup>
+      )}
     </>
   );
 };

@@ -3,7 +3,6 @@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FieldItem } from "./FieldElement";
-import { useSession } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../../../database.types";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
@@ -12,6 +11,8 @@ import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
+import { useAuth, useSession, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
 
 const MIN_HEIGHT_PX = 12;
 const MIN_WIDTH_PX = 36;
@@ -49,6 +50,7 @@ const Elements = ({
   documentId: string;
   isDocumentPdfLoaded: boolean;
 }) => {
+  const { userId } = useAuth();
   const { session } = useSession();
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
@@ -407,13 +409,27 @@ const Elements = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col">
-        <p className="text-lg font-medium">Fields</p>
-        <p className="text-xs text-gray-500">
-          {!selectedRecipient
-            ? "Select a recipient to add fields for them."
-            : "Add fields to the document to collect information from the signers."}
-        </p>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4 bg-white border rounded-md p-4">
+          {!userId ? (
+            <>
+              <div className="flex flex-col">
+                <p className="text-lg font-medium">Sign Document</p>
+                <p className="text-sm text-gray-500">
+                  {"You must be logged in to sign this document"}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 w-full">
+                <SignInButton>
+                  <Button variant="outline">Log In</Button>
+                </SignInButton>
+                <SignUpButton>
+                  <Button variant="default">Sign Up</Button>
+                </SignUpButton>
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
       {selectedField && (
         <div

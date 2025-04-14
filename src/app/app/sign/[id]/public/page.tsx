@@ -1,7 +1,7 @@
+import { notFound } from "next/navigation";
 import { SupabaseClient } from "@supabase/supabase-js";
 import ViewerWrapper from "@/components/viewer/ViewerWrapper";
-import { createServerSupabaseClient } from "@/lib/supabaseSsr";
-import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabaseAdmin";
 
 const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   const { data, error } = await supabase
@@ -33,7 +33,7 @@ export const generateMetadata = async (props: {
 }) => {
   const { id } = await props.params;
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createClient();
   const document = await getDocumentData(supabase, id);
 
   return {
@@ -68,7 +68,7 @@ const getDocumentFields = async (supabase: SupabaseClient, id: string) => {
 const SignPage = async (props: { params: Promise<{ id: string }> }) => {
   const { id } = await props.params;
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createClient();
 
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
