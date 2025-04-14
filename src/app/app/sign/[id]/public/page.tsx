@@ -71,9 +71,6 @@ const SignPage = async (props: { params: Promise<{ id: string }> }) => {
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
 
-  console.log(document);
-  console.log(fields);
-
   return (
     <div className="bg-gray-50">
       <ViewerWrapper document={document} fields={fields} />

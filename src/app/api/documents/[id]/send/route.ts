@@ -6,10 +6,10 @@ export async function POST(
   req: NextRequest,
   props: { params: { id: string } }
 ) {
-  const { name, access } = await req.json();
   const params = await props.params;
-
   const { id } = params;
+
+  const { name, access } = await req.json();
 
   const { userId } = await auth();
   const supabase = createServerSupabaseClient();
@@ -26,6 +26,7 @@ export async function POST(
       .update({
         name,
         visibility: isPublic,
+        status: "pending",
       })
       .eq("id", id)
       .select()
