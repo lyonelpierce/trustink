@@ -1,3 +1,5 @@
+export const runtime = "edge";
+
 import { streamText, embed } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { NextRequest, NextResponse } from "next/server";
@@ -7,8 +9,6 @@ const openai = createOpenAI({
   compatibility: "strict", // strict mode, enable when using the OpenAI API
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,8 +28,8 @@ export async function POST(req: NextRequest) {
       {
         query_embedding: embedding,
         document_id: documentId,
-        match_threshold: 0.1, // Lower threshold for testing
-        match_count: 15, // Increased count for testing
+        match_threshold: 0.5, // Lower threshold for testing
+        match_count: 5, // Increased count for testing
       }
     );
 

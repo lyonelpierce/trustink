@@ -9,92 +9,75 @@ import {
   getUserDocumentsWithMeta,
 } from "@/lib/supabase";
 import { embed } from "ai";
-import pdfParse from "pdf-parse";
 import { auth } from "@clerk/nextjs/server";
 import { Tiktoken } from "js-tiktoken/lite";
+import { Document } from "langchain/document";
 import { createOpenAI } from "@ai-sdk/openai";
 import { after, NextResponse } from "next/server";
 import o200k_base from "js-tiktoken/ranks/o200k_base";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+
+type PDFPage = {
+  pageContent: string;
+  metadata: {
+    loc: { pageNumber: number };
+  };
+};
+
+const encoder = new Tiktoken(o200k_base);
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const encoder = new Tiktoken(o200k_base);
+export const truncateStringByBytes = (str: string, bytes: number) => {
+  const enc = new TextEncoder();
+  return new TextDecoder("utf-8").decode(enc.encode(str).slice(0, bytes));
+};
 
-function countTokens(text: string): number {
-  const tokens = encoder.encode(text);
-  return tokens.length;
-}
+async function prepareDocument(page: PDFPage) {
+  const { pageContent, metadata } = page;
+  const pageContentWithoutNewlines = pageContent.replace(/\n/g, "");
 
-function chunkText(text: string, maxChunkSize: number = 500): string[] {
-  const chunks: string[] = [];
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-  let currentChunk = "";
+  // Count tokens in the content
+  const tokens = encoder.encode(pageContentWithoutNewlines);
+  const maxTokens = 8000; // OpenAI's recommended limit for embeddings
 
-  for (let i = 0; i < sentences.length; i++) {
-    const sentence = sentences[i].trim();
-    if (!sentence) continue;
-
-    // First check if adding this sentence would exceed the limit
-    if (countTokens(currentChunk + " " + sentence) > 1536) {
-      if (currentChunk) {
-        chunks.push(currentChunk.trim());
-        currentChunk = "";
-      }
-
-      // Now handle the sentence itself
-      if (countTokens(sentence) > 1536) {
-        // Split into words and create smaller chunks
-        const words = sentence.split(" ");
-        let longSentenceChunk = "";
-
-        for (const word of words) {
-          const potentialChunk =
-            longSentenceChunk + (longSentenceChunk ? " " : "") + word;
-          if (countTokens(potentialChunk) > 1536) {
-            if (longSentenceChunk) {
-              chunks.push(longSentenceChunk.trim());
-            }
-            // If a single word is too long, split it into characters
-            if (countTokens(word) > 1536) {
-              let charChunk = "";
-              for (const char of word) {
-                if (countTokens(charChunk + char) > 1536) {
-                  chunks.push(charChunk);
-                  charChunk = char;
-                } else {
-                  charChunk += char;
-                }
-              }
-              if (charChunk) chunks.push(charChunk);
-            } else {
-              longSentenceChunk = word;
-            }
-          } else {
-            longSentenceChunk = potentialChunk;
-          }
-        }
-        if (longSentenceChunk) chunks.push(longSentenceChunk.trim());
-      } else {
-        currentChunk = sentence;
-      }
-    } else {
-      currentChunk += (currentChunk ? " " : "") + sentence;
-    }
+  // If content is within token limit, process as single chunk
+  if (tokens.length <= maxTokens) {
+    return [
+      new Document({
+        pageContent: pageContentWithoutNewlines,
+        metadata: {
+          pageNumber: metadata.loc.pageNumber,
+          text: pageContentWithoutNewlines,
+        },
+      }),
+    ];
   }
 
-  if (currentChunk) {
-    chunks.push(currentChunk.trim());
-  }
+  // Otherwise split the document
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 2000,
+    chunkOverlap: 200,
+  });
 
-  // Final verification - split any chunks that somehow ended up too large
-  return chunks.flatMap((chunk) => {
-    if (countTokens(chunk) > 1536) {
-      return chunkText(chunk, maxChunkSize); // Recursively split if still too large
-    }
-    return [chunk];
+  const docs = await splitter.splitDocuments([
+    new Document({
+      pageContent: pageContentWithoutNewlines,
+      metadata: {
+        pageNumber: metadata.loc.pageNumber,
+        text: pageContentWithoutNewlines,
+      },
+    }),
+  ]);
+
+  // Filter chunks that exceed token limit
+  return docs.filter((doc) => {
+    const chunkTokens = encoder.encode(doc.pageContent);
+    return chunkTokens.length <= maxTokens;
   });
 }
 
@@ -153,7 +136,6 @@ export async function POST(request: Request) {
         storageError
       );
 
-      console.log("STORAGE ERROR", storageError);
       return NextResponse.json(
         {
           error: "Failed to upload document",
@@ -215,34 +197,40 @@ export async function POST(request: Request) {
 
     after(async () => {
       try {
-        const cleanBase64 = base64Data.split(",")[1] || base64Data;
-        const pdfBuffer = Buffer.from(cleanBase64, "base64");
-        const data = await pdfParse(pdfBuffer);
+        const loader = new PDFLoader(file);
+        const pages = (await loader.load()) as PDFPage[];
 
-        // Chunk the extracted text
-        const textChunks = chunkText(data.text);
+        const documents = await Promise.all(pages.map(prepareDocument));
 
         // Generate embeddings for each chunk
         const embeddings = await Promise.all(
-          textChunks.map(async (chunk, index) => {
+          documents.flat().map(async (document, index: number) => {
+            const typedDoc = document as Document<{
+              pageNumber: number;
+              text: string;
+            }>;
             const { embedding } = await embed({
               model: openai.embedding("text-embedding-3-small"),
-              value: chunk,
+              value: typedDoc.pageContent,
             });
 
             return {
               document_id: document.id,
               user_id: userId,
-              content: chunk,
+              content: typedDoc.pageContent,
               embedding: embedding,
               chunk_index: index,
             };
           })
         );
+
         // Store embeddings in Supabase
-        const { error } = await supabase
-          .from("document_embeddings")
-          .insert(embeddings);
+        const { error } = await supabase.from("document_embeddings").insert(
+          embeddings.map((embedding) => ({
+            ...embedding,
+            document_id: document.id,
+          }))
+        );
 
         if (error) throw error;
 
