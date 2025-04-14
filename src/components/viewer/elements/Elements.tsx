@@ -420,7 +420,7 @@ const Elements = ({
                 </p>
               </div>
               <div className="flex flex-col gap-2 w-full">
-                <SignInButton>
+                <SignInButton forceRedirectUrl={`/sign/${documentId}`}>
                   <Button variant="outline">Log In</Button>
                 </SignInButton>
                 <SignUpButton>
