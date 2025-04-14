@@ -5,21 +5,29 @@ import { useAuth } from "@clerk/nextjs";
 import { Database } from "../../../database.types";
 import Elements from "@/components/viewer/elements/Elements";
 import { LazyPDFViewerNoLoader } from "@/components/viewer/LazyPDFViewer";
+import { cn } from "@/lib/utils";
 
 const ViewerWrapper = ({
   document,
   fields,
 }: {
-  document: Database["public"]["Tables"]["documents_data"]["Row"] & {
-    documents: {
-      name: string;
+  document: Database["public"]["Tables"]["documents"]["Row"] & {
+    documents_data: {
+      data: string;
     };
+    recipients: {
+      id: string;
+      email: string;
+      color: string;
+      account_id: string;
+    }[];
   };
   fields: (Database["public"]["Tables"]["fields"]["Row"] & {
     recipients: {
       id: string;
       email: string;
       color: string;
+      account_id: string;
     };
   })[];
 }) => {
@@ -29,11 +37,21 @@ const ViewerWrapper = ({
 
   return (
     <>
-      <div className="mx-auto max-w-[90rem] bg-gray-50">
+      <div
+        className={cn(
+          "bg-gray-50 w-full",
+          !userId ||
+            document.recipients.some(
+              (recipient) => recipient.account_id !== userId
+            )
+            ? "pr-0 w-5/6 mx-auto"
+            : "pr-[30rem]"
+        )}
+      >
         <div className="flex gap-4 justify-center pt-20 relative p-4">
-          <div className="w-3/5">
+          <div className="w-1/2">
             <LazyPDFViewerNoLoader
-              documentData={document}
+              document={document}
               onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
             />
           </div>
@@ -41,14 +59,17 @@ const ViewerWrapper = ({
             {isDocumentPdfLoaded && (
               <Elements
                 fields={fields}
-                documentId={document.document_id}
+                documentId={document.id}
                 isDocumentPdfLoaded={isDocumentPdfLoaded}
+                recipients={document.recipients}
               />
             )}
           </div>
         </div>
       </div>
-      {userId === document.user_id && (
+      {document.recipients.some(
+        (recipient) => recipient.account_id === userId
+      ) && (
         <div className="fixed top-0 right-0 bg-white h-screen w-[30rem] border-l pt-16 px-4">
           <p>Hello</p>
         </div>

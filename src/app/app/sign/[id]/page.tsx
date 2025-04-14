@@ -1,31 +1,51 @@
 import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabaseAdmin";
 import { SupabaseClient } from "@supabase/supabase-js";
 import ViewerWrapper from "@/components/viewer/ViewerWrapper";
-import { createClient } from "@/lib/supabaseAdmin";
 
-const getDocumentData = async (supabase: SupabaseClient, id: string) => {
-  const { data, error } = await supabase
-    .from("documents_data")
+const getDocument = async (supabase: SupabaseClient, id: string) => {
+  // Get the document and recipients
+  const { data: document, error: documentError } = await supabase
+    .from("documents")
     .select(
       `
       *,
-      documents (
-        name
+      recipients (
+        id,
+        email,
+        color,
+        account_id
       )
     `
     )
+    .eq("id", id)
+    .single();
+
+  if (documentError) {
+    console.error(documentError);
+    throw new Error(documentError.message);
+  }
+
+  if (!document) {
+    notFound();
+  }
+
+  // Get the documents_data
+  const { data: documentData, error: dataError } = await supabase
+    .from("documents_data")
+    .select("data")
     .eq("document_id", id)
     .single();
 
-  if (!data) {
-    return notFound();
-  }
-  if (error) {
-    console.error(error);
-    throw new Error(error.message);
+  if (dataError) {
+    console.error(dataError);
+    throw new Error(dataError.message);
   }
 
-  return data;
+  return {
+    ...document,
+    documents_data: documentData,
+  };
 };
 
 export const generateMetadata = async (props: {
@@ -34,11 +54,11 @@ export const generateMetadata = async (props: {
   const { id } = await props.params;
 
   const supabase = await createClient();
-  const document = await getDocumentData(supabase, id);
+  const document = await getDocument(supabase, id);
 
   return {
-    title: document.documents.name,
-    description: document.documents.name,
+    title: document.name,
+    description: document.name,
   };
 };
 
@@ -70,7 +90,7 @@ const SignPage = async (props: { params: Promise<{ id: string }> }) => {
 
   const supabase = await createClient();
 
-  const document = await getDocumentData(supabase, id);
+  const document = await getDocument(supabase, id);
   const fields = await getDocumentFields(supabase, id);
 
   return (

@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FieldItem } from "./FieldElement";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../../../database.types";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
@@ -12,7 +13,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 import { useAuth, useSession, SignInButton, SignUpButton } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
 
 const MIN_HEIGHT_PX = 12;
 const MIN_WIDTH_PX = 36;
@@ -39,16 +39,24 @@ const Elements = ({
   fields,
   documentId,
   isDocumentPdfLoaded,
+  recipients,
 }: {
   fields: (Database["public"]["Tables"]["fields"]["Row"] & {
     recipients: {
       id: string;
       email: string;
       color: string;
+      account_id: string;
     };
   })[];
   documentId: string;
   isDocumentPdfLoaded: boolean;
+  recipients: {
+    id: string;
+    email: string;
+    color: string;
+    account_id: string;
+  }[];
 }) => {
   const { userId } = useAuth();
   const { session } = useSession();
@@ -423,12 +431,28 @@ const Elements = ({
                 <SignInButton forceRedirectUrl={`/sign/${documentId}`}>
                   <Button variant="outline">Log In</Button>
                 </SignInButton>
-                <SignUpButton>
+                <SignUpButton forceRedirectUrl={`/sign/${documentId}`}>
                   <Button variant="default">Sign Up</Button>
                 </SignUpButton>
               </div>
             </>
-          ) : null}
+          ) : recipients.some(
+              (recipient) => recipient.account_id === userId
+            ) ? (
+            <div className="flex flex-col">
+              <p className="text-lg font-medium">Signer View</p>
+              <p className="text-sm text-gray-500">
+                {"You can sign this document"}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              <p className="text-lg font-medium">Signer View</p>
+              <p className="text-sm text-gray-500">
+                {"You are not a recipient of this document"}
+              </p>
+            </div>
+          )}
         </div>
       </div>
       {selectedField && (

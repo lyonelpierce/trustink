@@ -36,13 +36,17 @@ const PDFLoader = () => {
 
 export const PDFViewer = ({
   className,
-  documentData,
+  document,
   onDocumentLoad,
   onPageClick,
   ...props
 }: {
   className?: string;
-  documentData: Database["public"]["Tables"]["documents_data"]["Row"];
+  document: Database["public"]["Tables"]["documents"]["Row"] & {
+    documents_data: {
+      data: string;
+    };
+  };
   onDocumentLoad?: (_doc: LoadedPDFDocument) => void;
   onPageClick?: OnPDFViewerPageClick;
   [key: string]: unknown;
@@ -56,9 +60,11 @@ export const PDFViewer = ({
   const [numPages, setNumPages] = useState(0);
   const [pdfError, setPdfError] = useState(false);
 
+  // console.log("documentData", document.documents_data);
+
   const memoizedData = useMemo(
-    () => ({ data: documentData.data }),
-    [documentData.data]
+    () => ({ data: document.documents_data.data }),
+    [document.documents_data.data]
   );
 
   const isLoading = isDocumentBytesLoading || !documentBytes;
@@ -128,6 +134,8 @@ export const PDFViewer = ({
     const fetchDocumentBytes = async () => {
       try {
         setIsDocumentBytesLoading(true);
+
+        console.log("memoizedData", memoizedData);
 
         const binaryData = base64.decode(memoizedData.data);
 

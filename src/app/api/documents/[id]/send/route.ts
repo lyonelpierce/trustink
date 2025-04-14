@@ -55,6 +55,7 @@ export async function POST(
           body: JSON.stringify({
             emails: recipients.map((recipient) => recipient.email),
             documentName: document.name,
+            documentId: id,
           }),
         }
       );
