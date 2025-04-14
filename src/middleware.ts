@@ -47,8 +47,8 @@ export default clerkMiddleware(async (auth, req) => {
       hostname === "localhost" ||
       hostname === baseUrl ||
       hostname === `www.${baseUrl}` ||
-      hostname === "trustink.dev" ||
-      hostname === "www.trustink.dev"
+      hostname === "trustink.ai" ||
+      hostname === "www.trustink.ai"
     ) {
       return NextResponse.next();
     }
