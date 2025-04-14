@@ -1,8 +1,10 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import EditorWrapper from "@/components/editor/EditorWrapper";
+import ViewerWrapper from "@/components/viewer/ViewerWrapper";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
 const getDocumentData = async (supabase: SupabaseClient, id: string) => {
+  console.log("[ID]", id);
+
   const { data, error } = await supabase
     .from("documents_data")
     .select(
@@ -61,20 +63,22 @@ const getDocumentFields = async (supabase: SupabaseClient, id: string) => {
   return data;
 };
 
-const SingleDocumentPage = async (props: {
-  params: Promise<{ id: string }>;
-}) => {
+const SignPage = async (props: { params: Promise<{ id: string }> }) => {
   const { id } = await props.params;
+
   const supabase = createServerSupabaseClient();
 
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
 
+  console.log(document);
+  console.log(fields);
+
   return (
-    <div className="bg-gray-50 min-h-full">
-      <EditorWrapper document={document} key={document.id} fields={fields} />
+    <div className="bg-gray-50">
+      <ViewerWrapper document={document} fields={fields} />
     </div>
   );
 };
 
-export default SingleDocumentPage;
+export default SignPage;

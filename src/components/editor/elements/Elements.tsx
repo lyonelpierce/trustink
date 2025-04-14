@@ -10,7 +10,6 @@ import {
   CircleDotIcon,
   SquareCheckIcon,
 } from "lucide-react";
-import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FieldItem } from "./FieldElement";
@@ -19,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { CardContent } from "@/components/ui/card";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../../../database.types";
+import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";

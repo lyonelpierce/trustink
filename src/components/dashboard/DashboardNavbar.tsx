@@ -12,11 +12,11 @@ const links = [
     label: "Documents",
     href: "/documents",
   },
-  {
-    id: "2",
-    label: "Templates",
-    href: "/templates",
-  },
+  // {
+  //   id: "2",
+  //   label: "Templates",
+  //   href: "/templates",
+  // },
 ];
 const DashboardNavbar = () => {
   return (
