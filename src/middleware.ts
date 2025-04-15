@@ -26,10 +26,16 @@ const reservedSubdomains = [
   "_dmarc",
 ];
 
-const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
+const isDashboardRoute = createRouteMatcher([
+  "/documents(.*)",
+  "/profile(.*)",
+  "/signatures(.*)",
+  "/editor(.*)",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
   try {
+    // Protect both dashboard and editor routes
     if (isDashboardRoute(req)) await auth.protect();
 
     const url = req.nextUrl;
