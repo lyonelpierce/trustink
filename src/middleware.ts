@@ -9,7 +9,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in",
   "/sign-up",
   "/sign(.*)",
-  "/api/webhooks(.*)",
+  "/api/webhooks/clerk",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -36,9 +36,6 @@ export default clerkMiddleware(async (auth, req) => {
   const path = `${url.pathname}${
     searchParams.length > 0 ? `?${searchParams}` : ""
   }`;
-
-  // Add this before the rewrite conditions
-  console.log("Incoming hostname:", hostname);
 
   // rewrites for app pages
   if (hostname === `app.${process.env.NEXT_PUBLIC_BASE_URL}`) {
