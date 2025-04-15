@@ -50,7 +50,7 @@ const ViewerWrapper = ({
         )}
       >
         <div className="flex gap-4 justify-center w-full pt-20 relative p-4">
-          <div className="w-[46%]">
+          <div className="flex-1 max-w-4xl">
             <LazyPDFViewerNoLoader
               document={document}
               onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
