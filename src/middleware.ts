@@ -15,6 +15,10 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl;
 
+  // If it's the Clerk webhook endpoint, let it pass through
+  if (url.pathname.startsWith("/api/webhooks/clerk"))
+    return NextResponse.next();
+
   // If it's an API route (except clerk webhook which is handled above), let it pass through
   if (url.pathname.startsWith("/api/")) return NextResponse.next();
 
