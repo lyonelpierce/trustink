@@ -1,91 +1,71 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export const config = {
-  matcher: [
-    /*
-     * Match all paths except for:
-     * 1. /api routes
-     * 2. /_next (Next.js internals)
-     * 3. /_static (inside /public)
-     * 4. all root files inside /public (e.g. /favicon.ico)
-     */
-    "/((?!_next/|_static/|_vercel|[\\w-]+\\.\\w+).*)",
-  ],
-};
-
-const reservedSubdomains = [
-  "clkmail",
-  "clk2._domainkey",
-  "clk._domainkey",
-  "accounts",
-  "clerk",
-  "purelymail3._domainkey",
-  "purelymail2._domainkey",
-  "purelymail1._domainkey",
-  "_dmarc",
-];
-
-const isDashboardRoute = createRouteMatcher([
-  "/documents(.*)",
-  "/profile(.*)",
-  "/signatures(.*)",
-  "/editor(.*)",
+// This example protects all routes including api/trpc routes
+// Please edit this to allow other routes to be public as needed.
+// See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your Middleware
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/sign-in",
+  "/sign-up",
+  "/sign(.*)",
+  "/api/webhooks(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  try {
-    // Protect both dashboard and editor routes
-    if (isDashboardRoute(req)) await auth.protect();
+  const url = req.nextUrl;
 
-    const url = req.nextUrl;
-    const host = req.headers.get("host") || "";
+  // Get hostname of request (e.g. demo.vercel.pub, demo.localhost:3123)
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  let hostname = req.headers
+    .get("host")!
+    .replace(".localhost:3000", `.${process.env.NEXT_PUBLIC_BASE_URL}`);
 
-    // Normalize hostname - Remove port and protocol
-    const hostname = host.split(":")[0].replace(/^https?:\/\//, "");
-    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(
-      /^https?:\/\//,
-      ""
-    );
-
-    // Handle root domain and www subdomain
-    if (
-      hostname === "localhost" ||
-      hostname === baseUrl ||
-      hostname === `www.${baseUrl}` ||
-      hostname === "trustink.ai" ||
-      hostname === "www.trustink.ai"
-    ) {
-      return NextResponse.next();
-    }
-
-    // Construct path with search params
-    const searchParams = url.searchParams.toString();
-    const path = `${url.pathname}${searchParams ? `?${searchParams}` : ""}`;
-
-    // Handle app subdomain
-    if (hostname.startsWith("app.")) {
-      // Check if it's an API route
-      if (url.pathname.startsWith("/api/")) {
-        return NextResponse.next();
-      }
-      return NextResponse.rewrite(new URL(`/app${path}`, req.url));
-    }
-
-    // Handle reserved subdomains
-    if (
-      reservedSubdomains.some(
-        (subdomain) =>
-          hostname === `${subdomain}.${process.env.NEXT_PUBLIC_BASE_URL}`
-      )
-    ) {
-      return NextResponse.redirect(url);
-    }
-
-    // Handle all other routes
-    return NextResponse.rewrite(new URL(`/${hostname}${path}`, req.url));
-  } catch (error) {
-    console.error("[Middleware Error]", error);
-    return NextResponse.next();
+  // special case for Vercel preview deployment URLs
+  if (
+    hostname.includes("---") &&
+    hostname.endsWith(`.${process.env.NEXT_PUBLIC_VERCEL_DEPLOYMENT_SUFFIX}`)
+  ) {
+    hostname = `${hostname.split("---")[0]}.${
+      process.env.NEXT_PUBLIC_BASE_URL
+    }`;
   }
+
+  const searchParams = req.nextUrl.searchParams.toString();
+  // Get the pathname of the request (e.g. /, /about, /blog/first-post)
+  const path = `${url.pathname}${
+    searchParams.length > 0 ? `?${searchParams}` : ""
+  }`;
+
+  // rewrites for app pages
+  if (hostname === `app.${process.env.NEXT_PUBLIC_BASE_URL}`) {
+    const { userId } = await auth();
+    if (!userId && !isPublicRoute(req)) {
+      const prefix =
+        process.env.NODE_ENV === "development" ? "http://" : "https://";
+
+      const { redirectToSignIn } = await auth();
+      return redirectToSignIn({ returnBackUrl: `${prefix}${hostname}/` });
+    }
+
+    return NextResponse.rewrite(
+      new URL(`/app${path === "/" ? "" : path}`, req.url)
+    );
+  }
+
+  // rewrite root application to `/` folder
+  if (
+    hostname === "localhost:3000" ||
+    hostname === process.env.NEXT_PUBLIC_BASE_URL
+  ) {
+    return NextResponse.rewrite(new URL(path, req.url));
+  }
+  // console.log("here");
+
+  // rewrite everything else to `/[domain]/[slug] dynamic route
+  return NextResponse.rewrite(new URL(`/${hostname}${path}`, req.url));
 });
+
+export const config = {
+  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+};
