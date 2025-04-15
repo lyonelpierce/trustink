@@ -16,12 +16,7 @@ export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl;
 
   // If it's an API route (except clerk webhook which is handled above), let it pass through
-  if (
-    url.pathname.startsWith("/api/") &&
-    url.pathname !== "/api/webhooks/clerk"
-  ) {
-    return NextResponse.next();
-  }
+  if (url.pathname.startsWith("/api/")) return NextResponse.next();
 
   // Get hostname of request (e.g. demo.vercel.pub, demo.localhost:3123)
   // biome-ignore lint/style/noNonNullAssertion: <explanation>
