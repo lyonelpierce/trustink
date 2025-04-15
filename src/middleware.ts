@@ -15,6 +15,11 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl;
 
+  // If it's a webhook route, let it pass through without any rewrites
+  if (req.nextUrl.pathname === "/api/webhooks/clerk") {
+    return NextResponse.next();
+  }
+
   // Get hostname of request (e.g. demo.vercel.pub, demo.localhost:3123)
   // biome-ignore lint/style/noNonNullAssertion: <explanation>
   let hostname = req.headers
