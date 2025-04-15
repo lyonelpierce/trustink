@@ -1,7 +1,7 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
-import { WebhookEvent } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabaseAdmin";
+import { WebhookEvent } from "@clerk/nextjs/server";
 
 export async function POST(req: Request) {
   const SIGNING_SECRET = process.env.CLERK_SIGNING_SECRET;
@@ -54,13 +54,28 @@ export async function POST(req: Request) {
     const supabase = await createClient();
 
     try {
-      await supabase.from("users").insert({
+      // Insert the new user
+      const { error: userError } = await supabase.from("users").insert({
         clerk_id: evt.data.id,
         email: emailAddress,
         image_url: evt.data.image_url,
         first_name: evt.data.first_name,
         last_name: evt.data.last_name,
       });
+
+      if (userError) {
+        console.error("Error inserting user into database:", userError);
+      }
+
+      // Check recipients table for matching email and update account_id
+      const { error: updateError } = await supabase
+        .from("recipients")
+        .update({ account_id: evt.data.id })
+        .eq("email", emailAddress);
+
+      if (updateError) {
+        console.error("Error updating recipients table:", updateError);
+      }
     } catch (error) {
       console.error("Error: Could not insert user into database:", error);
     }
