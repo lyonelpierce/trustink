@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          document_id: string
+          id: number
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          document_id: string
+          id?: number
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          document_id?: string
+          id?: number
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["clerk_id"]
+          },
+        ]
+      }
       contract_revisions: {
         Row: {
           changes: Json
@@ -601,6 +643,20 @@ export type Database = {
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: string
+      }
+      match_document_embeddings: {
+        Args: {
+          query_embedding: string
+          document_id: string
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          id: string
+          content: string
+          embedding: string
+          similarity: number
+        }[]
       }
       sparsevec_out: {
         Args: { "": unknown }

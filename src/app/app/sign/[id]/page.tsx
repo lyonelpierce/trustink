@@ -85,6 +85,25 @@ const getDocumentFields = async (supabase: SupabaseClient, id: string) => {
   return data;
 };
 
+const getChatMessages = async (supabase: SupabaseClient, id: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("document_id", id);
+
+    if (error) {
+      console.error(error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
+};
+
 const SignPage = async (props: { params: Promise<{ id: string }> }) => {
   const { id } = await props.params;
 
@@ -92,10 +111,15 @@ const SignPage = async (props: { params: Promise<{ id: string }> }) => {
 
   const document = await getDocument(supabase, id);
   const fields = await getDocumentFields(supabase, id);
+  const chatMessages = await getChatMessages(supabase, id);
 
   return (
     <div className="bg-gray-50">
-      <ViewerWrapper document={document} fields={fields} />
+      <ViewerWrapper
+        document={document}
+        fields={fields}
+        chatMessages={chatMessages}
+      />
     </div>
   );
 };
