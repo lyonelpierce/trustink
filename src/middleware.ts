@@ -23,7 +23,6 @@ export default clerkMiddleware(async (auth, req) => {
   if (url.pathname.startsWith("/api/")) return NextResponse.next();
 
   // Get hostname of request (e.g. demo.vercel.pub, demo.localhost:3123)
-  // biome-ignore lint/style/noNonNullAssertion: <explanation>
   let hostname = req.headers
     .get("host")!
     .replace(".localhost:3000", `.${process.env.NEXT_PUBLIC_BASE_URL}`);
