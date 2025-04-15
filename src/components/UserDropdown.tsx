@@ -58,7 +58,7 @@ const UserDropdown = () => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem className="px-0 cursor-pointer text-xs h-10">
-          <SignOutButton>
+          <SignOutButton redirectUrl="https://trustink.ai">
             <Button
               variant="ghost"
               className="flex items-center justify-start w-full font-medium"
