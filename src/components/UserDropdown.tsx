@@ -58,11 +58,7 @@ const UserDropdown = () => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem className="px-0 cursor-pointer text-xs h-10">
-          <SignOutButton
-            signOutOptions={{
-              redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}`,
-            }}
-          >
+          <SignOutButton>
             <Button
               variant="ghost"
               className="flex items-center justify-start w-full font-medium"
