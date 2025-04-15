@@ -496,7 +496,7 @@ const Elements = ({
                 }
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-3">
                 <SignatureIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-center text-xs">
@@ -521,7 +521,7 @@ const Elements = ({
                 }
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-3">
                 <CaseUpperIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-center text-xs">
@@ -546,7 +546,7 @@ const Elements = ({
                 }
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-3">
                 <MailIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Email</p>
@@ -569,7 +569,7 @@ const Elements = ({
                 }
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-3">
                 <User2Icon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Name</p>
@@ -592,7 +592,7 @@ const Elements = ({
                 }
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-3">
                 <Calendar1Icon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Date</p>
@@ -615,7 +615,7 @@ const Elements = ({
                 }
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-3">
                 <TypeIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Text</p>
@@ -638,7 +638,7 @@ const Elements = ({
                 }
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-3">
                 <CircleDotIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Radio</p>
@@ -661,7 +661,7 @@ const Elements = ({
                 }
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center px-6 py-4">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-3">
                 <SquareCheckIcon className="w-6 h-6 text-muted-foreground" />
 
                 <p className="text-muted-foreground mt-2 text-xs">Checkbox</p>
