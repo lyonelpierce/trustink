@@ -44,7 +44,10 @@ export default clerkMiddleware(async (auth, req) => {
   }`;
 
   // rewrites for app pages
-  if (hostname === `app.${process.env.NEXT_PUBLIC_BASE_URL}`) {
+  if (
+    hostname === `app.${process.env.NEXT_PUBLIC_BASE_URL}` ||
+    hostname === "app.trustink.ai" // Add explicit app subdomain
+  ) {
     const { userId } = await auth();
     if (!userId && !isPublicRoute(req)) {
       const prefix =
