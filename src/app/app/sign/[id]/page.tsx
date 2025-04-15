@@ -21,6 +21,10 @@ const getDocument = async (supabase: SupabaseClient, id: string) => {
     .eq("id", id)
     .single();
 
+  if (!document || document.status === "draft") {
+    notFound();
+  }
+
   if (documentError) {
     console.error(documentError);
     throw new Error(documentError.message);
