@@ -37,6 +37,9 @@ export default clerkMiddleware(async (auth, req) => {
     searchParams.length > 0 ? `?${searchParams}` : ""
   }`;
 
+  // Add this before the rewrite conditions
+  console.log("Incoming hostname:", hostname);
+
   // rewrites for app pages
   if (hostname === `app.${process.env.NEXT_PUBLIC_BASE_URL}`) {
     const { userId } = await auth();
@@ -56,7 +59,10 @@ export default clerkMiddleware(async (auth, req) => {
   // rewrite root application to `/` folder
   if (
     hostname === "localhost:3000" ||
-    hostname === process.env.NEXT_PUBLIC_BASE_URL
+    hostname === process.env.NEXT_PUBLIC_BASE_URL ||
+    hostname === "www." + process.env.NEXT_PUBLIC_BASE_URL ||
+    hostname === "trustink.ai" || // Add explicit domain
+    hostname === "www.trustink.ai" // Add www subdomain
   ) {
     return NextResponse.rewrite(new URL(path, req.url));
   }
