@@ -20,7 +20,6 @@ import {
 } from "../ui/credenza";
 import { z } from "zod";
 import { toast } from "sonner";
-import { useState } from "react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
@@ -31,6 +30,7 @@ import { RadioGroup } from "../ui/radio-group";
 import { RadioGroupItem } from "../ui/radio-group";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LockIcon, LockOpenIcon, SendIcon, Loader2Icon } from "lucide-react";
+import { useState } from "react";
 
 const formSchema = z.object({
   title: z.string().min(1),
@@ -45,6 +45,7 @@ const SendModal = ({
   documentId: string;
 }) => {
   const router = useRouter();
+
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({

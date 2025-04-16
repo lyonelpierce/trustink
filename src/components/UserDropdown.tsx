@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -9,8 +11,6 @@ import {
   DropdownMenuContent,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
 import { SignOutButton } from "@clerk/nextjs";
 import { LogOutIcon, User2Icon } from "lucide-react";
