@@ -14,7 +14,7 @@ const getDocument = async (supabase: SupabaseClient, id: string) => {
         id,
         email,
         color,
-        account_id
+        sender_id
       )
     `
     )
