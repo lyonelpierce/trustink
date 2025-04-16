@@ -135,8 +135,6 @@ export const PDFViewer = ({
       try {
         setIsDocumentBytesLoading(true);
 
-        console.log("memoizedData", memoizedData);
-
         const binaryData = base64.decode(memoizedData.data);
 
         setDocumentBytes(binaryData);

@@ -363,7 +363,6 @@ export type Database = {
       }
       recipients: {
         Row: {
-          account_id: string | null
           color: string
           created_at: string
           deleted_at: string
@@ -373,12 +372,12 @@ export type Database = {
           is_read: boolean
           is_send: boolean
           is_signed: boolean
+          sender_id: string
           signature_id: string | null
           signed_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
-          account_id?: string | null
           color: string
           created_at?: string
           deleted_at?: string
@@ -388,12 +387,12 @@ export type Database = {
           is_read?: boolean
           is_send?: boolean
           is_signed?: boolean
+          sender_id: string
           signature_id?: string | null
           signed_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
-          account_id?: string | null
           color?: string
           created_at?: string
           deleted_at?: string
@@ -403,24 +402,25 @@ export type Database = {
           is_read?: boolean
           is_send?: boolean
           is_signed?: boolean
+          sender_id?: string
           signature_id?: string | null
           signed_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "recipients_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["clerk_id"]
-          },
           {
             foreignKeyName: "recipients_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipients_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["clerk_id"]
           },
           {
             foreignKeyName: "recipients_signature_id_fkey"
