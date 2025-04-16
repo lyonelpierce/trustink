@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { PencilIcon } from "lucide-react";
+import { PencilIcon, ChevronDownIcon } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Database } from "../../../../../database.types";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import DeleteDocumentAlert from "../DeleteDocumentAlert";
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -14,7 +14,15 @@ export const columns: ColumnDef<
 >[] = [
   {
     accessorKey: "name",
-    header: "Name",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Name
+        <ChevronDownIcon className="w-4 h-4" />
+      </Button>
+    ),
     cell: ({ row }) => {
       return (
         <div className="w-2/6">
@@ -36,7 +44,15 @@ export const columns: ColumnDef<
   },
   {
     accessorKey: "created_at",
-    header: "Created At",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Created
+        <ChevronDownIcon className="w-4 h-4" />
+      </Button>
+    ),
     cell: ({ row }) => {
       const date = new Date(row.original.created_at);
       return (
