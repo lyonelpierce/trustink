@@ -117,16 +117,16 @@ export function DocumentsTable<
   return (
     <div>
       <div className="flex items-center justify-between text-xl font-semibold pb-4">
-        <div className="flex items-center bg-[#ececec] rounded-full p-1.5">
+        <div className="flex items-center bg-[#f4f4f5] dark:bg-[#27272a] rounded-full p-1">
           <Button
             onClick={() => {
               setSelectedTab("inbox");
             }}
             variant="ghost"
             className={cn(
-              "text-black transition-all duration-300 ease-in-out w-24",
+              "text-black transition-all ease-in-out w-24 hover:bg-white dark:hover:bg-black",
               selectedTab === "inbox"
-                ? "bg-white text-black"
+                ? "bg-white dark:bg-black text-black dark:text-white"
                 : "bg-transparent text-muted-foreground"
             )}
           >
@@ -139,9 +139,9 @@ export function DocumentsTable<
             }}
             variant="ghost"
             className={cn(
-              "text-black transition-all duration-300 ease-in-out w-24",
+              "text-black transition-all ease-in-out w-24 hover:bg-white dark:hover:bg-black",
               selectedTab === "sent"
-                ? "bg-white"
+                ? "bg-white dark:bg-black text-black dark:text-white"
                 : "bg-transparent text-muted-foreground"
             )}
           >
