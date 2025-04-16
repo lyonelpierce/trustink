@@ -1,42 +1,48 @@
 "use client";
 
 import {
-  ColumnDef,
-  flexRender,
-  ColumnFiltersState,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  useReactTable,
-  getSortedRowModel,
-  SortingState,
-} from "@tanstack/react-table";
-
-import {
   Table,
+  TableRow,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
 } from "@/components/ui/table";
+import {
+  ColumnDef,
+  flexRender,
+  SortingState,
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  ColumnFiltersState,
+  getFilteredRowModel,
+  getPaginationRowModel,
+} from "@tanstack/react-table";
+import { cn } from "@/lib/utils";
 import { useSession } from "@clerk/nextjs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { InboxIcon, SendIcon } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
 import { Database } from "../../../../../database.types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import DashbaordTitle from "../../title";
-
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  selectedTab: string;
+  setSelectedTab: (tab: string) => void;
 }
 
 export function DocumentsTable<
   TData extends Database["public"]["Tables"]["documents"]["Row"],
   TValue
->({ columns, data }: DataTableProps<TData, TValue>) {
+>({
+  columns,
+  data,
+  selectedTab,
+  setSelectedTab,
+}: DataTableProps<TData, TValue>) {
   const { session } = useSession();
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -110,11 +116,39 @@ export function DocumentsTable<
 
   return (
     <div>
-      <div className="flex items-center justify-between text-xl font-semibold py-4">
-        <DashbaordTitle
-          title="Documents"
-          description="Sign or request document signatures"
-        />
+      <div className="flex items-center justify-between text-xl font-semibold pb-4">
+        <div className="flex items-center bg-[#ececec] rounded-full p-1.5">
+          <Button
+            onClick={() => {
+              setSelectedTab("inbox");
+            }}
+            variant="ghost"
+            className={cn(
+              "text-black transition-all duration-300 ease-in-out w-24",
+              selectedTab === "inbox"
+                ? "bg-white text-black"
+                : "bg-transparent text-muted-foreground"
+            )}
+          >
+            <InboxIcon className="w-4 h-4" />
+            Inbox
+          </Button>
+          <Button
+            onClick={() => {
+              setSelectedTab("sent");
+            }}
+            variant="ghost"
+            className={cn(
+              "text-black transition-all duration-300 ease-in-out w-24",
+              selectedTab === "sent"
+                ? "bg-white"
+                : "bg-transparent text-muted-foreground"
+            )}
+          >
+            <SendIcon className="w-4 h-4" />
+            Sent
+          </Button>
+        </div>
         <Input
           placeholder="Filter documents..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
