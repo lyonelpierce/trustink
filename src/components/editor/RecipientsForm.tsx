@@ -321,7 +321,9 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <p className="font-medium text-sm">{recipient.email}</p>
+                  <p className="font-medium text-sm truncate">
+                    {recipient.email}
+                  </p>
                 </div>
               </div>
               <Button
