@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { PencilIcon, ChevronDownIcon } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Database } from "../../../../../database.types";
-import { Button, buttonVariants } from "@/components/ui/button";
 import DeleteDocumentAlert from "../DeleteDocumentAlert";
+import { PencilIcon, ChevronDownIcon } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 

@@ -23,34 +23,65 @@ import { cn } from "@/lib/utils";
 import { useSession } from "@clerk/nextjs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { InboxIcon, SendIcon } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
-import { useCallback, useEffect, useState } from "react";
 import { Database } from "../../../../../database.types";
+import { useCallback, useEffect, useState, useMemo } from "react";
+import {
+  FileStackIcon,
+  InboxIcon,
+  FileIcon,
+  CircleCheckBigIcon,
+  ClockFadingIcon,
+} from "lucide-react";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  selectedTab: string;
-  setSelectedTab: (tab: string) => void;
 }
 
 export function DocumentsTable<
-  TData extends Database["public"]["Tables"]["documents"]["Row"],
+  TData extends Database["public"]["Tables"]["documents"]["Row"] & {
+    recipients: Database["public"]["Tables"]["recipients"]["Row"][];
+  },
   TValue
->({
-  columns,
-  data,
-  selectedTab,
-  setSelectedTab,
-}: DataTableProps<TData, TValue>) {
+>({ columns, data }: DataTableProps<TData, TValue>) {
   const { session } = useSession();
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [documents, setDocuments] = useState<TData[]>(data);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [filter, setFilter] = useState<
+    "all" | "inbox" | "pending" | "drafts" | "completed"
+  >("all");
+
+  const filteredDocuments = useMemo(() => {
+    switch (filter) {
+      case "inbox":
+        return documents.filter(
+          (doc) =>
+            doc.recipients.some(
+              (recipient) => recipient.user_id === session?.user.id
+            ) && doc.user_id !== session?.user.id
+        );
+      case "pending":
+        return documents.filter(
+          (doc) => doc.user_id === session?.user.id && doc.status === "pending"
+        );
+      case "drafts":
+        return documents.filter(
+          (doc) => doc.user_id === session?.user.id && doc.status === "draft"
+        );
+      case "completed":
+        return documents.filter(
+          (doc) =>
+            doc.user_id === session?.user.id && doc.status === "completed"
+        );
+      default:
+        return documents;
+    }
+  }, [documents, filter, session?.user.id]);
 
   const table = useReactTable({
-    data: documents,
+    data: filteredDocuments,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -117,15 +148,26 @@ export function DocumentsTable<
   return (
     <div>
       <div className="flex items-center justify-between text-xl font-semibold pb-4">
-        <div className="flex items-center bg-[#f4f4f5] dark:bg-[#27272a] rounded-full p-1">
+        <div className="relative flex items-center bg-[#f4f4f5] dark:bg-[#27272a] rounded-full p-1">
           <Button
-            onClick={() => {
-              setSelectedTab("inbox");
-            }}
+            onClick={() => setFilter("all")}
             variant="ghost"
             className={cn(
-              "text-black transition-all ease-in-out w-24 hover:bg-white dark:hover:bg-black",
-              selectedTab === "inbox"
+              "text-black transition-all ease-in-out w-28 gap-1 hover:bg-white dark:hover:bg-black",
+              filter === "all"
+                ? "bg-white dark:bg-black text-black dark:text-white"
+                : "bg-transparent text-muted-foreground"
+            )}
+          >
+            <FileStackIcon className="w-4 h-4" />
+            All
+          </Button>
+          <Button
+            onClick={() => setFilter("inbox")}
+            variant="ghost"
+            className={cn(
+              "text-black transition-all ease-in-out w-28 gap-1 hover:bg-white dark:hover:bg-black",
+              filter === "inbox"
                 ? "bg-white dark:bg-black text-black dark:text-white"
                 : "bg-transparent text-muted-foreground"
             )}
@@ -134,19 +176,43 @@ export function DocumentsTable<
             Inbox
           </Button>
           <Button
-            onClick={() => {
-              setSelectedTab("sent");
-            }}
+            onClick={() => setFilter("pending")}
             variant="ghost"
             className={cn(
-              "text-black transition-all ease-in-out w-24 hover:bg-white dark:hover:bg-black",
-              selectedTab === "sent"
+              "text-black transition-all ease-in-out w-28 gap-1 hover:bg-white dark:hover:bg-black",
+              filter === "pending"
                 ? "bg-white dark:bg-black text-black dark:text-white"
                 : "bg-transparent text-muted-foreground"
             )}
           >
-            <SendIcon className="w-4 h-4" />
-            Sent
+            <ClockFadingIcon className="w-4 h-4" />
+            Pending
+          </Button>
+          <Button
+            onClick={() => setFilter("completed")}
+            variant="ghost"
+            className={cn(
+              "text-black transition-all ease-in-out w-28 gap-1 hover:bg-white dark:hover:bg-black",
+              filter === "completed"
+                ? "bg-white dark:bg-black text-black dark:text-white"
+                : "bg-transparent text-muted-foreground"
+            )}
+          >
+            <CircleCheckBigIcon className="w-4 h-4" />
+            Completed
+          </Button>
+          <Button
+            onClick={() => setFilter("drafts")}
+            variant="ghost"
+            className={cn(
+              "text-black transition-all ease-in-out w-28 gap-1 hover:bg-white dark:hover:bg-black",
+              filter === "drafts"
+                ? "bg-white dark:bg-black text-black dark:text-white"
+                : "bg-transparent text-muted-foreground"
+            )}
+          >
+            <FileIcon className="w-4 h-4" />
+            Drafts
           </Button>
         </div>
         <Input
@@ -201,7 +267,7 @@ export function DocumentsTable<
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  There are no documents yet. Add one to get started.
+                  There are no documents yet.
                 </TableCell>
               </TableRow>
             )}
