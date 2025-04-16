@@ -46,7 +46,7 @@ const Elements = ({
       id: string;
       email: string;
       color: string;
-      user_id: string;
+      signer_id: string;
     };
   })[];
   documentId: string;
@@ -55,7 +55,7 @@ const Elements = ({
     id: string;
     email: string;
     color: string;
-    user_id: string;
+    signer_id: string;
   }[];
 }) => {
   const { userId } = useAuth();
@@ -436,7 +436,7 @@ const Elements = ({
                 </SignUpButton>
               </div>
             </>
-          ) : recipients.some((recipient) => recipient.user_id === userId) ? (
+          ) : recipients.some((recipient) => recipient.signer_id === userId) ? (
             <div className="flex flex-col">
               <p className="text-lg font-medium">Signer View</p>
               <p className="text-sm text-gray-500">
