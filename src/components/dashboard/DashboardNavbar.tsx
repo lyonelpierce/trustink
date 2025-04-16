@@ -23,7 +23,7 @@ const DashboardNavbar = () => {
     <div className="h-14 w-full border-b fixed top-0 z-50 backdrop-blur-2xl">
       <WidthWrapper className="flex items-center justify-between h-full">
         <div className="flex gap-8 items-center">
-          <Logo isMainLogo={true} />
+          <Logo isMainLogo={false} href="/documents" />
           {links.map((link) => (
             <UnderlineText key={link.id} text={link.label} link={link.href} />
           ))}
