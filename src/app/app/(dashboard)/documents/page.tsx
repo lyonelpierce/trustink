@@ -2,7 +2,6 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { getUserDocuments } from "@/lib/supabase";
-import DashbaordTitle from "@/components/dashboard/title";
 import { columns } from "@/components/dashboard/documents/Table/Columns";
 import DocumentUpload from "@/components/dashboard/documents/DocumentUpload";
 import { DocumentsTable } from "@/components/dashboard/documents/Table/DocumentsTable";
@@ -23,10 +22,6 @@ const DocumentsPage = async () => {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <DashbaordTitle
-        title="Documents"
-        description="Sign or request document signatures"
-      />
       <DocumentUpload />
       <DocumentsTable columns={columns} data={documents.data ?? []} />
     </div>

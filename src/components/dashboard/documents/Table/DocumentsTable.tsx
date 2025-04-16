@@ -26,6 +26,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Database } from "../../../../../database.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import DashbaordTitle from "../../title";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -109,7 +110,11 @@ export function DocumentsTable<
 
   return (
     <div>
-      <div className="flex items-center py-4">
+      <div className="flex items-center justify-between text-xl font-semibold py-4">
+        <DashbaordTitle
+          title="Documents"
+          description="Sign or request document signatures"
+        />
         <Input
           placeholder="Filter documents..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
