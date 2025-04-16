@@ -177,8 +177,8 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
       const { error } = await supabase.from("recipients").insert({
         email: values.email,
         document_id: documentId,
-        user_id: userId ?? "",
-        account_id: existingUsers?.[0]?.clerk_id ?? null,
+        sender_id: userId ?? "",
+        user_id: existingUsers?.[0]?.clerk_id ?? null,
         color: randomColor,
       });
 

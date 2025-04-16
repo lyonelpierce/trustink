@@ -1,7 +1,7 @@
 import Link from "next/link";
-import SendModal from "./SendModal";
 import Logo from "@/components/Logo";
 import DocumentName from "./DocumentName";
+import SendModal from "../viewer/SendModal";
 import { ChevronLeftIcon } from "lucide-react";
 
 const EditorNavbar = ({

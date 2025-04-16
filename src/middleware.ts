@@ -31,7 +31,6 @@ const isDashboardRoute = createRouteMatcher([
   "/profile(.*)",
   "/signatures(.*)",
   "/editor(.*)",
-  "/api/(?!webhooks)(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

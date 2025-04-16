@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       // Check recipients table for matching email and update account_id
       const { error: updateError } = await supabase
         .from("recipients")
-        .update({ account_id: evt.data.id })
+        .update({ user_id: evt.data.id })
         .eq("email", emailAddress);
 
       if (updateError) {
