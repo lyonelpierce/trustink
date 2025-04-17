@@ -73,7 +73,7 @@ const ViewerWrapper = ({
       {document.recipients.some(
         (recipient) => recipient.signer_id === userId
       ) && (
-        <div className="fixed top-0 right-0 bg-white h-screen min-w-md border-l pt-16 px-4">
+        <div className="fixed top-0 right-0 bg-white h-screen min-w-md max-w-md border-l pt-16 px-4">
           <ChatComponent documentId={document.id} chatMessages={chatMessages} />
         </div>
       )}
