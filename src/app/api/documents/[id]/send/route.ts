@@ -11,7 +11,6 @@ export async function POST(
 ) {
   const params = await props.params;
   const { id } = params;
-
   const { name, access } = await req.json();
 
   const { userId } = await auth();

@@ -22,7 +22,8 @@ const getDocumentsWithData = async (userId: string) => {
         *,
         recipients (
           document_id,
-          user_id
+          user_id,
+          signer_id
         )
       `
       )

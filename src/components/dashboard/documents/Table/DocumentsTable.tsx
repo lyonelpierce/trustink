@@ -40,7 +40,11 @@ interface DataTableProps<TData, TValue> {
 
 export function DocumentsTable<
   TData extends Database["public"]["Tables"]["documents"]["Row"] & {
-    recipients: Database["public"]["Tables"]["recipients"]["Row"][];
+    recipients: {
+      id: string;
+      signer_id: string;
+      user_id: string;
+    }[];
   },
   TValue
 >({ columns, data }: DataTableProps<TData, TValue>) {
@@ -56,11 +60,10 @@ export function DocumentsTable<
   const filteredDocuments = useMemo(() => {
     switch (filter) {
       case "inbox":
-        return documents.filter(
-          (doc) =>
-            doc.recipients.some(
-              (recipient) => recipient.user_id === session?.user.id
-            ) && doc.user_id !== session?.user.id
+        return documents.filter((doc) =>
+          doc.recipients.some(
+            (recipient) => recipient.signer_id === session?.user.id
+          )
         );
       case "pending":
         return documents.filter(
