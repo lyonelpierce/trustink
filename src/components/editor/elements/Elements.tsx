@@ -48,6 +48,7 @@ export type FieldFormType = {
 
 const Elements = ({
   fields,
+  setFields,
   documentId,
   isDocumentPdfLoaded,
 }: {
@@ -58,22 +59,13 @@ const Elements = ({
       color: string;
     };
   })[];
+  setFields: React.Dispatch<React.SetStateAction<typeof fields>>;
   documentId: string;
   isDocumentPdfLoaded: boolean;
 }) => {
   const { session } = useSession();
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
-
-  const [currentFields, setCurrentFields] = useState<
-    (Database["public"]["Tables"]["fields"]["Row"] & {
-      recipients: {
-        id: string;
-        email: string;
-        color: string;
-      };
-    })[]
-  >(fields);
 
   const { selectedRecipient } = useSelectedRecipientStore();
 
@@ -154,9 +146,9 @@ const Elements = ({
 
             if (fieldWithRecipient) {
               if (payload.eventType === "INSERT") {
-                setCurrentFields((prev) => [...prev, fieldWithRecipient]);
+                setFields((prev) => [...prev, fieldWithRecipient]);
               } else {
-                setCurrentFields((prev) =>
+                setFields((prev) =>
                   prev.map((field) =>
                     field.id === fieldWithRecipient.id
                       ? fieldWithRecipient
@@ -166,7 +158,7 @@ const Elements = ({
               }
             }
           } else if (payload.eventType === "DELETE") {
-            setCurrentFields((prev) =>
+            setFields((prev) =>
               prev.filter((field) => field.id !== payload.old.id)
             );
           }
@@ -177,7 +169,7 @@ const Elements = ({
     return () => {
       channel.unsubscribe();
     };
-  }, [documentId, createClerkSupabaseClient]);
+  }, [documentId, createClerkSupabaseClient, setFields]);
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -276,7 +268,7 @@ const Elements = ({
 
   const onFieldResize = useCallback(
     async (node: HTMLElement, index: number) => {
-      const field = currentFields[index];
+      const field = fields[index];
 
       const $page = window.document.querySelector<HTMLElement>(
         `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
@@ -312,12 +304,12 @@ const Elements = ({
         console.error("Error updating field position and size:", error);
       }
     },
-    [getFieldPosition, client, currentFields]
+    [getFieldPosition, client, fields]
   );
 
   const onFieldMove = useCallback(
     async (node: HTMLElement, index: number) => {
-      const field = currentFields[index];
+      const field = fields[index];
 
       const $page = window.document.querySelector<HTMLElement>(
         `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
@@ -346,7 +338,7 @@ const Elements = ({
         console.error("Error updating field position:", error);
       }
     },
-    [getFieldPosition, client, currentFields]
+    [getFieldPosition, client, fields]
   );
 
   // Add new handler for field removal
@@ -354,7 +346,7 @@ const Elements = ({
     async (index: number) => {
       if (isDeletingField) return; // Prevent multiple simultaneous deletions
 
-      const field = currentFields[index];
+      const field = fields[index];
 
       try {
         setIsDeletingField(true);
@@ -371,7 +363,7 @@ const Elements = ({
         setIsDeletingField(false);
       }
     },
-    [client, currentFields, isDeletingField]
+    [client, fields, isDeletingField]
   );
 
   useEffect(() => {
@@ -455,7 +447,7 @@ const Elements = ({
 
       {isDocumentPdfLoaded && isPdfReady && (
         <>
-          {currentFields.map((field, index) => (
+          {fields.map((field, index) => (
             <FieldItem
               key={index}
               field={field}
