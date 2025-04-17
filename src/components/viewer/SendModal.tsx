@@ -75,7 +75,7 @@ const SendModal = ({
     const documentStatus = async () => {
       const { data, error } = await supabase
         .from("recipients")
-        .select("id, signer_id, user_id, status")
+        .select("id, signer_id, user_id")
         .eq("document_id", documentId);
 
       if (error) {
@@ -86,7 +86,7 @@ const SendModal = ({
     };
 
     documentStatus();
-  }, [session, documentId, supabase]);
+  }, [session, documentId, supabase, isOpen]);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
