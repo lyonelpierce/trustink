@@ -69,6 +69,12 @@ export default clerkMiddleware(async (auth, req) => {
       if (url.pathname.startsWith("/api/")) {
         return NextResponse.next();
       }
+
+      // Redirect to /documents if accessing the root path
+      if (url.pathname === "/") {
+        return NextResponse.redirect(new URL("/documents", req.url));
+      }
+
       return NextResponse.rewrite(new URL(`/app${path}`, req.url));
     }
 

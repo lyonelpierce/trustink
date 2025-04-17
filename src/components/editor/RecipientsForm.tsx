@@ -20,7 +20,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserPlus2Icon, Trash2Icon } from "lucide-react";
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 
 const formSchema = z.object({
@@ -57,7 +57,7 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
   const { selectedRecipient, setSelectedRecipient } =
     useSelectedRecipientStore();
 
-  const createClerkSupabaseClient = useCallback(() => {
+  const createClerkSupabaseClient = () => {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -67,11 +67,11 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
         },
       }
     );
-  }, [session]);
+  };
+
+  const supabase = createClerkSupabaseClient();
 
   useEffect(() => {
-    const supabase = createClerkSupabaseClient();
-
     const channel = supabase
       .channel("recipients")
       .on(
@@ -120,12 +120,10 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [documentId, createClerkSupabaseClient]);
+  }, [documentId, supabase]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const supabase = createClerkSupabaseClient();
-
       // Check if recipient limit is reached
       if (recipients.length >= 5) {
         toast.error("Maximum of 5 signers allowed per document");

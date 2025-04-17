@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../../../../database.types";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   FileStackIcon,
   InboxIcon,
@@ -52,39 +52,48 @@ export function DocumentsTable<
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [documents, setDocuments] = useState<TData[]>(data);
+  const [filteredDocs, setFilteredDocs] = useState<TData[]>(data);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [filter, setFilter] = useState<
     "all" | "inbox" | "pending" | "drafts" | "completed"
   >("all");
 
-  const filteredDocuments = useMemo(() => {
+  useEffect(() => {
+    let result = [...documents];
+
     switch (filter) {
       case "inbox":
-        return documents.filter((doc) =>
+        result = documents.filter((doc) =>
           doc.recipients.some(
             (recipient) => recipient.signer_id === session?.user.id
           )
         );
+        break;
       case "pending":
-        return documents.filter(
+        result = documents.filter(
           (doc) => doc.user_id === session?.user.id && doc.status === "pending"
         );
+        break;
       case "drafts":
-        return documents.filter(
+        result = documents.filter(
           (doc) => doc.user_id === session?.user.id && doc.status === "draft"
         );
+        break;
       case "completed":
-        return documents.filter(
+        result = documents.filter(
           (doc) =>
             doc.user_id === session?.user.id && doc.status === "completed"
         );
+        break;
       default:
-        return documents;
+        result = documents;
     }
-  }, [documents, filter, session?.user.id]);
+
+    setFilteredDocs(result);
+  }, [filter, documents, session?.user.id]);
 
   const table = useReactTable({
-    data: filteredDocuments,
+    data: filteredDocs,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -98,7 +107,7 @@ export function DocumentsTable<
     },
   });
 
-  const createClerkSupabaseClient = useCallback(() => {
+  const createClerkSupabaseClient = () => {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -108,7 +117,7 @@ export function DocumentsTable<
         },
       }
     );
-  }, [session]);
+  };
 
   const supabase = createClerkSupabaseClient();
 
