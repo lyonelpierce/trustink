@@ -171,7 +171,7 @@ const SendModal = ({
           <CredenzaHeader>
             <CredenzaTitle>Send</CredenzaTitle>
             <CredenzaDescription>
-              Review the document and send it to the recipients.
+              Customize the email and send it to the recipients.
             </CredenzaDescription>
           </CredenzaHeader>
           <CredenzaBody>
