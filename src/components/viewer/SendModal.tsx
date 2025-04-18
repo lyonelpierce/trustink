@@ -139,20 +139,19 @@ const SendModal = ({
     documentStatus();
   }, [session, documentId, supabase, isOpen]);
 
-  // Add this useEffect to handle keyboard shortcuts
+  // Add this useEffect to handle Ctrl+S
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isOpen && (e.ctrlKey || e.metaKey) && e.key === "s") {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        if (!validationErrors && !isLoading) {
-          form.handleSubmit(onSubmit)();
-        }
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, validationErrors, isLoading, form]);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
@@ -192,7 +191,7 @@ const SendModal = ({
             </CredenzaDescription>
           </CredenzaHeader>
           <CredenzaBody>
-            {validationErrors ? (
+            {validationErrors.noRecipients || validationErrors.noSignature ? (
               <div className="p-4 text-sm rounded-md space-y-2 flex flex-col items-center justify-center">
                 <TriangleAlert
                   className="w-28 h-28 text-red-600"
@@ -300,22 +299,23 @@ const SendModal = ({
             )}
           </CredenzaBody>
           <CredenzaFooter className="flex justify-end gap-2">
-            {!validationErrors && (
-              <Button
-                type="submit"
-                form="send-document-form"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2Icon className="w-4 h-4 animate-spin" />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <SendIcon />
-                    Send
-                  </div>
-                )}
-              </Button>
-            )}
+            {!validationErrors.noRecipients &&
+              !validationErrors.noSignature && (
+                <Button
+                  type="submit"
+                  form="send-document-form"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2Icon className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <SendIcon />
+                      Send
+                    </div>
+                  )}
+                </Button>
+              )}
             <CredenzaClose asChild>
               <Button variant="outline">Close</Button>
             </CredenzaClose>
