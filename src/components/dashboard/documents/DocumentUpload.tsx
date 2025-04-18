@@ -57,7 +57,7 @@ const DocumentUpload = () => {
                     ${
                       isDragActive
                         ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
+                        : "border-gray-300 dark:border-zinc-700 hover:border-gray-400"
                     }
                     ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
@@ -79,12 +79,12 @@ const DocumentUpload = () => {
               </p>
             ) : (
               <div>
-                <p className="mt-2 text-sm text-gray-600">
+                <p className="mt-2 text-sm text-zinc-600">
                   {isUploading
                     ? "Uploading..."
                     : "Drag and drop a PDF file here, or click to select a file"}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">10MB max</p>
+                <p className="mt-1 text-xs text-zinc-500">10MB max</p>
                 {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
               </div>
             )}
