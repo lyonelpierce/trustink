@@ -33,7 +33,7 @@ import { SendIcon, Loader2Icon, TriangleAlert } from "lucide-react";
 
 const formSchema = z.object({
   subject: z.string().min(1),
-  message: z.string().min(1),
+  message: z.string().min(10),
 });
 
 const SendModal = ({
