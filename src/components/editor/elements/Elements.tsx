@@ -420,7 +420,7 @@ const Elements = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col">
-        <p className="text-lg font-medium">Fields</p>
+        <p className="text-lg font-medium">3. Fields</p>
         <p className="text-xs text-gray-500">
           {!selectedRecipient
             ? "Select a recipient to add fields for them."

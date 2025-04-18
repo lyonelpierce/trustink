@@ -248,7 +248,7 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
     <div className="flex flex-col gap-4">
       <Form {...form}>
         <div className="flex flex-col">
-          <p className="text-lg font-medium">Add Signers</p>
+          <p className="text-lg font-medium">1. Add Signers</p>
           <p className="text-xs text-gray-500">
             Who needs to sign the document? (Max 5)
           </p>
@@ -291,7 +291,7 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
       {recipients.length > 0 && (
         <div className="flex flex-col gap-4 ">
           <div className="flex flex-col gap-0">
-            <p className="text-lg font-medium">Select a signer</p>
+            <p className="text-lg font-medium">2. Select a signer</p>
             <p className="text-xs text-gray-500">
               Select a signer to add fields
             </p>

@@ -17,42 +17,40 @@ import {
   CredenzaContent,
   CredenzaDescription,
 } from "../ui/credenza";
-import {
-  SendIcon,
-  LockIcon,
-  Loader2Icon,
-  LockOpenIcon,
-  TriangleAlert,
-} from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { FormField } from "../ui/form";
 import { useForm } from "react-hook-form";
+import { Textarea } from "../ui/textarea";
 import { useSession } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { RadioGroup } from "../ui/radio-group";
-import { RadioGroupItem } from "../ui/radio-group";
 import { createClient } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState, useCallback } from "react";
+import { SendIcon, Loader2Icon, TriangleAlert } from "lucide-react";
 
 const formSchema = z.object({
-  title: z.string().min(1),
-  access: z.enum(["public", "private"]),
+  subject: z.string().min(1),
+  message: z.string().min(1),
 });
 
 const SendModal = ({
   documentName,
   documentId,
+  userInfo,
 }: {
   documentName: string;
   documentId: string;
+  userInfo: {
+    first_name: string;
+    last_name: string;
+  };
 }) => {
   const router = useRouter();
   const { session } = useSession();
+
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
@@ -63,8 +61,8 @@ const SendModal = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: documentName || "",
-      access: "public",
+      subject: `${userInfo.first_name} ${userInfo.last_name} via TrustInk`,
+      message: `${userInfo.first_name} ${userInfo.last_name} invited you to sign ${documentName}`,
     },
   });
 
@@ -82,76 +80,62 @@ const SendModal = ({
 
   const supabase = createClerkSupabaseClient();
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const documentStatus = async () => {
-      const { data, error } = await supabase
-        .from("recipients")
-        .select(
-          `
-          id, 
-          signer_id, 
-          user_id,
-          fields!fields_recipient_id_fkey (
-            id,
-            type,
-            page,
-            position_x,
-            position_y,
-            width,
-            height
-          )
+  const documentStatus = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("recipients")
+      .select(
         `
+        id, 
+        signer_id, 
+        user_id,
+        fields!fields_recipient_id_fkey (
+          id,
+          type,
+          page,
+          position_x,
+          position_y,
+          width,
+          height
         )
-        .eq("document_id", documentId);
+      `
+      )
+      .eq("document_id", documentId);
 
-      if (error) {
-        console.log("error");
-        console.error(error);
-        return;
-      }
+    if (error) {
+      console.log("error");
+      console.error(error);
+      return;
+    }
 
-      const errors: {
-        noRecipients?: boolean;
-        noSignature?: string[];
-      } = {};
+    const errors: {
+      noRecipients?: boolean;
+      noSignature?: string[];
+    } = {};
 
-      if (!data?.length) {
-        errors.noRecipients = true;
-        setValidationErrors(errors);
-        return;
-      }
-
-      // Check for recipients with no signature field
-      const recipientsWithNoSignature = data.filter(
-        (recipient) =>
-          !recipient.fields?.some((field) => field.type === "signature")
-      );
-
-      if (recipientsWithNoSignature.length > 0) {
-        errors.noSignature = recipientsWithNoSignature.map((r) => r.user_id);
-      }
-
+    if (!data?.length) {
+      errors.noRecipients = true;
       setValidationErrors(errors);
-    };
+      return;
+    }
 
-    documentStatus();
-  }, [session, documentId, supabase, isOpen]);
+    // Check for recipients with no signature field
+    const recipientsWithNoSignature = data.filter(
+      (recipient) =>
+        !recipient.fields?.some((field) => field.type === "signature")
+    );
 
-  // Add this useEffect to handle Ctrl+S
+    if (recipientsWithNoSignature.length > 0) {
+      errors.noSignature = recipientsWithNoSignature.map((r) => r.user_id);
+    }
+
+    setValidationErrors(errors);
+  }, [supabase, documentId]);
+
   useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+    if (isOpen) {
+      documentStatus();
+    }
+  }, [isOpen, documentStatus]); // Only run when modal is opened
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
@@ -180,12 +164,12 @@ const SendModal = ({
     <>
       <Button variant="default" type="button" onClick={() => setIsOpen(true)}>
         <SendIcon />
-        Review and Send
+        Send
       </Button>
       <Credenza open={isOpen} onOpenChange={setIsOpen}>
         <CredenzaContent>
           <CredenzaHeader>
-            <CredenzaTitle>Review and Send</CredenzaTitle>
+            <CredenzaTitle>Send</CredenzaTitle>
             <CredenzaDescription>
               Review the document and send it to the recipients.
             </CredenzaDescription>
@@ -219,13 +203,13 @@ const SendModal = ({
                 >
                   <FormField
                     control={form.control}
-                    name="title"
+                    name="subject"
                     disabled={isLoading}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Document Title</FormLabel>
+                        <FormLabel>Subject</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} placeholder="Your subject" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -233,62 +217,16 @@ const SendModal = ({
                   />
                   <FormField
                     control={form.control}
-                    name="access"
+                    name="message"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Document Access</FormLabel>
+                        <FormLabel>Message</FormLabel>
                         <FormControl>
-                          <RadioGroup
-                            defaultValue="card"
-                            className="grid grid-cols-2 gap-4"
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <div>
-                              <RadioGroupItem
-                                value="public"
-                                id="public"
-                                className="peer sr-only"
-                                aria-label="Public"
-                                disabled={isLoading}
-                              />
-                              <Label
-                                htmlFor="public"
-                                className="cursor-pointer flex gap-4 items-center rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <LockOpenIcon className="flex-shrink-0" />
-                                <div className="flex flex-col gap-1">
-                                  <span>Public</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    Document can be viewed by anyone with the
-                                    link.
-                                  </span>
-                                </div>
-                              </Label>
-                            </div>
-                            <div>
-                              <RadioGroupItem
-                                value="private"
-                                id="private"
-                                className="peer sr-only"
-                                aria-label="Private"
-                                disabled={isLoading}
-                              />
-                              <Label
-                                htmlFor="private"
-                                className="cursor-pointer flex gap-4 items-center rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <LockIcon className="flex-shrink-0" />
-                                <div className="flex flex-col gap-1">
-                                  <span>Private</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    Users will need to sign up to view the
-                                    document
-                                  </span>
-                                </div>
-                              </Label>
-                            </div>
-                          </RadioGroup>
+                          <Textarea
+                            {...field}
+                            className="resize-none"
+                            placeholder="Your message"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import EditorWrapper from "@/components/editor/EditorWrapper";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
@@ -22,6 +23,28 @@ const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   }
 
   return data;
+};
+
+const getUserInfo = async (supabase: SupabaseClient) => {
+  const { userId } = await auth();
+
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("first_name, last_name")
+      .eq("clerk_id", userId)
+      .single();
+
+    if (error) {
+      console.error(error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
 };
 
 export const generateMetadata = async (props: {
@@ -69,10 +92,16 @@ const SingleDocumentPage = async (props: {
 
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
+  const userInfo = await getUserInfo(supabase);
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <EditorWrapper document={document} key={document.id} fields={fields} />
+      <EditorWrapper
+        key={document.id}
+        document={document}
+        fields={fields}
+        userInfo={userInfo}
+      />
     </div>
   );
 };

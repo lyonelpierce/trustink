@@ -11,7 +11,7 @@ export async function POST(
 ) {
   const params = await props.params;
   const { id } = params;
-  const { name, access } = await req.json();
+  const { subject, message } = await req.json();
 
   const { userId } = await auth();
   const supabase = createServerSupabaseClient();
@@ -20,25 +20,7 @@ export async function POST(
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const isPublic = access === "public";
-
   try {
-    const { data: document, error } = await supabase
-      .from("documents")
-      .update({
-        name,
-        visibility: isPublic,
-        status: "pending",
-      })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error(error);
-      return new NextResponse("Error creating document", { status: 500 });
-    }
-
     const { data: recipients, error: recipientsError } = await supabase
       .from("recipients")
       .select("email")
@@ -55,15 +37,14 @@ export async function POST(
           resend.emails.send({
             from: "Trustink <no-reply@trustink.ai>",
             to: recipient.email,
-            subject: `Document for Signature: ${document.name}`,
+            subject: subject,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2>Document Ready for Signature</h2>
                 <p>Hello,</p>
-                <p>You have received a new document to sign: <strong>${document.name}</strong></p>
-                <p>Please click the button below to review and sign the document:</p>
+                <p>${message}</p>
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="https://app.trustink.ai/sign/${document.id}" 
+                  <a href="https://app.trustink.ai/sign/${id}" 
                      style="background-color: #0066cc; 
                             color: white; 
                             padding: 12px 24px; 

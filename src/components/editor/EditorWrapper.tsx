@@ -10,6 +10,7 @@ import { LazyPDFViewerNoLoader } from "@/components/editor/LazyPDFViewer";
 const EditorWrapper = ({
   document,
   fields,
+  userInfo,
 }: {
   document: Database["public"]["Tables"]["documents_data"]["Row"] & {
     documents: {
@@ -23,6 +24,10 @@ const EditorWrapper = ({
       color: string;
     };
   })[];
+  userInfo: {
+    first_name: string;
+    last_name: string;
+  };
 }) => {
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
 
@@ -31,6 +36,7 @@ const EditorWrapper = ({
       <EditorNavbar
         documentName={document.documents.name}
         documentId={document.document_id}
+        userInfo={userInfo}
       />
       <div className="mx-auto max-w-[90rem] bg-gray-50">
         <div className="flex gap-4 justify-center pt-20 relative p-4">

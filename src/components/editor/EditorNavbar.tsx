@@ -7,9 +7,14 @@ import { ChevronLeftIcon } from "lucide-react";
 const EditorNavbar = ({
   documentName,
   documentId,
+  userInfo,
 }: {
   documentName: string;
   documentId: string;
+  userInfo: {
+    first_name: string;
+    last_name: string;
+  };
 }) => {
   return (
     <div className="h-14 flex items-center justify-between px-4 fixed top-0 z-[50] w-full backdrop-blur-3xl border-b bg-white/40">
@@ -23,7 +28,11 @@ const EditorNavbar = ({
         <DocumentName documentName={documentName} />
       </div>
       <div className="w-1/3 flex justify-end items-center">
-        <SendModal documentName={documentName} documentId={documentId} />
+        <SendModal
+          documentName={documentName}
+          documentId={documentId}
+          userInfo={userInfo}
+        />
       </div>
     </div>
   );
