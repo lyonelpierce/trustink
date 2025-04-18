@@ -1,7 +1,6 @@
 import Logo from "./Logo";
 import WidthWrapper from "./WidthWrapper";
 import UserDropdown from "./UserDropdown";
-import { ModeToggle } from "./theme-toggle";
 import { Button } from "@/components/ui/button";
 import { SignedOut, SignInButton, SignedIn } from "@clerk/nextjs";
 
@@ -11,7 +10,6 @@ const Navbar = () => {
       <WidthWrapper className="flex items-center justify-between h-full">
         <Logo isMainLogo={true} />
         <div className="flex items-center gap-4">
-          <ModeToggle rounded />
           <SignedOut>
             <SignInButton>
               <Button size="sm" className="h-10">

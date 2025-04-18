@@ -248,7 +248,7 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
     <div className="flex flex-col gap-4">
       <Form {...form}>
         <div className="flex flex-col">
-          <p className="text-lg font-medium">1. Add Signers</p>
+          <p className="text-lg font-medium dark:text-black">1. Add Signers</p>
           <p className="text-xs text-gray-500">
             Who needs to sign the document? (Max 5)
           </p>
@@ -291,7 +291,9 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
       {recipients.length > 0 && (
         <div className="flex flex-col gap-4 ">
           <div className="flex flex-col gap-0">
-            <p className="text-lg font-medium">2. Select a signer</p>
+            <p className="text-lg font-medium dark:text-black">
+              2. Select a signer
+            </p>
             <p className="text-xs text-gray-500">
               Select a signer to add fields
             </p>
@@ -335,7 +337,7 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
                 }}
                 className="group"
               >
-                <Trash2Icon className="size-5 text-muted-foreground transition-all ease-in-out group-hover:text-red-500" />
+                <Trash2Icon className="size-5 text-muted-foreground transition-all ease-in-out group-hover:text-red-500 dark:text-zinc-400  " />
               </Button>
             </div>
           ))}

@@ -1,10 +1,9 @@
 import Logo from "../Logo";
 import WidthWrapper from "../WidthWrapper";
 import UserDropdown from "../UserDropdown";
-import { ModeToggle } from "../theme-toggle";
 import { Button } from "@/components/ui/button";
-import { SignedOut, SignInButton, SignedIn } from "@clerk/nextjs";
 import UnderlineText from "../ui/underlineText";
+import { SignedOut, SignInButton, SignedIn } from "@clerk/nextjs";
 
 const links = [
   {
@@ -29,7 +28,7 @@ const DashboardNavbar = () => {
           ))}
         </div>
         <div className="flex items-center gap-4">
-          <ModeToggle rounded />
+          {/* <ModeToggle rounded /> */}
           <SignedOut>
             <SignInButton>
               <Button size="sm" className="h-10">

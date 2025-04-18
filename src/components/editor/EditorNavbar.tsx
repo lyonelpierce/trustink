@@ -25,7 +25,7 @@ const EditorNavbar = ({
         <Logo isMainLogo={false} href="/documents" />
       </div>
       <div className="w-1/3 flex justify-center items-center">
-        <DocumentName documentName={documentName} />
+        <DocumentName documentName={documentName} documentId={documentId} />
       </div>
       <div className="w-1/3 flex justify-end items-center">
         <SendModal
