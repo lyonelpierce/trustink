@@ -43,7 +43,7 @@ const EditorWrapper = ({
           <div className="sticky top-20 z-[50] min-w-80 h-min rounded-lg">
             <RecipientsForm documentId={document.document_id} />
           </div>
-          <div className="w-5/6">
+          <div className="w-full">
             <LazyPDFViewerNoLoader
               documentData={document}
               onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
