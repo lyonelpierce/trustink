@@ -10,22 +10,22 @@ const NavigationItems = [
   {
     label: "Profile",
     href: "/profile",
-    icon: <UserIcon className="w-6 h-6" />,
+    icon: <UserIcon className="w-5 h-5" />,
   },
   {
     label: "Signatures",
     href: "/signatures",
-    icon: <SignatureIcon className="w-6 h-6" />,
+    icon: <SignatureIcon className="w-5 h-5" />,
   },
   {
     label: "Security",
     href: "/security",
-    icon: <LockIcon className="w-6 h-6" />,
+    icon: <LockIcon className="w-5 h-5" />,
   },
   {
     label: "Billing",
     href: "/billing",
-    icon: <CreditCardIcon className="w-6 h-6" />,
+    icon: <CreditCardIcon className="w-5 h-5" />,
   },
 ];
 

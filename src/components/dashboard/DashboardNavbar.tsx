@@ -1,22 +1,11 @@
 import Logo from "../Logo";
 import WidthWrapper from "../WidthWrapper";
 import UserDropdown from "../UserDropdown";
+import { links } from "@/constants/MenuItems";
 import { Button } from "@/components/ui/button";
 import UnderlineText from "../ui/underlineText";
 import { SignedOut, SignInButton, SignedIn } from "@clerk/nextjs";
 
-const links = [
-  {
-    id: "1",
-    label: "Documents",
-    href: "/documents",
-  },
-  // {
-  //   id: "2",
-  //   label: "Templates",
-  //   href: "/templates",
-  // },
-];
 const DashboardNavbar = () => {
   return (
     <div className="h-14 w-full border-b fixed top-0 z-50 backdrop-blur-2xl">

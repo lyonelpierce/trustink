@@ -1,14 +1,14 @@
 "use client";
 
-import { Rnd } from "react-rnd";
 import { cn } from "@/lib/utils";
-import { Trash } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Database } from "../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
+import { useCallback, useEffect, useState } from "react";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-import { useCallback, useEffect, useRef, useState } from "react";
+
+const INDICATOR_HEIGHT = 32; // Fixed height for the indicator
 
 export type FieldItemProps = {
   field: Database["public"]["Tables"]["fields"]["Row"] & {
@@ -18,47 +18,22 @@ export type FieldItemProps = {
       color: string;
     };
   };
-  passive?: boolean;
-  disabled?: boolean;
-  minHeight?: number;
-  minWidth?: number;
-  defaultHeight?: number;
-  defaultWidth?: number;
-  onResize?: (_node: HTMLElement) => void;
-  onMove?: (_node: HTMLElement) => void;
-  onRemove?: () => void;
-  onFocus?: () => void;
-  onBlur?: () => void;
-  active?: boolean;
-  onFieldDeactivate?: () => void;
-  onFieldActivate?: () => void;
+  isSelected?: boolean;
+  onFieldClick?: (fieldId: number) => void;
 };
 
 export const FieldItem = ({
   field,
-  passive,
-  disabled,
-  minHeight,
-  minWidth,
-  defaultHeight,
-  defaultWidth,
-  active,
-  onResize,
-  onMove,
-  onRemove,
-  onFieldDeactivate,
-  onFieldActivate,
-  onBlur,
-  onFocus,
+  isSelected,
+  onFieldClick,
 }: FieldItemProps) => {
   const [coords, setCoords] = useState({
     pageX: 0,
     pageY: 0,
-    pageHeight: defaultHeight || 0,
-    pageWidth: defaultWidth || 0,
+    pageHeight: 0,
+    pageWidth: 0,
+    pageLeft: 0,
   });
-  const [settingsActive, setSettingsActive] = useState(false);
-  const $el = useRef(null);
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
@@ -69,23 +44,23 @@ export const FieldItem = ({
       return;
     }
 
-    const { height, width } = $page.getBoundingClientRect();
-
-    const top = $page.getBoundingClientRect().top + window.scrollY;
-    const left = $page.getBoundingClientRect().left + window.scrollX;
+    const { height, width, left, top } = $page.getBoundingClientRect();
+    const pageLeft = left + window.scrollX;
+    const pageTop = top + window.scrollY;
 
     // X and Y are percentages of the page's height and width
-    const pageX = (field.position_x / 100) * width + left;
-    const pageY = (field.position_y / 100) * height + top;
+    const pageX = (field.position_x / 100) * width + pageLeft;
+    const pageY = (field.position_y / 100) * height + pageTop;
 
     const pageHeight = (field.height / 100) * height;
     const pageWidth = (field.width / 100) * width;
 
     setCoords({
-      pageX: pageX,
-      pageY: pageY,
-      pageHeight: pageHeight,
-      pageWidth: pageWidth,
+      pageX,
+      pageY,
+      pageHeight,
+      pageWidth,
+      pageLeft,
     });
   }, [
     field.height,
@@ -111,84 +86,52 @@ export const FieldItem = ({
     };
   }, [calculateCoords]);
 
-  useEffect(() => {
-    const onClickOutsideOfField = (event: MouseEvent) => {
-      const isOutsideOfField =
-        $el.current && !event.composedPath().includes($el.current);
+  const handleClick = useCallback(() => {
+    if (onFieldClick) {
+      onFieldClick(field.id);
 
-      setSettingsActive((active) => {
-        if (active && isOutsideOfField) {
-          return false;
-        }
-
-        return active;
-      });
-
-      if (isOutsideOfField) {
-        setSettingsActive(false);
-        onFieldDeactivate?.();
-        onBlur?.();
+      // Find the field element and scroll it into view
+      const fieldElement = document.querySelector(
+        `[data-field-id="${field.id}"]`
+      );
+      if (fieldElement) {
+        fieldElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       }
-    };
-
-    document.body.addEventListener("click", onClickOutsideOfField);
-
-    return () => {
-      document.body.removeEventListener("click", onClickOutsideOfField);
-    };
-  }, [onBlur, onFieldDeactivate]);
+    }
+  }, [field.id, onFieldClick]);
 
   return createPortal(
-    <Rnd
-      key={coords.pageX + coords.pageY + coords.pageHeight + coords.pageWidth}
-      className={cn("group", {
-        "pointer-events-none": passive,
-        "pointer-events-none cursor-not-allowed opacity-75": disabled,
-        "z-50": active && !disabled,
-        "z-20": !active && !disabled,
-        "z-10": disabled,
-      })}
-      default={{
-        x: coords.pageX,
-        y: coords.pageY,
+    <div
+      style={{
+        position: "absolute",
+        left: coords.pageX,
+        top: coords.pageY,
         height: coords.pageHeight,
         width: coords.pageWidth,
       }}
-      minHeight={minHeight || "auto"}
-      minWidth={minWidth || "auto"}
-      bounds={`${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`}
-      onDragStart={() => onFieldActivate?.()}
-      onResizeStart={() => onFieldActivate?.()}
-      onResizeStop={(_e, _d, ref) => {
-        onFieldDeactivate?.();
-        onResize?.(ref);
-      }}
-      onDragStop={(_e, d) => {
-        onFieldDeactivate?.();
-        onMove?.(d.node);
-      }}
-      resizeHandleStyles={{
-        bottom: { bottom: -8, cursor: "ns-resize" },
-        top: { top: -8, cursor: "ns-resize" },
-        left: { cursor: "ew-resize" },
-        right: { cursor: "ew-resize" },
-      }}
+      className="z-10"
+      onClick={handleClick}
     >
+      <div
+        className={cn(
+          "absolute w-8 transition-all duration-200",
+          isSelected ? "bg-blue-500" : "bg-transparent"
+        )}
+        style={{
+          left: coords.pageLeft - coords.pageX - 32,
+          height: INDICATOR_HEIGHT,
+          top: "50%",
+          transform: "translateY(-50%)",
+        }}
+      />
       <Card
         className={cn(
-          "bg-field-card/80 h-full w-full backdrop-blur-[1px] group overflow-hidden transition-all ease-in-out",
-          {
-            "border-field-card-border": !disabled,
-            "border-none": active,
-          }
+          "bg-field-card/80 h-full w-full backdrop-blur-[1px] overflow-hidden border-field-card-border cursor-pointer transition-all duration-200",
+          isSelected && "ring-2 ring-blue-500 ring-offset-2"
         )}
-        onClick={(e) => {
-          e.stopPropagation();
-          setSettingsActive((prev) => !prev);
-          onFieldActivate?.();
-          onFocus?.();
-        }}
-        ref={$el}
         data-field-id={field.id}
         style={{
           border: field.recipients.color
@@ -198,9 +141,8 @@ export const FieldItem = ({
       >
         <CardContent
           className={cn(
-            "text-field-card-foreground rounded-b-none select-none flex flex-col items-center justify-center p-2 bg-white w-full h-full text-sm font-medium transition-all duration-300 ease-in-out",
+            "text-field-card-foreground rounded-b-none select-none flex flex-col items-center justify-center p-2 bg-white w-full h-full text-sm font-medium",
             {
-              "text-field-card-foreground/50": disabled,
               "font-tangerine text-3xl": field.type === "signature",
             }
           )}
@@ -209,21 +151,7 @@ export const FieldItem = ({
           <p className="text-xs hidden">{field.recipients.email}</p>
         </CardContent>
       </Card>
-
-      {!disabled && settingsActive && (
-        <div className="z-[60] flex justify-center items-center">
-          <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
-            <button
-              className="cursor-pointer dark:text-muted-foreground/50 dark:hover:text-muted-foreground dark:hover:bg-foreground/10 rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
-              onClick={onRemove}
-              onTouchEnd={onRemove}
-            >
-              <Trash className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-      )}
-    </Rnd>,
+    </div>,
     document.body
   );
 };

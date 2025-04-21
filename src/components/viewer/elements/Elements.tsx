@@ -60,8 +60,7 @@ const Elements = ({
 }) => {
   const { userId } = useAuth();
   const { session } = useSession();
-  const { getPage, isWithinPageBounds, getFieldPosition } =
-    useDocumentElement();
+  const { getPage, isWithinPageBounds } = useDocumentElement();
 
   const [currentFields, setCurrentFields] = useState<
     (Database["public"]["Tables"]["fields"]["Row"] & {
@@ -73,9 +72,18 @@ const Elements = ({
     })[]
   >(fields);
 
+  const authorizedRecipient = recipients.find(
+    (recipient) => recipient.signer_id === userId
+  );
+
+  const userFields = fields.filter(
+    (field) => field.recipient_id === authorizedRecipient?.id
+  );
+
   const { selectedRecipient } = useSelectedRecipientStore();
 
   const [selectedField, setSelectedField] = useState<FieldType | null>(null);
+  const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
 
   const [isFieldWithinBounds, setIsFieldWithinBounds] = useState(false);
   const [coords, setCoords] = useState({
@@ -87,9 +95,6 @@ const Elements = ({
     height: 0,
     width: 0,
   });
-
-  // Add a state to track if a field is being deleted
-  const [isDeletingField, setIsDeletingField] = useState(false);
 
   // Add this new state to track PDF readiness
   const [isPdfReady, setIsPdfReady] = useState(false);
@@ -107,6 +112,8 @@ const Elements = ({
   }, [session]);
 
   const client = createClerkSupabaseClient();
+
+  console.log("CURRENT FIELDS", currentFields);
 
   useEffect(() => {
     const client = createClerkSupabaseClient();
@@ -272,106 +279,6 @@ const Elements = ({
     ]
   );
 
-  const onFieldResize = useCallback(
-    async (node: HTMLElement, index: number) => {
-      const field = currentFields[index];
-
-      const $page = window.document.querySelector<HTMLElement>(
-        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
-      );
-
-      if (!$page) {
-        return;
-      }
-
-      const {
-        x: pageX,
-        y: pageY,
-        width: pageWidth,
-        height: pageHeight,
-      } = getFieldPosition($page, node);
-
-      try {
-        // Update the database
-        const { error } = await client
-          .from("fields")
-          .update({
-            position_x: pageX,
-            position_y: pageY,
-            width: pageWidth,
-            height: pageHeight,
-          })
-          .eq("secondary_id", field.secondary_id);
-
-        if (error) throw error;
-
-        // Update local state
-      } catch (error) {
-        console.error("Error updating field position and size:", error);
-      }
-    },
-    [getFieldPosition, client, currentFields]
-  );
-
-  const onFieldMove = useCallback(
-    async (node: HTMLElement, index: number) => {
-      const field = currentFields[index];
-
-      const $page = window.document.querySelector<HTMLElement>(
-        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
-      );
-
-      if (!$page) {
-        return;
-      }
-
-      const { x: pageX, y: pageY } = getFieldPosition($page, node);
-
-      try {
-        // Update the database
-        const { error } = await client
-          .from("fields")
-          .update({
-            position_x: pageX,
-            position_y: pageY,
-          })
-          .eq("secondary_id", field.secondary_id);
-
-        if (error) throw error;
-
-        // Update local state
-      } catch (error) {
-        console.error("Error updating field position:", error);
-      }
-    },
-    [getFieldPosition, client, currentFields]
-  );
-
-  // Add new handler for field removal
-  const handleFieldRemove = useCallback(
-    async (index: number) => {
-      if (isDeletingField) return; // Prevent multiple simultaneous deletions
-
-      const field = currentFields[index];
-
-      try {
-        setIsDeletingField(true);
-
-        const { error } = await client
-          .from("fields")
-          .delete()
-          .eq("secondary_id", field.secondary_id);
-
-        if (error) throw error;
-      } catch (error) {
-        console.error("Error removing field:", error);
-      } finally {
-        setIsDeletingField(false);
-      }
-    },
-    [client, currentFields, isDeletingField]
-  );
-
   useEffect(() => {
     if (selectedField) {
       window.addEventListener("mousemove", onMouseMove);
@@ -415,8 +322,42 @@ const Elements = ({
     };
   }, []);
 
-  console.log(recipients);
-  console.log(userId);
+  // Sort fields by page, vertical position, and horizontal position
+  const sortedFields = [...userFields].sort((a, b) => {
+    // First sort by page
+    if (a.page !== b.page) {
+      return a.page - b.page;
+    }
+    // Then by vertical position (lower values first since 0 is top of page)
+    if (Math.abs(a.position_y - b.position_y) > 0.1) {
+      // Add small threshold for floating point comparison
+      return a.position_y - b.position_y;
+    }
+    // Finally by horizontal position (left to right)
+    return a.position_x - b.position_x;
+  });
+
+  const handleFieldClick = useCallback(
+    (fieldId: number) => {
+      setSelectedFieldId(fieldId === selectedFieldId ? null : fieldId);
+    },
+    [selectedFieldId]
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside any field
+      if (!target.closest("[data-field-id]")) {
+        setSelectedFieldId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -443,7 +384,7 @@ const Elements = ({
             <div className="flex flex-col">
               <p className="text-lg font-medium">Signer View</p>
               <p className="text-sm text-gray-500">
-                {"You can sign this document"}
+                {userFields.map((field) => field.type).join(", ")}
               </p>
             </div>
           ) : (
@@ -484,23 +425,12 @@ const Elements = ({
 
       {isDocumentPdfLoaded && isPdfReady && (
         <>
-          {currentFields.map((field, index) => (
+          {sortedFields.map((field, index) => (
             <FieldItem
               key={index}
               field={field}
-              disabled={
-                !selectedRecipient ||
-                field.recipient_id !== selectedRecipient.id
-              }
-              minHeight={MIN_HEIGHT_PX}
-              minWidth={MIN_WIDTH_PX}
-              defaultHeight={DEFAULT_HEIGHT_PX}
-              defaultWidth={DEFAULT_WIDTH_PX}
-              passive={isFieldWithinBounds && !!selectedField}
-              active={selectedField === field.type}
-              onResize={(node) => onFieldResize(node, index)}
-              onMove={(node) => onFieldMove(node, index)}
-              onRemove={() => handleFieldRemove(index)}
+              isSelected={field.id === selectedFieldId}
+              onFieldClick={handleFieldClick}
             />
           ))}
         </>

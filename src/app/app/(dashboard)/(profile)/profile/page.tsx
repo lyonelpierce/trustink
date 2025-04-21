@@ -1,4 +1,5 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import DashbaordTitle from "@/components/dashboard/title";
 import UserForm from "@/components/dashboard/profile/UserForm";
 
 const UserPage = async () => {
@@ -17,7 +18,11 @@ const UserPage = async () => {
   };
 
   return (
-    <div>
+    <div className="flex flex-col gap-8">
+      <DashbaordTitle
+        title="Profile"
+        description="Manage your profile information"
+      />
       <UserForm user={userData} />
     </div>
   );

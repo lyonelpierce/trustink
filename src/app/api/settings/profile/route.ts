@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
@@ -11,12 +11,17 @@ export async function POST(request: NextRequest) {
     if (!userId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const clerkUser = await currentUser();
+
+    if (!clerkUser)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    console.log(clerkUser);
+
     const formData = await request.formData();
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
     const avatarFile = formData.get("avatar") as File | null;
-
-    console.log(firstName, lastName, avatarFile);
 
     // Get current user
     const { data: user, error: userError } = await supabase
@@ -30,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     // Update profile data
-    const { data: updatedUser, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from("users")
       .update({
         first_name: firstName,
@@ -41,8 +46,6 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.log(updateError);
     }
-
-    console.log("updatedUser", updatedUser);
 
     // Handle avatar upload if provided
     if (avatarFile) {
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
       const { error: avatarUpdateError } = await supabase
         .from("users")
         .update({
-          avatar_url: publicUrl,
+          image_url: publicUrl,
         })
         .eq("clerk_id", userId);
 
