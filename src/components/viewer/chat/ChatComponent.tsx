@@ -26,16 +26,18 @@ const ChatComponent = ({
   });
 
   return (
-    <div className="relative flex flex-col h-full">
-      <div className="sticky top-0 inset-x-0 p-2 bg-white h-fit z-10">
+    <div className="relative flex flex-col h-full overflow-hidden">
+      <div className="absolute top-0 inset-x-0 p-2 bg-white h-fit z-10">
         <h3 className="text-lg font-medium">Chat</h3>
       </div>
 
-      <ScrollArea className="flex-1 h-[calc(100%-8rem)]">
-        <MessageList messages={messages} />
+      <ScrollArea className="flex-1 mt-12 mb-16 overflow-y-auto">
+        <div className="px-2">
+          <MessageList messages={messages} />
+        </div>
       </ScrollArea>
 
-      <div className="sticky bottom-2 inset-x-0 p-2 bg-white mt-auto">
+      <div className="absolute bottom-0 inset-x-0 p-2 bg-white">
         <form onSubmit={handleSubmit} className="flex gap-2 items-center">
           <Input
             value={input}
