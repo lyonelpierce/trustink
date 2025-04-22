@@ -7,8 +7,8 @@ import {
   Calendar1Icon,
   SignatureIcon,
   CaseUpperIcon,
-  CircleDotIcon,
-  SquareCheckIcon,
+  // CircleDotIcon,
+  // SquareCheckIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -623,7 +623,7 @@ const Elements = ({
             </Card>
           </button>
 
-          <button
+          {/* <button
             type="button"
             className="group h-full w-full"
             onClick={() => setSelectedField("radio" as FieldType)}
@@ -667,7 +667,7 @@ const Elements = ({
                 <p className="text-muted-foreground mt-2 text-xs">Checkbox</p>
               </CardContent>
             </Card>
-          </button>
+          </button> */}
         </fieldset>
       </div>
     </div>

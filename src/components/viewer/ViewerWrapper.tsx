@@ -40,17 +40,7 @@ const ViewerWrapper = ({
 
   return (
     <>
-      <div
-        className={cn(
-          "bg-gray-50 w-full",
-          !userId ||
-            document.recipients.some(
-              (recipient) => recipient.signer_id !== userId
-            )
-            ? "pr-0 mx-auto"
-            : "mx-auto pr-[28rem]"
-        )}
-      >
+      <div className={cn("bg-gray-50 w-full flex flex-row")}>
         <div className="flex gap-4 justify-center w-full pt-20 relative p-4">
           <div className="flex-1 max-w-4xl">
             <LazyPDFViewerNoLoader
@@ -69,14 +59,17 @@ const ViewerWrapper = ({
             )}
           </div>
         </div>
+        {document.recipients.some(
+          (recipient) => recipient.signer_id === userId
+        ) && (
+          <div className="sticky top-16 bg-white h-[calc(100vh-4rem)] min-w-md max-w-md border-l">
+            <ChatComponent
+              documentId={document.id}
+              chatMessages={chatMessages}
+            />
+          </div>
+        )}
       </div>
-      {document.recipients.some(
-        (recipient) => recipient.signer_id === userId
-      ) && (
-        <div className="fixed top-0 right-0 bg-white h-screen min-w-md max-w-md border-l pt-16 px-4">
-          <ChatComponent documentId={document.id} chatMessages={chatMessages} />
-        </div>
-      )}
     </>
   );
 };

@@ -1,10 +1,15 @@
 "use client";
 
+import { z } from "zod";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useForm } from "react-hook-form";
 import { FieldItem } from "./FieldElement";
-import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useAuth, useSession } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Database } from "../../../../database.types";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
@@ -12,7 +17,13 @@ import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
-import { useAuth, useSession, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+
+const formSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email().optional(),
+  initials: z.string().min(1).optional(),
+});
 
 const MIN_HEIGHT_PX = 12;
 const MIN_WIDTH_PX = 36;
@@ -62,6 +73,15 @@ const Elements = ({
   const { session } = useSession();
   const { getPage, isWithinPageBounds } = useDocumentElement();
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      initials: "",
+    },
+  });
+
   const [currentFields, setCurrentFields] = useState<
     (Database["public"]["Tables"]["fields"]["Row"] & {
       recipients: {
@@ -71,6 +91,8 @@ const Elements = ({
       };
     })[]
   >(fields);
+
+  console.log(currentFields);
 
   const authorizedRecipient = recipients.find(
     (recipient) => recipient.signer_id === userId
@@ -112,8 +134,6 @@ const Elements = ({
   }, [session]);
 
   const client = createClerkSupabaseClient();
-
-  console.log("CURRENT FIELDS", currentFields);
 
   useEffect(() => {
     const client = createClerkSupabaseClient();
@@ -362,40 +382,68 @@ const Elements = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-4 bg-white border rounded-md p-4">
-          {!userId ? (
-            <>
-              <div className="flex flex-col">
-                <p className="text-lg font-medium">Sign Document</p>
-                <p className="text-sm text-gray-500">
-                  {"You must be logged in to sign this document"}
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 w-full">
-                <SignInButton forceRedirectUrl={`/sign/${documentId}`}>
-                  <Button variant="outline">Log In</Button>
-                </SignInButton>
-                <SignUpButton forceRedirectUrl={`/sign/${documentId}`}>
-                  <Button variant="default">Sign Up</Button>
-                </SignUpButton>
-              </div>
-            </>
-          ) : recipients.some((recipient) => recipient.signer_id === userId) ? (
-            <div className="flex flex-col">
-              <p className="text-lg font-medium">Signer View</p>
-              <p className="text-sm text-gray-500">
-                {userFields.map((field) => field.type).join(", ")}
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col">
-              <p className="text-lg font-medium">Signer View</p>
-              <p className="text-sm text-gray-500">
-                {"You are not a recipient of this document"}
-              </p>
-            </div>
-          )}
-        </div>
+        {recipients.some((recipient) => recipient.signer_id === userId) && (
+          <div className="flex flex-col">
+            <p className="text-lg font-medium mb-2">Document Fields</p>
+            <Form {...form}>
+              <form className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2">
+                  {sortedFields.map((field, index) => {
+                    if (
+                      field.type === "name" ||
+                      field.type === "text" ||
+                      field.type === "email" ||
+                      field.type === "initials" ||
+                      field.type !== "signature"
+                    ) {
+                      return (
+                        <div
+                          key={field.id}
+                          className="flex flex-col gap-2 w-full"
+                        >
+                          <div className="flex flex-col gap-2 bg-white rounded-xl border p-4 overflow-hidden w-full">
+                            <div className="flex gap-2 text-sm items-center">
+                              <div className="bg-black aspect-square rounded-full text-white size-6 flex items-center justify-center">
+                                {index + 1}
+                              </div>
+                              {FRIENDLY_FIELD_TYPE[field.type as FieldType]}
+                            </div>
+                            <Input
+                              placeholder={
+                                FRIENDLY_FIELD_TYPE[field.type as FieldType]
+                              }
+                              className="bg-[#fafafa]"
+                            />
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div
+                        key={field.id}
+                        className="flex flex-col gap-2 text-sm bg-white rounded-xl border p-4 overflow-hidden w-full"
+                      >
+                        <div className="flex gap-2 text-sm items-center">
+                          <div className="bg-black aspect-square rounded-full text-white size-6 flex items-center justify-center">
+                            {index + 1}
+                          </div>
+                          {FRIENDLY_FIELD_TYPE[field.type as FieldType]}
+                        </div>
+                        <Input
+                          className="h-32 bg-[#fafafa] flex items-center justify-center w-full"
+                          placeholder={
+                            FRIENDLY_FIELD_TYPE[field.type as FieldType]
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <Button type="submit">Finish</Button>
+              </form>
+            </Form>
+          </div>
+        )}
       </div>
       {selectedField && (
         <div
