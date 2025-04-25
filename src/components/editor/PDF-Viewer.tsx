@@ -203,7 +203,7 @@ export const PDFViewer = ({
                     pageNumber={i + 1}
                     width={width}
                     renderAnnotationLayer={false}
-                    renderTextLayer={false}
+                    renderTextLayer={true}
                     loading={() => ""}
                     onClick={(e) => onDocumentPageClick(e, i + 1)}
                   />

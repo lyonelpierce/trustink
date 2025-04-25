@@ -10,14 +10,14 @@ const Navbar = () => {
   return (
     <div className="h-14 w-full border-b fixed top-0 z-50 backdrop-blur-xs">
       <WidthWrapper className="flex items-center justify-between h-full">
-        <SignedIn>
-          <div className="flex gap-8 items-center">
-            <Logo isMainLogo={false} href="/" />
+        <div className="flex gap-8 items-center">
+          <Logo isMainLogo={false} href="/" />
+          <SignedIn>
             {links.map((link) => (
               <UnderlineText key={link.id} text={link.label} link={link.href} />
             ))}
-          </div>
-        </SignedIn>
+          </SignedIn>
+        </div>
         <div className="flex items-center gap-4">
           <SignedOut>
             <SignInButton>

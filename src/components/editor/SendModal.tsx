@@ -184,7 +184,7 @@ const SendModal = ({
                 {validationErrors.noRecipients && (
                   <p>
                     <span className="font-semibold">Error:</span> You need to
-                    add at least one recipient to the document.
+                    add at least one signer to the document.
                   </p>
                 )}
                 {validationErrors.noSignature && (
