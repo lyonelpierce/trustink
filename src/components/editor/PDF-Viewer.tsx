@@ -144,46 +144,6 @@ export const PDFViewer = ({
     void fetchDocumentBytes();
   }, [memoizedData]);
 
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const textLayers = document.querySelectorAll(
-        ".react-pdf__Page .textLayer"
-      );
-      textLayers.forEach((layer) => {
-        const spans = layer.querySelectorAll("span");
-        spans.forEach((span) => {
-          if (span.getAttribute("data-editable")) return; // Avoid duplicates
-
-          const editable = document.createElement("div");
-          editable.contentEditable = "true";
-          editable.innerText = span.textContent || "";
-          editable.setAttribute("data-editable", "true");
-
-          // Copy styles to match exact position
-          editable.style.position = "absolute";
-          editable.style.left = span.style.left;
-          editable.style.top = span.style.top;
-          editable.style.transform = span.style.transform;
-          editable.style.fontSize = span.style.fontSize;
-          editable.style.fontFamily = span.style.fontFamily;
-          editable.style.lineHeight = span.style.lineHeight;
-          editable.style.color = "black"; // Optional
-          editable.style.background = "white"; // Optional
-
-          // Remove the original span
-          span.replaceWith(editable);
-        });
-      });
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
-    return () => observer.disconnect();
-  }, [numPages]);
-
   return (
     <div ref={$el} className={cn("overflow-hidden", className)} {...props}>
       {isLoading ? (
@@ -247,13 +207,6 @@ export const PDFViewer = ({
                     renderTextLayer={true}
                     loading={() => ""}
                     onClick={(e) => onDocumentPageClick(e, i + 1)}
-                  />
-                  <div
-                    className="absolute inset-0 bg-white opacity-100 pointer-events-none"
-                    style={{
-                      width: `${width}px`,
-                      height: `${width * 1.414}px`, // Standard A4 aspect ratio
-                    }}
                   />
                 </div>
                 <p className="text-muted-foreground/80 my-2 text-center text-[11px]">
