@@ -38,12 +38,12 @@ const EditorWrapper = ({
         documentId={document.document_id}
         userInfo={userInfo}
       />
-      <div className="mx-auto max-w-[90rem] bg-gray-50">
+      <div className="mx-auto bg-gray-50">
         <div className="flex gap-4 justify-center pt-20 relative p-4">
           <div className="sticky top-20 z-[50] min-w-80 h-min rounded-lg">
             <RecipientsForm documentId={document.document_id} />
           </div>
-          <div className="w-full">
+          <div className="w-full max-w-4xl">
             <LazyPDFViewerNoLoader
               documentData={document}
               onDocumentLoad={() => setIsDocumentPdfLoaded(true)}

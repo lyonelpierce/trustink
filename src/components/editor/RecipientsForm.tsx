@@ -288,61 +288,65 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
           </Button>
         </form>
       </Form>
-      {recipients.length > 0 && (
-        <div className="flex flex-col gap-4 ">
-          <div className="flex flex-col gap-0">
-            <p className="text-lg font-medium dark:text-black">
-              2. Select a signer
-            </p>
-            <p className="text-xs text-gray-500">
-              Select a signer to add fields
-            </p>
-          </div>
-          {recipients.map((recipient) => (
-            <div
-              className={cn(
-                "flex items-center justify-between gap-2 p-4 border rounded-lg shadow-sm bg-white cursor-pointer transition-all ease-in-out",
-                selectedRecipient?.id === recipient.id && "ring-2"
-              )}
-              style={{
-                boxShadow:
-                  selectedRecipient?.id === recipient.id
-                    ? `0 0 0 2px ${recipient.color}`
-                    : "none",
-              }}
-              key={recipient.id}
-              onClick={() => handleRecipientClick(recipient)}
-            >
-              <div className="flex items-center gap-2">
-                <Avatar className="w-10 h-10">
-                  <AvatarFallback
-                    className="uppercase"
-                    style={{ backgroundColor: recipient.color }}
-                  >
-                    {recipient.email.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <p className="font-medium text-sm truncate">
-                    {recipient.email}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(recipient.id);
-                }}
-                className="group"
-              >
-                <Trash2Icon className="size-5 text-muted-foreground transition-all ease-in-out group-hover:text-red-500 dark:text-zinc-400  " />
-              </Button>
-            </div>
-          ))}
+      <div className="flex flex-col gap-4 ">
+        <div className="flex flex-col gap-0">
+          <p className="text-lg font-medium dark:text-black">
+            2. Select a signer
+          </p>
+          <p className="text-xs text-gray-500">Select a signer to add fields</p>
         </div>
-      )}
+        {recipients.length > 0 ? (
+          <>
+            {recipients.map((recipient) => (
+              <div
+                className={cn(
+                  "flex items-center justify-between gap-2 p-4 border rounded-lg shadow-sm bg-white cursor-pointer transition-all ease-in-out",
+                  selectedRecipient?.id === recipient.id && "ring-2"
+                )}
+                style={{
+                  boxShadow:
+                    selectedRecipient?.id === recipient.id
+                      ? `0 0 0 2px ${recipient.color}`
+                      : "none",
+                }}
+                key={recipient.id}
+                onClick={() => handleRecipientClick(recipient)}
+              >
+                <div className="flex items-center gap-2">
+                  <Avatar className="w-10 h-10">
+                    <AvatarFallback
+                      className="uppercase"
+                      style={{ backgroundColor: recipient.color }}
+                    >
+                      {recipient.email.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm truncate">
+                      {recipient.email}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(recipient.id);
+                  }}
+                  className="group"
+                >
+                  <Trash2Icon className="size-5 text-muted-foreground transition-all ease-in-out group-hover:text-red-500 dark:text-zinc-400  " />
+                </Button>
+              </div>
+            ))}
+          </>
+        ) : (
+          <div className="h-20 flex items-center justify-center text-gray-500 border border-dashed border-gray-300 bg-white rounded-lg p-4 text-center text-xs">
+            Add a signer to get started.
+          </div>
+        )}
+      </div>
     </div>
   );
 };
