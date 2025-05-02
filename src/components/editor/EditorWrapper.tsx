@@ -12,10 +12,8 @@ const EditorWrapper = ({
   fields,
   userInfo,
 }: {
-  document: Database["public"]["Tables"]["documents_data"]["Row"] & {
-    documents: {
-      name: string;
-    };
+  document: Database["public"]["Tables"]["documents"]["Row"] & {
+    documents_data: Database["public"]["Tables"]["documents_data"]["Row"][];
   };
   fields: (Database["public"]["Tables"]["fields"]["Row"] & {
     recipients: {
@@ -34,25 +32,25 @@ const EditorWrapper = ({
   return (
     <>
       <EditorNavbar
-        documentName={document.documents.name}
-        documentId={document.document_id}
+        documentName={document.name}
+        documentId={document.id}
         userInfo={userInfo}
       />
       <div className="mx-auto bg-gray-50">
         <div className="flex gap-4 justify-center pt-20 relative p-4">
-          <div className="sticky top-20 z-[50] min-w-80 h-min rounded-lg">
-            <RecipientsForm documentId={document.document_id} />
+          <div className="sticky top-20 z-[50] min-w-96 max-w-96 h-min rounded-lg">
+            <RecipientsForm documentId={document.id} />
           </div>
           <div className="w-full max-w-4xl">
             <LazyPDFViewerNoLoader
-              documentData={document}
+              documentData={document.documents_data[0]}
               onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
             />
           </div>
-          <div className="sticky top-20 z-[50] min-w-80 h-min">
+          <div className="sticky top-20 z-[50] min-w-96 max-w-96 h-min">
             <Elements
               fields={fields}
-              documentId={document.document_id}
+              documentId={document.id}
               isDocumentPdfLoaded={isDocumentPdfLoaded}
             />
           </div>

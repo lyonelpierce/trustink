@@ -8,78 +8,14 @@ import {
   getDocumentAnalysis,
   getUserDocumentsWithMeta,
 } from "@/lib/supabase";
-import { embed } from "ai";
 import { auth } from "@clerk/nextjs/server";
-import { Tiktoken } from "js-tiktoken/lite";
-import { Document } from "langchain/document";
-import { createOpenAI } from "@ai-sdk/openai";
 import { after, NextResponse } from "next/server";
-import o200k_base from "js-tiktoken/ranks/o200k_base";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
-import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-
-type PDFPage = {
-  pageContent: string;
-  metadata: {
-    loc: { pageNumber: number };
-  };
-};
-
-const encoder = new Tiktoken(o200k_base);
-
-const openai = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export const truncateStringByBytes = (str: string, bytes: number) => {
   const enc = new TextEncoder();
   return new TextDecoder("utf-8").decode(enc.encode(str).slice(0, bytes));
 };
-
-async function prepareDocument(page: PDFPage) {
-  const { pageContent, metadata } = page;
-  const pageContentWithoutNewlines = pageContent.replace(/\n/g, "");
-
-  // Count tokens in the content
-  const tokens = encoder.encode(pageContentWithoutNewlines);
-  const maxTokens = 8000; // OpenAI's recommended limit for embeddings
-
-  // If content is within token limit, process as single chunk
-  if (tokens.length <= maxTokens) {
-    return [
-      new Document({
-        pageContent: pageContentWithoutNewlines,
-        metadata: {
-          pageNumber: metadata.loc.pageNumber,
-          text: pageContentWithoutNewlines,
-        },
-      }),
-    ];
-  }
-
-  // Otherwise split the document
-  const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 2000,
-    chunkOverlap: 200,
-  });
-
-  const docs = await splitter.splitDocuments([
-    new Document({
-      pageContent: pageContentWithoutNewlines,
-      metadata: {
-        pageNumber: metadata.loc.pageNumber,
-        text: pageContentWithoutNewlines,
-      },
-    }),
-  ]);
-
-  // Filter chunks that exceed token limit
-  return docs.filter((doc) => {
-    const chunkTokens = encoder.encode(doc.pageContent);
-    return chunkTokens.length <= maxTokens;
-  });
-}
 
 export async function POST(request: Request) {
   try {
@@ -197,42 +133,28 @@ export async function POST(request: Request) {
 
     after(async () => {
       try {
-        const loader = new PDFLoader(file);
-        const pages = (await loader.load()) as PDFPage[];
+        const formData = new FormData();
+        formData.append("user_id", userId);
+        formData.append("document_id", document.id);
+        formData.append("file", file);
 
-        const documents = await Promise.all(pages.map(prepareDocument));
-
-        // Generate embeddings for each chunk
-        const embeddings = await Promise.all(
-          documents.flat().map(async (document, index: number) => {
-            const typedDoc = document as Document<{
-              pageNumber: number;
-              text: string;
-            }>;
-            const { embedding } = await embed({
-              model: openai.embedding("text-embedding-3-small"),
-              value: typedDoc.pageContent,
-            });
-
-            return {
-              document_id: document.id,
-              user_id: userId,
-              content: typedDoc.pageContent,
-              embedding: embedding,
-              chunk_index: index,
-            };
-          })
+        const response = await fetch(
+          "https://trustink-api-production.up.railway.app/extract-from-file",
+          {
+            method: "POST",
+            body: formData,
+          }
         );
 
-        // Store embeddings in Supabase
-        const { error } = await supabase.from("document_embeddings").insert(
-          embeddings.map((embedding) => ({
-            ...embedding,
-            document_id: document.id,
-          }))
-        );
+        console.log(response);
 
-        if (error) throw error;
+        const data = await response.json();
+
+        console.log(data);
+
+        if (!response.ok) {
+          throw new Error("Failed to extract data from file");
+        }
 
         return NextResponse.json(
           {

@@ -5,16 +5,14 @@ import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
 const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   const { data, error } = await supabase
-    .from("documents_data")
+    .from("documents")
     .select(
       `
       *,
-      documents (
-        name
-      )
+      documents_data (*)
     `
     )
-    .eq("document_id", id)
+    .eq("id", id)
     .single();
 
   if (error) {
@@ -56,8 +54,8 @@ export const generateMetadata = async (props: {
   const document = await getDocumentData(supabase, id);
 
   return {
-    title: document.documents.name,
-    description: document.documents.name,
+    title: document.name,
+    description: document.name,
   };
 };
 

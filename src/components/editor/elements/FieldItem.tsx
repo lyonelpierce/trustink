@@ -173,10 +173,13 @@ export const FieldItem = ({
         left: { cursor: "ew-resize" },
         right: { cursor: "ew-resize" },
       }}
+      style={{
+        overflow: "visible",
+      }}
     >
       <Card
         className={cn(
-          "bg-field-card/80 h-full w-full backdrop-blur-[1px] group overflow-hidden transition-all ease-in-out",
+          "bg-field-card/80 h-full w-full backdrop-blur-[1px] group overflow-visible transition-all ease-in-out",
           {
             "border-field-card-border": !disabled,
             "border-none": active,
@@ -194,6 +197,7 @@ export const FieldItem = ({
           border: field.recipients.color
             ? `2px solid ${field.recipients.color}`
             : "none",
+          overflow: "visible",
         }}
       >
         <CardContent
@@ -204,6 +208,10 @@ export const FieldItem = ({
               "font-tangerine text-3xl": field.type === "signature",
             }
           )}
+          style={{
+            overflow: "visible",
+            position: "relative",
+          }}
         >
           {FRIENDLY_FIELD_TYPE[field.type]}
           <p className="text-xs hidden">{field.recipients.email}</p>

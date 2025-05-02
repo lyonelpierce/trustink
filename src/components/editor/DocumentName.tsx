@@ -81,7 +81,7 @@ const DocumentName = ({
       setName(documentName);
       console.error(error);
     }
-  }, 1000);
+  }, 500);
 
   return (
     <Input

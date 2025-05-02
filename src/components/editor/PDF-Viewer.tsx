@@ -165,6 +165,7 @@ export const PDFViewer = ({
           onSourceError={() => {
             setPdfError(true);
           }}
+          renderMode="canvas"
           externalLinkTarget="_blank"
           loading={
             <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
@@ -204,9 +205,11 @@ export const PDFViewer = ({
                     pageNumber={i + 1}
                     width={width}
                     renderAnnotationLayer={false}
-                    renderTextLayer={true}
+                    renderTextLayer={false}
+                    // renderMode="canvas"
                     loading={() => ""}
                     onClick={(e) => onDocumentPageClick(e, i + 1)}
+                    className="[&_canvas]:opacity-0"
                   />
                 </div>
                 <p className="text-muted-foreground/80 my-2 text-center text-[11px]">

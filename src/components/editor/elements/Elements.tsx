@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { FieldItem } from "./FieldElement";
+import { FieldItem } from "./FieldItem";
 import { useSession } from "@clerk/nextjs";
 import { Card } from "@/components/ui/card";
 import { CardContent } from "@/components/ui/card";
@@ -24,6 +24,8 @@ import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
+import React from "react";
+import { ParagraphItem } from "./ParagraphItems";
 
 const MIN_HEIGHT_PX = 12;
 const MIN_WIDTH_PX = 36;
@@ -75,6 +77,12 @@ const Elements = ({
     })[]
   >(fields);
 
+  // State for document paragraphs - will be used for text analysis and field positioning
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [documentParagraphs, setDocumentParagraphs] = useState<
+    Database["public"]["Tables"]["documents_paragraphs"]["Row"][]
+  >([]);
+
   const { selectedRecipient } = useSelectedRecipientStore();
 
   const [selectedField, setSelectedField] = useState<FieldType | null>(null);
@@ -113,7 +121,8 @@ const Elements = ({
   useEffect(() => {
     const client = createClerkSupabaseClient();
 
-    const channel = client
+    // Subscribe to fields changes
+    const fieldsChannel = client
       .channel("fields")
       .on(
         "postgres_changes",
@@ -174,8 +183,65 @@ const Elements = ({
       )
       .subscribe();
 
+    // Subscribe to document_text_paragraphs changes
+    const paragraphsChannel = client
+      .channel("documents_paragraphs")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "documents_paragraphs",
+          filter: `document_id=eq.${documentId}`,
+        },
+        async (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newParagraph =
+              payload.new as Database["public"]["Tables"]["documents_paragraphs"]["Row"];
+            setDocumentParagraphs((prev) => [...prev, newParagraph]);
+          } else if (payload.eventType === "UPDATE") {
+            const updatedParagraph =
+              payload.new as Database["public"]["Tables"]["documents_paragraphs"]["Row"];
+            setDocumentParagraphs((prev) =>
+              prev.map((paragraph) =>
+                paragraph.id === updatedParagraph.id
+                  ? updatedParagraph
+                  : paragraph
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            const oldParagraph =
+              payload.old as Database["public"]["Tables"]["documents_paragraphs"]["Row"];
+            setDocumentParagraphs((prev) =>
+              prev.filter((paragraph) => paragraph.id !== oldParagraph.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Initial fetch of document_text_paragraphs
+    const fetchParagraphs = async () => {
+      const { data: paragraphs, error } = await client
+        .from("documents_paragraphs")
+        .select("*")
+        .eq("document_id", documentId);
+
+      if (error) {
+        console.error("Error fetching paragraphs:", error);
+        return;
+      }
+
+      if (paragraphs) {
+        setDocumentParagraphs(paragraphs);
+      }
+    };
+
+    fetchParagraphs();
+
     return () => {
-      channel.unsubscribe();
+      fieldsChannel.unsubscribe();
+      paragraphsChannel.unsubscribe();
     };
   }, [documentId, createClerkSupabaseClient]);
 
@@ -472,6 +538,17 @@ const Elements = ({
               onResize={(node) => onFieldResize(node, index)}
               onMove={(node) => onFieldMove(node, index)}
               onRemove={() => handleFieldRemove(index)}
+            />
+          ))}
+          {documentParagraphs.map((paragraph) => (
+            <ParagraphItem
+              key={paragraph.id}
+              paragraph={paragraph}
+              disabled={!selectedRecipient}
+              minHeight={MIN_HEIGHT_PX}
+              minWidth={MIN_WIDTH_PX}
+              defaultHeight={DEFAULT_HEIGHT_PX}
+              defaultWidth={DEFAULT_WIDTH_PX}
             />
           ))}
         </>

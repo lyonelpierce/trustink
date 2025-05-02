@@ -57,7 +57,12 @@ export function DocumentsTable<
 >({ columns, data }: DataTableProps<TData, TValue>) {
   const { session } = useSession();
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    {
+      id: "created_at",
+      desc: true,
+    },
+  ]);
   const [documents, setDocuments] = useState<TData[]>(data);
   const [filteredDocs, setFilteredDocs] = useState<TData[]>(data);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
