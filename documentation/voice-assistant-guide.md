@@ -20,15 +20,15 @@ TrustInk's voice assistant supports two primary interaction modes:
 ### Speech Input → Speech Response Flow
 
 1. **User speaks query** after activating the microphone
-2. **Speech is converted to text** using Web Speech API
+2. **Speech is converted to text** using Web Speech API (current) or ElevenLabs Conversational AI (planned)
 3. **System processes the text query** in the context of the current document
 4. **Text response is displayed** in the conversation history
-5. **Response is spoken back** using SpeechSynthesis API
+5. **Response is spoken back** using SpeechSynthesis API (current) or ElevenLabs TTS (planned)
 6. **Document sections may be highlighted** based on relevance to the query
 
 ## Current Implementation
 
-The voice assistant is implemented using the native Web Speech API built into modern browsers:
+The voice assistant is currently implemented using the native Web Speech API built into modern browsers:
 
 ### Speech Recognition (Speech-to-Text)
 
@@ -51,6 +51,98 @@ The voice assistant is implemented using the native Web Speech API built into mo
   - Voice output for AI responses
   - Start/stop speech control
   - Speaking state management
+
+## ElevenLabs Integration (Next Phase)
+
+We are transitioning from the native Web Speech API to ElevenLabs' Conversational AI for significantly improved voice interactions:
+
+### ElevenLabs Conversational AI Architecture
+
+The system will integrate ElevenLabs Conversational AI platform to provide a complete voice interaction cycle:
+
+1. **Speech to Text**: Enhanced speech recognition with higher accuracy and better handling of technical terminology
+2. **Language Model Processing**: Integration with Together AI's Llama 3.1 model for document understanding
+3. **Text to Speech**: High-quality natural voice synthesis from ElevenLabs
+4. **Turn Taking**: Natural conversation flow with better interruption detection
+
+### Components for ElevenLabs Integration
+
+1. **API Routes**:
+   - `/api/i` route: Securely obtains a signed URL from ElevenLabs API using environment variables
+   - `/api/c` route: Manages conversation history and message persistence in Supabase
+
+2. **React Components**:
+   - `useConversation` hook: Manages connection to ElevenLabs Conversational AI service
+   - `TextAnimation`: Displays AI responses with typing animation
+   
+3. **Conversation Session Flow**:
+   ```mermaid
+   sequenceDiagram
+       participant User
+       participant TrustInk
+       participant ElevenLabs
+       participant TogetherAI
+       participant Supabase
+       
+       User->>TrustInk: Speaks or types query
+       TrustInk->>ElevenLabs: Establish conversational session
+       ElevenLabs->>TrustInk: Return signed URL
+       TrustInk->>ElevenLabs: Connect to conversation service
+       User->>TrustInk: Ask document question
+       TrustInk->>ElevenLabs: Stream audio/text
+       ElevenLabs->>TogetherAI: Process with Llama 3.1
+       TogetherAI->>ElevenLabs: Return response
+       ElevenLabs->>TrustInk: Stream audio/text response
+       TrustInk->>User: Play spoken response
+       TrustInk->>Supabase: Store conversation history
+   ```
+
+### Implementation Steps
+
+1. **Environment Configuration**:
+   ```typescript
+   // Required environment variables
+   AGENT_ID=<your-elevenlabs-agent-id>
+   XI_API_KEY=<your-elevenlabs-api-key>
+   ```
+
+2. **ElevenLabs Agent Setup**:
+   - Create a customized conversational AI agent in ElevenLabs
+   - Configure with Together AI LLM (Llama 3.1)
+   - Enable document context awareness through knowledge base
+
+3. **Session Management**:
+   ```typescript
+   // Using the useConversation hook
+   const conversation = useConversation({
+     onError: (error: string) => { /* handle error */ },
+     onMessage: (props: { message: string; source: Role }) => {
+       // Store message in database and update UI
+     },
+   })
+
+   // Starting a session
+   const response = await fetch('/api/i', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+   })
+   const data = await response.json()
+   await conversation.startSession({ signedUrl: data.apiKey })
+   ```
+
+### Integration with Document Context
+
+To make the voice assistant aware of document content, we'll need to:
+
+1. **Provide Document Context**:
+   - Send current document sections to the language model
+   - Include highlighted section context in queries
+   - Use document metadata to improve relevance
+
+2. **Context-aware Responses**:
+   - References to specific document sections
+   - Highlighting relevant sections during response
+   - Direct answers to queries about specific document parts
 
 ## Detailed Implementation
 
@@ -177,55 +269,140 @@ const sendMessage = useCallback(async (message: string) => {
 }, [currentDocument, highlightedSection, speak, isSpeechSynthesisSupported]);
 ```
 
-## Planned Enhancements
+## ElevenLabs Conversation Implementation
 
-### Near-term Improvements (Next 1-2 Months)
+```typescript
+// New conversation implementation with ElevenLabs
+import { useConversation } from '@11labs/react'
+import { toast } from 'sonner'
 
-1. **Enhanced Speech Recognition**
-   - Improved error handling for background noise
-   - Support for longer utterances
-   - Better handling of technical terminology
+// Setup conversation connection
+const conversation = useConversation({
+  onError: (error: string) => { toast(error) },
+  onConnect: () => { toast('Connected to ElevenLabs.') },
+  onMessage: (props: { message: string; source: Role }) => {
+    const { message, source } = props
+    
+    // Store message in database
+    fetch('/api/c', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: sessionId,
+        item: {
+          type: 'message',
+          status: 'completed',
+          object: 'realtime.item',
+          id: 'item_' + Math.random(),
+          role: source === 'ai' ? 'assistant' : 'user',
+          content: [{ type: 'text', transcript: message }],
+        },
+      }),
+    })
+  },
+})
 
-2. **Improved Text-to-Speech**
-   - More natural-sounding voices
-   - Enhanced prosody and pacing
-   - Better pronunciation of technical terms
+// Connect to ElevenLabs
+const connectConversation = async () => {
+  try {
+    // Request microphone access
+    await navigator.mediaDevices.getUserMedia({ audio: true })
+    
+    // Get signed URL from our API
+    const response = await fetch('/api/i', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const data = await response.json()
+    
+    if (data.error) {
+      toast(data.error)
+      return
+    }
+    
+    // Connect to ElevenLabs Conversation API
+    await conversation.startSession({ signedUrl: data.apiKey })
+  } catch (err) {
+    toast(`Failed to set up ElevenLabs: ${err instanceof Error ? err.message : 'Unknown error'}`)
+  }
+}
+```
 
-3. **User Experience Improvements**
-   - Visual feedback during speech recognition
-   - Clearer indication of listening state
-   - Save voice preferences per user
+## Implementation Roadmap
+
+### Near-term Goals (1-2 Months)
+
+1. **ElevenLabs Integration**
+   - ⬜ Set up agent in ElevenLabs Conversational AI platform
+   - ⬜ Configure custom LLM with Together AI (Llama 3.1)
+   - ⬜ Implement document context awareness in agent configuration
+   - ⬜ Add conversation persistence via API endpoints
+
+2. **User Experience Refinement**
+   - ⬜ Add visual indicators for listening/speaking states
+   - ⬜ Implement smooth transitions between voice and text interfaces
+   - ⬜ Add loading states for AI processing
+   - ⬜ Enhance the UI with status indicators
+
+3. **Error Handling & Fallbacks**
+   - ⬜ Implement graceful degradation for unsupported browsers
+   - ⬜ Add reconnection logic for dropped connections
+   - ⬜ Prepare fallback to Web Speech API when needed
+   - ⬜ Add detailed error reporting
 
 ### Medium-term Roadmap (3-6 Months)
 
-1. **External API Integration**
-   - **ElevenLabs Integration**: Replace browser's built-in TTS with higher quality voice synthesis
-   - **OpenAI Whisper Integration**: Improve speech recognition accuracy
-   - **Azure Speech Services**: Alternative for enterprise deployments
+1. **Advanced Conversation Capabilities**
+   - ⬜ Multi-turn conversation with context maintenance
+   - ⬜ Conversation history recall
+   - ⬜ Better interruption handling
+   - ⬜ Context-aware responses with document highlighting
 
 2. **Multi-platform Support**
-   - Mobile-optimized voice interface
-   - Progressive Web App (PWA) support
-   - Background processing for longer documents
+   - ⬜ Mobile-optimized voice interface
+   - ⬜ Progressive Web App (PWA) capabilities
+   - ⬜ Background processing for larger documents
+   - ⬜ Offline mode with limited functionality
 
-3. **Advanced Voice Features**
-   - Voice authentication for secure document access
-   - Voice commands for application navigation
-   - Voice-triggered document actions (highlight, export, share)
+3. **Document-specific Features**
+   - ⬜ Intelligent section highlighting during speech
+   - ⬜ Voice commands for document navigation
+   - ⬜ Automatic summarization of document sections
+   - ⬜ Comparative analysis of multiple documents
+
+### Long-term Vision (6-12 Months)
+
+1. **Personalization**
+   - ⬜ User-specific voice preferences
+   - ⬜ Learning from user interactions
+   - ⬜ Personalized terminology adaptation
+   - ⬜ Industry-specific knowledge tuning
+
+2. **Enterprise Integration**
+   - ⬜ Team-based document analysis
+   - ⬜ Integration with enterprise document systems
+   - ⬜ Role-based access controls for voice features
+   - ⬜ Compliance and audit capabilities
+
+3. **Advanced Analytics**
+   - ⬜ Usage pattern analysis
+   - ⬜ Query effectiveness metrics
+   - ⬜ ROI measurement for AI assistance
+   - ⬜ Continuous improvement via feedback loops
 
 ## Browser Compatibility
 
 The voice features require browser support for the Web Speech API:
 
-| Browser | Speech Recognition | Speech Synthesis | Notes |
-|---------|-------------------|------------------|-------|
-| Chrome  | ✅ | ✅ | Best overall support |
-| Edge    | ✅ | ✅ | Based on Chromium |
-| Safari  | ✅ | ✅ | Requires user permission prompt |
-| Firefox | ❌ | ✅ | No speech recognition support |
-| Opera   | ✅ | ✅ | Based on Chromium |
-| iOS Safari | ⚠️ | ✅ | Limited support, requires user interaction |
-| Android Chrome | ✅ | ✅ | May have performance limitations |
+| Browser | Current Support (Web Speech) | Planned Support (ElevenLabs) |
+|---------|-------------------|------------------|
+| Chrome  | ✅ | ✅ |
+| Edge    | ✅ | ✅ |
+| Safari  | ✅ | ✅ |
+| Firefox | ❌ | ✅ |
+| Opera   | ✅ | ✅ |
+| iOS Safari | ⚠️ | ✅ |
+| Android Chrome | ✅ | ✅ |
 
 ## Fallback Mechanisms
 
@@ -234,6 +411,7 @@ For browsers or environments where speech features are not supported:
 1. **Text-only Mode**: Voice buttons are disabled, text input/output remains available
 2. **Feature Detection**: The application checks for browser support before enabling voice features
 3. **Graceful Degradation**: Clear error messages guide users to supported browsers
+4. **Progressive Enhancement**: Basic features work everywhere, enhanced features where supported
 
 ```typescript
 // Feature detection for speech recognition
@@ -247,6 +425,25 @@ const isSpeechSynthesisSupported = (): boolean => {
   return typeof window !== 'undefined' && !!window.speechSynthesis;
 };
 ```
+
+## Testing and Quality Assurance
+
+When testing the voice assistant functionality:
+
+1. **Unit Testing**:
+   - Test voice assistant core functions in isolation
+   - Mock ElevenLabs API responses
+   - Verify state transitions during interactions
+
+2. **Integration Testing**:
+   - Test communication between frontend and API routes
+   - Verify proper error handling
+   - Check context maintenance across interactions
+
+3. **End-to-End Testing**:
+   - Test complete voice interaction flows
+   - Verify document context is properly incorporated
+   - Test with different document types and sizes
 
 ## Usage Best Practices
 

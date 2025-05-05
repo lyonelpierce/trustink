@@ -3,6 +3,8 @@ import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
+import { DemoModeProvider } from "@/contexts/DemoModeContext";
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: {
@@ -27,8 +29,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
-            <Toaster position="bottom-right" richColors />
+            <DemoModeProvider>
+              <ErrorBoundary>{children}</ErrorBoundary>
+              <Toaster position="bottom-right" richColors />
+            </DemoModeProvider>
           </ThemeProvider>
         </body>
       </html>

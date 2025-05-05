@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useDocumentStore } from '@/store/zustand';
 import { SectionRevision, RiskLevel } from '@/types';
 import { 
@@ -9,8 +9,6 @@ import {
   FileText, 
   RotateCw,
   Calendar,
-  Tag,
-  MessageSquare
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -18,21 +16,20 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Card, 
   CardContent, 
-  CardDescription, 
   CardFooter, 
   CardHeader, 
-  CardTitle 
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 
 // Risk level badge colors
 const riskLevelColors: Record<RiskLevel, string> = {
   high: 'bg-red-100 text-red-800 border-red-200',
   medium: 'bg-amber-100 text-amber-800 border-amber-200',
-  low: 'bg-blue-100 text-blue-800 border-blue-200',
-  none: 'bg-gray-100 text-gray-800 border-gray-200',
+  low: 'bg-blue-100 text-blue-800 border-blue-200'
 };
+
+// Default risk level color for fallback
+const defaultRiskColor = 'bg-gray-100 text-gray-800 border-gray-200';
 
 // Status badge colors
 const statusColors: Record<string, string> = {
@@ -118,7 +115,7 @@ const RevisionCard = ({
           {revision.riskLevel && (
             <Badge 
               variant="outline" 
-              className={`${riskLevelColors[revision.riskLevel]} gap-1 items-center`}
+              className={`${riskLevelColors[revision.riskLevel] || defaultRiskColor} gap-1 items-center`}
             >
               <RiskIcon level={revision.riskLevel} />
               {revision.riskLevel.charAt(0).toUpperCase() + revision.riskLevel.slice(1)} Risk

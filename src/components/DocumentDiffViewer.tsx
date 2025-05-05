@@ -67,16 +67,11 @@ export function DocumentDiffViewer({
   // Parse the diff
   const files = useMemo(() => parseDiff(diffText, { nearbySequences: 'zip' }), [diffText]);
   
-  // No files or no differences to display
-  if (files.length === 0 || !files[0].hunks || files[0].hunks.length === 0) {
-    return (
-      <div className="p-4 border rounded-md">
-        No differences to display
-      </div>
-    );
-  }
+  // Early return check for empty files/hunks
+  const hasDifferences = files.length > 0 && files[0].hunks && files[0].hunks.length > 0;
   
-  const file = files[0];
+  // Access file conditionally but declare tokens unconditionally
+  const file = hasDifferences ? files[0] : { hunks: null, type: 'modify' };
   
   // Create tokens with syntax highlighting and edits marking
   const tokens = useMemo(() => {
@@ -126,6 +121,15 @@ export function DocumentDiffViewer({
     
     return result;
   }, [highlightRisks, file.hunks, riskAnnotations]);
+
+  // No files or no differences to display
+  if (!hasDifferences) {
+    return (
+      <div className="p-4 border rounded-md">
+        No differences to display
+      </div>
+    );
+  }
 
   return (
     <div className={`document-diff-viewer rounded-md border overflow-hidden ${className}`}>
