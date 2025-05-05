@@ -612,3 +612,157 @@ Add comprehensive testing for the PDF processing and analysis features.
 3. **Template Learning**
    - Implement ML to recognize document templates
    - Use template data to improve section detection 
+
+## Document Comparison and Diff Visualization
+
+### Approach for Implementing Contract Diffing
+
+We will implement diff viewing similar to git commits with the following approach:
+
+1. **Diffing Algorithm**
+   - Implement a text-based diffing algorithm using [diff-match-patch](https://github.com/google/diff-match-patch) library
+   - Store both the original text and revised text for each section in our database
+   - Calculate diffs at rendering time to ensure flexibility
+
+2. **UI Components for Diff Visualization**
+   - Create a `DiffViewer` component that shows:
+     - Side-by-side comparison (original vs. proposed)
+     - Inline diff view with color-coding (red for deletions, green for additions)
+     - Word-level or character-level diffing for precision
+   - Support toggling between different viewing modes
+
+3. **Contract Version Management**
+   - Track all versions of document sections in the `section_changes` table
+   - Add metadata for each change (timestamp, user, AI-generated flag)
+   - Implement version history navigation similar to git history
+
+4. **Technical Implementation Details**
+   ```typescript
+   interface SectionDiff {
+     original: string;
+     modified: string;
+     changes: Array<{
+       type: 'addition' | 'deletion' | 'unchanged';
+       text: string;
+       startIndex: number;
+       endIndex: number;
+     }>;
+   }
+   
+   // Component usage example
+   <DiffViewer 
+     original={section.original_text} 
+     modified={section.proposed_text}
+     viewMode="inline" // or "side-by-side"
+     wordLevel={true} 
+   />
+   ```
+
+### Risk Highlighting Implementation
+
+For LLM-based risk highlighting in contracts:
+
+1. **AI Integration for Risk Detection**
+   - Enhance the existing document analysis API to include risk detection
+   - Use Claude's capabilities to identify potentially risky clauses based on:
+     - Legal implications
+     - Financial risks
+     - Unclear or ambiguous language
+     - Restrictive terms
+
+2. **Risk Categorization System**
+   ```typescript
+   enum RiskLevel {
+     HIGH = 'high',
+     MEDIUM = 'medium',
+     LOW = 'low',
+     NONE = 'none'
+   }
+   
+   interface RiskAnnotation {
+     sectionId: string;
+     riskLevel: RiskLevel;
+     explanation: string;
+     suggestedAlternative?: string;
+     category: 'legal' | 'financial' | 'clarity' | 'restrictive' | 'other';
+   }
+   ```
+
+3. **UI Components for Risk Visualization**
+   - Create a `RiskHighlighter` component that applies different highlighting styles based on risk level
+   - Implement a hover tooltip that shows risk explanation
+   - Add a risk summary panel showing all identified risks in the document
+
+4. **User Interaction Flow**
+   - Initial document upload triggers basic document analysis
+   - User can request specific risk assessment ("Analyze this contract for risks")
+   - AI identifies risky sections and returns risk annotations
+   - UI highlights risky sections with appropriate color coding
+   - User can click on highlights to see explanations and suggested alternatives
+
+5. **Technical Implementation**
+   - Extend `document_analyses` table to include risk annotations
+   - Modify `EditableDocumentViewer` to support risk highlighting
+   - Create a new API endpoint specifically for risk analysis
+
+## Document Section Highlighting
+
+### Implementation Details
+
+1. **Section Definition and Storage**
+   - Define sections based on structural elements (headings, paragraphs)
+   - Store section metadata including:
+     - Position information (for visual highlighting)
+     - Content hash (for change detection)
+     - Risk assessment data
+
+2. **Highlighting Mechanism**
+   - Use CSS for visual highlighting with transition effects
+   - Apply highlighting based on:
+     - User selection
+     - AI recommendation
+     - Risk level
+     - Current editing focus
+
+3. **Interactive Highlighting API**
+   ```typescript
+   // Function to highlight a section
+   function highlightSection(sectionId: string, highlightType: 'selection' | 'risk' | 'ai-focus') {
+     // Implementation details
+   }
+   
+   // In the document viewer component
+   useEffect(() => {
+     if (highlightedSectionId) {
+       const element = document.getElementById(`section-${highlightedSectionId}`);
+       if (element) {
+         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         element.classList.add('highlighted');
+       }
+     }
+   }, [highlightedSectionId]);
+   ```
+
+4. **LLM Integration for Contextual Highlighting**
+   - When user asks questions about specific topics, the LLM will:
+     - Identify relevant sections
+     - Return section IDs to highlight
+     - Provide context about why these sections are relevant
+   - Implementation through the document analysis API with a new parameter for highlighting intent
+
+## Incremental Implementation Plan
+
+1. **Phase 1: Basic Diffing and Highlighting (Current Sprint)**
+   - Implement basic section highlighting in `EditableDocumentViewer`
+   - Create `DiffViewer` component with simple inline diff visualization
+   - Add section navigation with highlighting
+
+2. **Phase 2: Risk Analysis Integration (Next Sprint)**
+   - Extend document analysis API to include risk detection
+   - Create risk visualization components
+   - Implement risk summary panel
+
+3. **Phase 3: Advanced Features (Future)**
+   - Implement version history navigation
+   - Add collaborative highlighting for multiple users
+   - Create AI-suggested improvements based on risk analysis 

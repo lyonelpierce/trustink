@@ -2,21 +2,63 @@
 
 This directory contains comprehensive documentation for the TrustInk document management system with AI integration.
 
+## Quick Links for Developers
+
+- **[Project Status & Roadmap](./07-development-roadmap.md)** - Current implementation status and development plans
+- **[System Architecture](./01-system-architecture.md)** - Technical architecture and database schema
+- **[Data Models](./02-data-models.md)** - Core data types and database structure
+
 ## Documentation Index
 
-1. [System Architecture](./01-system-architecture.md) - Database design and component structure
-2. [Data Models](./02-data-models.md) - Core data types and store structure
-3. [User Flows](./03-user-flows.md) - Document analysis and revision management workflows
-4. [API Reference](./04-api-reference.md) - API endpoints and usage
-5. [Component Reference](./05-component-reference.md) - Key components and their roles
-6. [Implementation Status](./06-implementation-status.md) - What's implemented, mocked, and needs to be completed
-7. [Development Roadmap](./07-development-roadmap.md) - Future development plans
-8. [Build System](./build-system.md) - Build configuration, development workflow, and dependency management
-9. [PDF Architecture](./pdf-architecture.md) - PDF upload and processing design
-10. [PDF Implementation Tasks](./pdf-implementation-tasks.md) - Task checklist for PDF implementation
-11. [PDF Testing Guide](./pdf-testing-guide.md) - Guide for testing PDF functionality
-12. [PDF Upload Roadmap](./pdf-upload-roadmap.md) - Specific roadmap for PDF functionality
-13. [Voice Assistant Guide](./voice-assistant-guide.md) - Voice-based document interaction features
+### Core Documentation
+
+1. **[System Architecture](./01-system-architecture.md)** - Database design and component structure
+2. **[Data Models](./02-data-models.md)** - Core data types and store structure
+3. **[User Flows](./03-user-flows.md)** - Document analysis and revision management workflows
+4. **[API Reference](./04-api-reference.md)** - API endpoints and usage
+5. **[Component Reference](./05-component-reference.md)** - Key components and their roles
+
+### Project Management
+
+6. **[Project Status & Roadmap](./07-development-roadmap.md)** - ⭐ Single source of truth for implementation status and development plans
+
+### Implementation Guides
+
+7. **[PDF Architecture](./pdf-architecture.md)** - PDF upload and processing design
+8. **[PDF Implementation Tasks](./pdf-implementation-tasks.md)** - Task checklist for PDF implementation
+9. **[PDF Testing Guide](./pdf-testing-guide.md)** - Guide for testing PDF functionality
+10. **[Voice Assistant Guide](./voice-assistant-guide.md)** - Voice-based document interaction features
+11. **[Build System](./build-system.md)** - Build configuration, development workflow, and dependency management
+
+## Documentation Structure
+
+The documentation is organized to serve different needs:
+
+- **Core Documentation (01-05)**: Describes the system design and components
+- **Project Management (06-07)**: Tracks implementation status and roadmap
+- **Implementation Guides**: Provides detailed information for specific features
+
+## Best Practices for Documentation
+
+When contributing to this documentation:
+
+1. **Single Source of Truth**: The [Project Status & Roadmap](./07-development-roadmap.md) document is the authoritative source for implementation status and development plans.
+
+2. **Keep Content Focused**: Each document should have a clear, specific purpose to avoid duplication.
+
+3. **Cross-Reference**: Link to other documents rather than duplicating information.
+
+4. **Update README**: When adding new documentation, update this README to maintain the index.
+
+5. **Use Diagrams**: Use Mermaid syntax for consistent diagrams.
+
+## Getting Started
+
+For new developers:
+
+1. Start with the **[Project Status & Roadmap](./07-development-roadmap.md)** to understand what's been implemented and what's next
+2. Review the **[System Architecture](./01-system-architecture.md)** for an overview of the system
+3. Examine the **[User Flows](./03-user-flows.md)** to understand how users interact with the system
 
 ## Installation and Setup
 
@@ -31,8 +73,6 @@ This directory contains comprehensive documentation for the TrustInk document ma
 npm install
 ```
 
-> **Note about dependencies**: The project uses React 18.2 and compatible testing libraries. We've specifically aligned our dependencies to avoid version conflicts. If you encounter dependency issues, ensure you're using the exact versions specified in package.json.
-
 ### Development
 
 ```bash
@@ -44,16 +84,7 @@ npm test
 
 # Build for production (with linting)
 npm run build
-
-# Build for production (without linting)
-npm run build -- --no-lint
 ```
-
-For more details on the build system and configuration files, see the [Build System](./build-system.md) documentation.
-
-## Getting Started
-
-For developers new to the project, we recommend starting with the [System Architecture](./01-system-architecture.md) document to understand the overall structure, followed by the [User Flows](./03-user-flows.md) to understand how users interact with the system. The [Development Roadmap](./07-development-roadmap.md) provides an overview of upcoming features and priorities.
 
 ## Key Features
 
@@ -68,13 +99,9 @@ For developers new to the project, we recommend starting with the [System Archit
 - Receive recommendations for improvements
 
 ### Voice Assistant
-- **Dual Interaction Modes**: Interact with documents using both text and speech
-- **Text-Based Interaction**: Type questions and receive text responses about documents
-- **Voice-Based Interaction**: Ask questions verbally and receive spoken responses
-- **Web Speech API**: Uses browser's built-in speech recognition and synthesis
-- **Document Context**: AI responses consider both the document content and highlighted sections
-- **Conversation History**: Track and review your conversation with the AI assistant
-- **Future Enhancements**: Planned integration with ElevenLabs for higher quality speech and OpenAI Whisper for improved recognition
+- Interact with documents using both text and speech
+- Ask questions verbally and receive spoken responses
+- AI responses consider both document content and highlighted sections
 
 ### Collaborative Editing
 - Propose and review document changes

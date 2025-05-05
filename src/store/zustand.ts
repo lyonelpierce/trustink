@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { DocumentSection, SectionRevision } from "@/types";
+import { DocumentSection, RiskAnnotation, RiskLevel, SectionRevision } from "@/types";
+import { DocumentService } from "@/services/api";
 
 interface AnalysisResult {
   summary?: string;
@@ -57,18 +58,27 @@ interface DocumentState {
   activeRevisionSession: string | null;
   highlightedSection: string | null;
   isDocumentLoading: boolean;
+  // Risk annotations
+  riskAnnotations: RiskAnnotation[];
+  isLoadingRisks: boolean;
+  viewType: 'split' | 'unified';
   
   // Actions
   setCurrentDocument: (document: Document | null) => void;
   setHighlightedSection: (sectionId: string | null) => void;
   setDocumentLoading: (loading: boolean) => void;
   updateDocumentSection: (sectionId: string, newText: string, saveRevision?: boolean) => void;
-  proposeRevision: (sectionId: string, newText: string, aiGenerated?: boolean, comment?: string) => void;
+  proposeRevision: (sectionId: string, newText: string, aiGenerated?: boolean, comment?: string, riskLevel?: RiskLevel) => void;
   acceptRevision: (revisionId: string) => void;
   rejectRevision: (revisionId: string) => void;
   startRevisionSession: (sessionId: string) => void;
   endRevisionSession: () => void;
   clearDocument: () => void;
+  // Risk analysis
+  fetchRiskAnnotations: (documentId: string) => Promise<void>;
+  setViewType: (type: 'split' | 'unified') => void;
+  // API integrations 
+  suggestEdit: (sectionId: string) => Promise<void>;
 }
 
 type SetState<T> = (partial: Partial<T> | ((state: T) => Partial<T>)) => void;
@@ -81,6 +91,9 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
   activeRevisionSession: null,
   highlightedSection: null,
   isDocumentLoading: false,
+  riskAnnotations: [],
+  isLoadingRisks: false,
+  viewType: 'split',
   
   setCurrentDocument: (document: Document | null) => {
     console.log('[DocumentStore] Setting current document:', document?.name || 'null');
@@ -95,6 +108,10 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
   setDocumentLoading: (loading: boolean) => {
     console.log('[DocumentStore] Set document loading:', loading);
     set({ isDocumentLoading: loading });
+  },
+  
+  setViewType: (type: 'split' | 'unified') => {
+    set({ viewType: type });
   },
   
   updateDocumentSection: (sectionId: string, newText: string, saveRevision = false) => {
@@ -151,7 +168,7 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
     });
   },
   
-  proposeRevision: (sectionId: string, newText: string, aiGenerated = false, comment?: string) => {
+  proposeRevision: (sectionId: string, newText: string, aiGenerated = false, comment?: string, riskLevel?: RiskLevel) => {
     console.log('[DocumentStore] Proposing revision for section:', sectionId, 'AI generated:', aiGenerated);
     
     const currentDocument = get().currentDocument;
@@ -169,6 +186,8 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
     }
     
     const newRevision: SectionRevision = {
+      id: `rev-${Date.now()}`,
+      documentId: currentDocument.id,
       sectionId,
       originalText: sectionToRevise.text,
       proposedText: newText,
@@ -176,7 +195,8 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
       createdAt: new Date(),
       createdBy: get().activeRevisionSession || 'current-user',
       aiGenerated,
-      comment
+      comment,
+      riskLevel
     };
     
     console.log('[DocumentStore] Adding pending revision with session:', get().activeRevisionSession);
@@ -191,7 +211,7 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
     console.log('[DocumentStore] Accepting revision:', revisionId);
     
     const pendingRevisions = get().pendingRevisions;
-    const revisionToAccept = pendingRevisions.find((rev: SectionRevision) => rev.sectionId === revisionId);
+    const revisionToAccept = pendingRevisions.find((rev: SectionRevision) => rev.id === revisionId);
     
     if (!revisionToAccept) {
       console.log('[DocumentStore] Cannot accept revision: Revision not found');
@@ -211,7 +231,7 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
     
     // Move from pending to accepted revisions
     set((state: DocumentState) => ({
-      pendingRevisions: state.pendingRevisions.filter((rev: SectionRevision) => rev.sectionId !== revisionId),
+      pendingRevisions: state.pendingRevisions.filter((rev: SectionRevision) => rev.id !== revisionId),
       revisions: [...state.revisions, updatedRevision]
     }));
   },
@@ -220,7 +240,7 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
     console.log('[DocumentStore] Rejecting revision:', revisionId);
     
     const pendingRevisions = get().pendingRevisions;
-    const revisionToReject = pendingRevisions.find((rev: SectionRevision) => rev.sectionId === revisionId);
+    const revisionToReject = pendingRevisions.find((rev: SectionRevision) => rev.id === revisionId);
     
     if (!revisionToReject) {
       console.log('[DocumentStore] Cannot reject revision: Revision not found');
@@ -235,7 +255,7 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
     
     // Move from pending to rejected revisions
     set((state: DocumentState) => ({
-      pendingRevisions: state.pendingRevisions.filter((rev: SectionRevision) => rev.sectionId !== revisionId),
+      pendingRevisions: state.pendingRevisions.filter((rev: SectionRevision) => rev.id !== revisionId),
       revisions: [...state.revisions, updatedRevision]
     }));
   },
@@ -252,14 +272,59 @@ const useDocumentStore = create<DocumentState>((set: SetState<DocumentState>, ge
   
   clearDocument: () => {
     console.log('[DocumentStore] Clearing document');
-    set({ 
-      currentDocument: null, 
-      highlightedSection: null, 
-      isDocumentLoading: false,
+    set({
+      currentDocument: null,
+      revisions: [],
       pendingRevisions: [],
-      activeRevisionSession: null
+      activeRevisionSession: null,
+      highlightedSection: null,
+      riskAnnotations: []
     });
   },
+  
+  fetchRiskAnnotations: async (documentId: string) => {
+    console.log('[DocumentStore] Fetching risk annotations for document:', documentId);
+    set({ isLoadingRisks: true });
+    
+    try {
+      const annotations = await DocumentService.getRiskAnnotations(documentId);
+      console.log('[DocumentStore] Fetched risk annotations:', annotations.length);
+      set({ riskAnnotations: annotations });
+    } catch (error) {
+      console.error('[DocumentStore] Error fetching risk annotations:', error);
+    } finally {
+      set({ isLoadingRisks: false });
+    }
+  },
+  
+  suggestEdit: async (sectionId: string) => {
+    console.log('[DocumentStore] Requesting AI suggested edit for section:', sectionId);
+    const currentDocument = get().currentDocument;
+    
+    if (!currentDocument || !currentDocument.id) {
+      console.error('[DocumentStore] Cannot suggest edit: No current document');
+      return;
+    }
+    
+    try {
+      const suggestion = await DocumentService.suggestEdit(currentDocument.id, sectionId);
+      
+      if (suggestion.proposedText !== suggestion.originalText) {
+        get().proposeRevision(
+          sectionId,
+          suggestion.proposedText,
+          true, // AI generated
+          suggestion.explanation
+        );
+        console.log('[DocumentStore] Added AI suggestion as revision');
+      } else {
+        console.log('[DocumentStore] No changes suggested by AI');
+      }
+    } catch (error) {
+      console.error('[DocumentStore] Error getting AI suggestion:', error);
+    }
+  }
 }));
 
+// Export stores
 export { useContractStore, useModalStore, useDocumentStore };
