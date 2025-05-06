@@ -142,40 +142,55 @@ export type Database = {
       }
       documents_paragraphs: {
         Row: {
-          bbox: number[]
-          color: string
+          bbox: number[] | null
+          color: string | null
           created_at: string
           document_id: string
-          font: string
+          font: string | null
+          formatting: Json
+          height: number
           id: string
           page_number: number
-          size: number
+          position_x: number
+          position_y: number
+          size: number | null
           text: string
           user_id: string
+          width: number
         }
         Insert: {
-          bbox: number[]
-          color: string
+          bbox?: number[] | null
+          color?: string | null
           created_at?: string
           document_id: string
-          font: string
+          font?: string | null
+          formatting?: Json
+          height: number
           id?: string
           page_number: number
-          size: number
+          position_x: number
+          position_y: number
+          size?: number | null
           text: string
           user_id: string
+          width: number
         }
         Update: {
-          bbox?: number[]
-          color?: string
+          bbox?: number[] | null
+          color?: string | null
           created_at?: string
           document_id?: string
-          font?: string
+          font?: string | null
+          formatting?: Json
+          height?: number
           id?: string
           page_number?: number
-          size?: number
+          position_x?: number
+          position_y?: number
+          size?: number | null
           text?: string
           user_id?: string
+          width?: number
         }
         Relationships: [
           {

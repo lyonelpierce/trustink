@@ -10,11 +10,13 @@ import {
   // CircleDotIcon,
   // SquareCheckIcon,
 } from "lucide-react";
+import React from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FieldItem } from "./FieldItem";
 import { useSession } from "@clerk/nextjs";
 import { Card } from "@/components/ui/card";
+import { ParagraphItem } from "./ParagraphItems";
 import { CardContent } from "@/components/ui/card";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../../../database.types";
@@ -24,8 +26,6 @@ import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
-import React from "react";
-import { ParagraphItem } from "./ParagraphItems";
 
 const MIN_HEIGHT_PX = 12;
 const MIN_WIDTH_PX = 36;
@@ -78,7 +78,6 @@ const Elements = ({
   >(fields);
 
   // State for document paragraphs - will be used for text analysis and field positioning
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [documentParagraphs, setDocumentParagraphs] = useState<
     Database["public"]["Tables"]["documents_paragraphs"]["Row"][]
   >([]);

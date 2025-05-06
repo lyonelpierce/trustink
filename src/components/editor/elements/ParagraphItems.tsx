@@ -8,6 +8,16 @@ import { Database } from "../../../../database.types";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+// Add type definition for formatting
+type FormattingItem = {
+  text: string;
+  color: string;
+  size: string | number;
+  bold: boolean;
+  font?: string;
+  italic?: boolean;
+};
+
 export type ParagraphItemProps = {
   paragraph: Database["public"]["Tables"]["documents_paragraphs"]["Row"];
   passive?: boolean;
@@ -16,7 +26,6 @@ export type ParagraphItemProps = {
   minWidth?: number;
   defaultHeight?: number;
   defaultWidth?: number;
-  fontSize?: string | number;
   onResize?: (_node: HTMLElement) => void;
   onMove?: (_node: HTMLElement) => void;
   onRemove?: () => void;
@@ -47,7 +56,7 @@ export const ParagraphItem = ({
     pageY: 0,
     pageHeight: defaultHeight || 0,
     pageWidth: defaultWidth || 0,
-    fontSize: "inherit" as string,
+    pageScale: 1,
   });
   const $el = useRef(null);
 
@@ -65,53 +74,29 @@ export const ParagraphItem = ({
     const top = $page.getBoundingClientRect().top + window.scrollY;
     const left = $page.getBoundingClientRect().left + window.scrollX;
 
-    // Extract coordinates from bbox array [x1, y1, x2, y2]
-    const [x1, y1, x2, y2] = paragraph.bbox;
-
-    // PyMuPDF coordinates are in points (72 points = 1 inch)
-    // Standard PDF dimensions in points (Letter size: 8.5 x 11 inches)
-    const PDF_WIDTH_PT = 612; // 8.5 * 72
-    const PDF_HEIGHT_PT = 792; // 11 * 72
-
-    // Calculate the scale factor based on the rendered size vs PDF points
-    const scaleFactor = width / PDF_WIDTH_PT;
-
-    // Scale the font size according to the page scale
-    const fontSize = paragraph.size
-      ? `${paragraph.size * scaleFactor}px`
-      : "inherit";
-
-    // Convert from PDF points to percentages
-    const position_x = (x1 / PDF_WIDTH_PT) * 100;
-    // PDF coordinates are from bottom-left, we need to transform to top-left for screen coordinates
-    const position_y = (y1 / PDF_HEIGHT_PT) * 100;
-
-    // Calculate dimensions in percentages with a width adjustment factor to prevent text wrapping
-    const widthAdjustmentFactor = 1.15; // Add 5% to the width to prevent wrapping
-    const boxWidth = ((x2 - x1) / PDF_WIDTH_PT) * 100 * widthAdjustmentFactor;
-    const boxHeight = ((y2 - y1) / PDF_HEIGHT_PT) * 80;
-
-    // Convert percentages to actual pixels for positioning, with offset adjustments
-    const horizontalOffset = width * 0.02; // 2% right offset
-    const verticalOffset = height * 0.01; // 3% up offset
-    const pageX = (position_x / 100) * width + left + horizontalOffset;
+    const pageX = (paragraph.position_x / 100) * width + left;
     const pageY =
-      (position_y / 100) * height +
+      (paragraph.position_y / 100) * height +
       top -
-      (boxHeight / 100) * height * 0.5 +
-      verticalOffset;
+      (paragraph.height / 100) * height * 0.5;
 
-    const pageHeight = (boxHeight / 100) * height;
-    const pageWidth = (boxWidth / 100) * width;
+    const pageHeight = (paragraph.height / 100) * height;
+    const pageWidth = (paragraph.width / 100) * width;
 
     setCoords({
       pageX,
       pageY,
       pageHeight,
       pageWidth,
-      fontSize,
+      pageScale: height / 792, // Assuming standard PDF height is 792px (letter size)
     });
-  }, [paragraph.bbox, paragraph.page_number, paragraph.size]);
+  }, [
+    paragraph.page_number,
+    paragraph.position_x,
+    paragraph.position_y,
+    paragraph.height,
+    paragraph.width,
+  ]);
 
   useEffect(() => {
     calculateCoords();
@@ -143,7 +128,7 @@ export const ParagraphItem = ({
         x: coords.pageX,
         y: coords.pageY,
         height: coords.pageHeight,
-        width: coords.pageWidth,
+        width: coords.pageWidth * 2,
       }}
       minHeight={minHeight || "auto"}
       minWidth={minWidth || "auto"}
@@ -173,12 +158,34 @@ export const ParagraphItem = ({
         data-field-id={paragraph.id}
         style={{
           overflow: "visible",
-          fontSize: coords.fontSize,
         }}
       >
-        {paragraph.text}
-      </div>
+        {paragraph.formatting &&
+          Array.isArray(paragraph.formatting) &&
+          paragraph.formatting.map((item, i: number) => {
+            const formatting = item as unknown as FormattingItem;
+            const scaledFontSize = formatting.size
+              ? typeof formatting.size === "number"
+                ? `${Number(formatting.size) * (coords.pageScale || 1)}px`
+                : formatting.size
+              : "inherit";
 
+            return (
+              <span
+                key={i}
+                style={{
+                  color: formatting.color,
+                  fontSize: scaledFontSize,
+                  fontWeight: formatting.bold ? "bold" : "normal",
+                  fontStyle: formatting.italic ? "italic" : "normal",
+                  fontFamily: formatting.font || "inherit",
+                }}
+              >
+                {formatting.text}
+              </span>
+            );
+          })}
+      </div>
       {!disabled && (
         <div className="z-[60] flex justify-center items-center">
           <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
