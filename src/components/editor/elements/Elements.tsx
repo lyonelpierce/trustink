@@ -86,6 +86,11 @@ const Elements = ({
 
   const [selectedField, setSelectedField] = useState<FieldType | null>(null);
 
+  // Add state for selected paragraph
+  const [selectedParagraph, setSelectedParagraph] = useState<string | null>(
+    null
+  );
+
   const [isFieldWithinBounds, setIsFieldWithinBounds] = useState(false);
   const [coords, setCoords] = useState({
     x: 0,
@@ -482,6 +487,47 @@ const Elements = ({
     };
   }, []);
 
+  useEffect(() => {
+    // Click outside handler to deselect paragraphs
+    const handleClickOutside = (e: MouseEvent) => {
+      // Check if the click is on a paragraph item
+      const isParagraphClick = (e.target as HTMLElement).closest(
+        "[data-field-id]"
+      );
+      if (!isParagraphClick) {
+        setSelectedParagraph(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Function to handle paragraph removal
+  const handleParagraphRemove = async (paragraphId: string) => {
+    try {
+      const { error } = await client
+        .from("documents_paragraphs")
+        .delete()
+        .eq("id", paragraphId);
+
+      if (error) {
+        console.error("Error removing paragraph:", error);
+        toast.error("Failed to remove paragraph");
+        return;
+      }
+
+      toast.success("Paragraph removed");
+      setSelectedParagraph(null);
+    } catch (error) {
+      console.error("Error removing paragraph:", error);
+      toast.error("Failed to remove paragraph");
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col">
@@ -547,6 +593,9 @@ const Elements = ({
               minWidth={MIN_WIDTH_PX}
               defaultHeight={DEFAULT_HEIGHT_PX}
               defaultWidth={DEFAULT_WIDTH_PX}
+              isSelected={selectedParagraph === paragraph.id}
+              onSelect={() => setSelectedParagraph(paragraph.id)}
+              onRemove={() => handleParagraphRemove(paragraph.id)}
             />
           ))}
         </>

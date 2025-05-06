@@ -32,6 +32,8 @@ export type ParagraphItemProps = {
   onBlur?: () => void;
   onFieldDeactivate?: () => void;
   onFieldActivate?: () => void;
+  isSelected?: boolean;
+  onSelect?: () => void;
 };
 
 export const ParagraphItem = ({
@@ -46,6 +48,8 @@ export const ParagraphItem = ({
   onRemove,
   onFieldDeactivate,
   onFieldActivate,
+  isSelected,
+  onSelect,
 }: ParagraphItemProps) => {
   const [coords, setCoords] = useState({
     pageX: 0,
@@ -110,17 +114,23 @@ export const ParagraphItem = ({
     };
   }, [calculateCoords]);
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect?.();
+  };
+
   return createPortal(
     <Rnd
       key={coords.pageX + coords.pageY + coords.pageHeight + coords.pageWidth}
-      className={cn("group", {
+      className={cn("group hover:ring rounded ring-blue-400", {
         "pointer-events-none": passive,
+        "ring-2 ring-blue-400 rounded": isSelected,
       })}
       default={{
         x: coords.pageX,
         y: coords.pageY,
         height: coords.pageHeight,
-        width: coords.pageWidth * 2,
+        width: coords.pageWidth,
       }}
       minHeight={minHeight || "auto"}
       minWidth={minWidth || "auto"}
@@ -144,6 +154,7 @@ export const ParagraphItem = ({
       style={{
         overflow: "visible",
       }}
+      onClick={handleClick}
     >
       <div
         ref={$el}
@@ -178,17 +189,19 @@ export const ParagraphItem = ({
             );
           })}
       </div>
-      <div className="z-[60] flex justify-center items-center">
-        <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
-          <button
-            className="cursor-pointer dark:text-muted-foreground/50 dark:hover:text-muted-foreground dark:hover:bg-foreground/10 rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
-            onClick={onRemove}
-            onTouchEnd={onRemove}
-          >
-            <Trash className="h-3 w-3" />
-          </button>
+      {isSelected && (
+        <div className="z-[60] flex justify-center items-center absolute -top-6 right-0">
+          <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
+            <button
+              className="cursor-pointer dark:text-muted-foreground/50 dark:hover:text-muted-foreground dark:hover:bg-foreground/10 rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
+              onClick={onRemove}
+              onTouchEnd={onRemove}
+            >
+              <Trash className="h-3 w-3" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </Rnd>,
     document.body
   );
