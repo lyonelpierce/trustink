@@ -21,7 +21,6 @@ type FormattingItem = {
 export type ParagraphItemProps = {
   paragraph: Database["public"]["Tables"]["documents_paragraphs"]["Row"];
   passive?: boolean;
-  disabled?: boolean;
   minHeight?: number;
   minWidth?: number;
   defaultHeight?: number;
@@ -31,7 +30,6 @@ export type ParagraphItemProps = {
   onRemove?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;
-  active?: boolean;
   onFieldDeactivate?: () => void;
   onFieldActivate?: () => void;
 };
@@ -39,12 +37,10 @@ export type ParagraphItemProps = {
 export const ParagraphItem = ({
   paragraph,
   passive,
-  disabled,
   minHeight,
   minWidth,
   defaultHeight,
   defaultWidth,
-  active,
   onResize,
   onMove,
   onRemove,
@@ -119,10 +115,6 @@ export const ParagraphItem = ({
       key={coords.pageX + coords.pageY + coords.pageHeight + coords.pageWidth}
       className={cn("group", {
         "pointer-events-none": passive,
-        "pointer-events-none cursor-not-allowed opacity-75": disabled,
-        "z-50": active && !disabled,
-        "z-20": !active && !disabled,
-        "z-10": disabled,
       })}
       default={{
         x: coords.pageX,
@@ -186,19 +178,17 @@ export const ParagraphItem = ({
             );
           })}
       </div>
-      {!disabled && (
-        <div className="z-[60] flex justify-center items-center">
-          <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
-            <button
-              className="cursor-pointer dark:text-muted-foreground/50 dark:hover:text-muted-foreground dark:hover:bg-foreground/10 rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
-              onClick={onRemove}
-              onTouchEnd={onRemove}
-            >
-              <Trash className="h-3 w-3" />
-            </button>
-          </div>
+      <div className="z-[60] flex justify-center items-center">
+        <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
+          <button
+            className="cursor-pointer dark:text-muted-foreground/50 dark:hover:text-muted-foreground dark:hover:bg-foreground/10 rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
+            onClick={onRemove}
+            onTouchEnd={onRemove}
+          >
+            <Trash className="h-3 w-3" />
+          </button>
         </div>
-      )}
+      </div>
     </Rnd>,
     document.body
   );

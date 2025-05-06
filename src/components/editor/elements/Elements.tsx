@@ -543,7 +543,6 @@ const Elements = ({
             <ParagraphItem
               key={paragraph.id}
               paragraph={paragraph}
-              disabled={!selectedRecipient}
               minHeight={MIN_HEIGHT_PX}
               minWidth={MIN_WIDTH_PX}
               defaultHeight={DEFAULT_HEIGHT_PX}
