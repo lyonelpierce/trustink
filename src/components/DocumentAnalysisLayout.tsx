@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { EditableDocumentViewer } from "@/components/EditableDocumentViewer";
-import { VoiceAssistant } from "@/components/VoiceAssistant";
+// import { EditableDocumentViewer } from "@/components/EditableDocumentViewer";
+// import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { RevisionPanel } from "@/components/RevisionPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDocumentStore } from "@/store/zustand";
@@ -19,7 +19,7 @@ interface DocumentAnalysisLayoutProps {
 /**
  * Layout component for document analysis
  * Displays document viewer alongside voice assistant and revision panel
- * 
+ *
  * Features:
  * - Split view with document on the left, assistant/revisions on the right
  * - Tabbed interface for switching between AI assistant and revisions
@@ -49,11 +49,13 @@ export function DocumentAnalysisLayout({
       try {
         // Demo mode check - use mock data if in demo mode
         if (isDemoMode) {
-          console.log('[DocumentAnalysisLayout] Using mock document in demo mode');
+          console.log(
+            "[DocumentAnalysisLayout] Using mock document in demo mode"
+          );
           setUsingMockData(true);
-          
+
           // Set mock document data
-          if (documentId === 'doc-123' || documentId === 'sample') {
+          if (documentId === "doc-123" || documentId === "sample") {
             setCurrentDocument({
               ...mockDocument,
               id: documentId,
@@ -61,28 +63,32 @@ export function DocumentAnalysisLayout({
                 sections: mockDocument.sections || [],
               },
             });
-            
-            console.log('[DocumentAnalysisLayout] Loaded mock document with sections:', 
-              mockDocument.sections?.length || 0);
-              
+
+            console.log(
+              "[DocumentAnalysisLayout] Loaded mock document with sections:",
+              mockDocument.sections?.length || 0
+            );
+
             setDocumentLoading(false);
             return;
           }
         }
-        
+
         // For real implementation, ensure auth is loaded first
         if (!isLoaded) {
-          console.log('[DocumentAnalysisLayout] Waiting for auth to load');
+          console.log("[DocumentAnalysisLayout] Waiting for auth to load");
           return; // Wait for auth to load
         }
-        
+
         // Real auth check
         if (!isSignedIn || !userId) {
           throw new Error("You must be signed in to view documents");
         }
 
         // Fetch document metadata
-        console.log(`[DocumentAnalysisLayout] Fetching document metadata: ${documentId}`);
+        console.log(
+          `[DocumentAnalysisLayout] Fetching document metadata: ${documentId}`
+        );
         const response = await fetch(`/api/documents?id=${documentId}`);
 
         if (!response.ok) {
@@ -101,10 +107,14 @@ export function DocumentAnalysisLayout({
         }
 
         const documentData = await response.json();
-        console.log('[DocumentAnalysisLayout] Document metadata loaded successfully');
+        console.log(
+          "[DocumentAnalysisLayout] Document metadata loaded successfully"
+        );
 
         // Fetch document analysis/content
-        console.log(`[DocumentAnalysisLayout] Fetching document analysis: ${documentId}`);
+        console.log(
+          `[DocumentAnalysisLayout] Fetching document analysis: ${documentId}`
+        );
         const analysisResponse = await fetch(
           `/api/documents/analyze?documentId=${documentId}`
         );
@@ -125,7 +135,9 @@ export function DocumentAnalysisLayout({
         }
 
         const analysisData = await analysisResponse.json();
-        console.log('[DocumentAnalysisLayout] Document analysis loaded successfully');
+        console.log(
+          "[DocumentAnalysisLayout] Document analysis loaded successfully"
+        );
 
         // Set current document with analysis data
         setCurrentDocument({
@@ -137,16 +149,18 @@ export function DocumentAnalysisLayout({
       } catch (error) {
         // Use standardized error handling
         const errorObj = handleError(error, {
-          context: 'Document Analysis Layout',
+          context: "Document Analysis Layout",
           showToast: true,
-          logToConsole: true
+          logToConsole: true,
         });
-        
+
         setError(errorObj.message);
-        
+
         // In demo mode, fallback to mock data even for errors
         if (isDemoMode) {
-          console.log('[DocumentAnalysisLayout] Falling back to mock document after error');
+          console.log(
+            "[DocumentAnalysisLayout] Falling back to mock document after error"
+          );
           setCurrentDocument({
             ...mockDocument,
             id: documentId,
@@ -176,7 +190,7 @@ export function DocumentAnalysisLayout({
     isSignedIn,
     userId,
     isDemoMode,
-    setUsingMockData
+    setUsingMockData,
   ]);
 
   // Auth loading state
@@ -202,7 +216,7 @@ export function DocumentAnalysisLayout({
   // Loading state
   if (isDocumentLoading) {
     return (
-      <LoadingState 
+      <LoadingState
         title="Loading document"
         description="Please wait while we load your document..."
       />
@@ -211,12 +225,7 @@ export function DocumentAnalysisLayout({
 
   // Error state
   if (error) {
-    return (
-      <ErrorState
-        title="Error loading document"
-        description={error}
-      />
-    );
+    return <ErrorState title="Error loading document" description={error} />;
   }
 
   // No document loaded
@@ -234,7 +243,7 @@ export function DocumentAnalysisLayout({
       <div className="flex-grow flex overflow-hidden">
         {/* Document viewer (left side) */}
         <div className="w-1/2 h-full overflow-auto border-r">
-          <EditableDocumentViewer />
+          {/* <EditableDocumentViewer /> */}
         </div>
 
         {/* Assistant/Revisions panel (right side) */}
@@ -250,11 +259,11 @@ export function DocumentAnalysisLayout({
               <TabsTrigger value="assistant">AI Assistant</TabsTrigger>
               <TabsTrigger value="revisions">Revisions</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="assistant" className="flex-grow overflow-auto">
-              <VoiceAssistant className="h-full" />
+              {/* <VoiceAssistant className="h-full" /> */}
             </TabsContent>
-            
+
             <TabsContent value="revisions" className="flex-grow overflow-auto">
               <RevisionPanel showAccepted={true} />
             </TabsContent>
