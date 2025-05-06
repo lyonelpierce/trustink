@@ -1,5 +1,11 @@
 import { cn } from "@/lib/utils";
 import Hero from "@/components/landing/Hero";
+import ProblemSection from "@/components/landing/ProblemSection";
+import DemoSection from "@/components/landing/DemoSection";
+import TechStackSection from "@/components/landing/TechStackSection";
+import TractionSection from "@/components/landing/TractionSection";
+import TeamSection from "@/components/landing/TeamSection";
+import CTASection from "@/components/landing/CTASection";
 
 export default function Home() {
   return (
@@ -16,6 +22,12 @@ export default function Home() {
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] dark:bg-black"></div>
         <Hero />
       </div>
+      <ProblemSection />
+      <DemoSection />
+      <TechStackSection />
+      <TractionSection />
+      <TeamSection />
+      <CTASection />
     </div>
   );
 }

@@ -1,160 +1,177 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { DocumentAnalysisLayout } from '@/components/DocumentAnalysisLayout';
 import { useDocumentStore } from '@/store/zustand';
-import { VoiceAssistant } from '@/components/VoiceAssistant';
-import { EditableDocumentViewer } from '@/components/EditableDocumentViewer';
 import { RevisionPanel } from '@/components/RevisionPanel';
+import { startMSWServer } from '@/mocks/msw-server';
+import { mockDocument } from '@/mocks/document-mock';
+import { auth } from '@clerk/nextjs/server';
 
-// Mock fetch
-global.fetch = jest.fn();
+// Define types for our mocks
+interface MockDocumentStore {
+  currentDocument: any | null;
+  isDocumentLoading: boolean;
+  highlightedSection?: string | null;
+  loadError?: string;
+  setCurrentDocument: jest.Mock;
+  setDocumentLoading: jest.Mock;
+  setHighlightedSection?: jest.Mock;
+}
 
-// Mock dependencies
+// Mock Clerk Auth
+jest.mock('@clerk/nextjs', () => ({
+  auth: jest.fn(),
+  ClerkProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useAuth: jest.fn().mockReturnValue({
+    isSignedIn: true,
+    userId: 'test-user-id',
+    isLoaded: true
+  })
+}));
+
+// Mock the document store
 jest.mock('@/store/zustand', () => ({
   useDocumentStore: jest.fn()
 }));
 
-// Mock child components
-jest.mock('@/components/VoiceAssistant', () => ({
-  VoiceAssistant: jest.fn(() => <div data-testid="mock-voice-assistant">Voice Assistant Mock</div>)
-}));
-
-jest.mock('@/components/EditableDocumentViewer', () => ({
-  EditableDocumentViewer: jest.fn(() => <div data-testid="mock-document-viewer">Document Viewer Mock</div>)
-}));
-
+// Mock the RevisionPanel component
 jest.mock('@/components/RevisionPanel', () => ({
   RevisionPanel: jest.fn(() => <div data-testid="mock-revision-panel">Revision Panel Mock</div>)
 }));
 
-describe('DocumentAnalysisLayout Component', () => {
-  const mockSetCurrentDocument = jest.fn();
-  const mockSetDocumentLoading = jest.fn();
-  
+// Mock the EditableDocumentViewer component
+jest.mock('@/components/EditableDocumentViewer', () => ({
+  EditableDocumentViewer: jest.fn(() => <div data-testid="document-viewer">Document Viewer Mock</div>)
+}));
+
+// Mock the VoiceAssistant component
+jest.mock('@/components/VoiceAssistant', () => ({
+  VoiceAssistant: jest.fn(() => <div data-testid="mock-voice-assistant">Ask questions about your document</div>)
+}));
+
+// Mock DemoMode context
+jest.mock('@/contexts/DemoModeContext', () => ({
+  useDemoMode: jest.fn().mockReturnValue({
+    isDemoMode: false,
+    usingMockData: false,
+    setUsingMockData: jest.fn()
+  })
+}));
+
+// Start MSW
+startMSWServer();
+
+describe('DocumentAnalysisLayout', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    
-    // Mock successful fetch responses
-    (global.fetch as jest.Mock).mockImplementation((url) => {
-      if (url.includes('api/documents?id=')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ id: 'doc-123', name: 'Test Document.pdf' })
-        });
-      } else if (url.includes('api/documents/analyze')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            sections: [
-              {
-                id: 'section-1',
-                title: 'Test Section',
-                text: 'Test content',
-                pageNumber: 1,
-                position: { x: 0, y: 0, width: 100, height: 100 }
-              }
-            ]
-          })
-        });
-      }
-      return Promise.reject(new Error('Not found'));
+    // Mock auth to return a user
+    (auth as unknown as jest.Mock).mockResolvedValue({
+      userId: 'user-123',
+      getToken: jest.fn().mockResolvedValue('mock-token')
     });
     
-    // Mock document store with a loaded document and the required setter functions
+    // Setup document store with default values
     (useDocumentStore as unknown as jest.Mock).mockReturnValue({
-      currentDocument: {
-        id: 'doc-123',
-        name: 'Test Document.pdf',
-        parsedContent: {
-          sections: [
-            {
-              id: 'section-1',
-              title: 'Test Section',
-              text: 'Test content',
-              pageNumber: 1,
-              position: { x: 0, y: 0, width: 100, height: 100 }
-            }
-          ]
-        }
-      },
+      currentDocument: null,
       isDocumentLoading: false,
-      setCurrentDocument: mockSetCurrentDocument,
-      setDocumentLoading: mockSetDocumentLoading
-    });
+      highlightedSection: null,
+      setCurrentDocument: jest.fn(),
+      setDocumentLoading: jest.fn(),
+      setHighlightedSection: jest.fn()
+    } as MockDocumentStore);
   });
-  
-  test('renders loading state when document is loading', () => {
-    // Mock loading state
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('renders loading state while fetching document', async () => {
+    // Set loading state to true
     (useDocumentStore as unknown as jest.Mock).mockReturnValue({
       currentDocument: null,
       isDocumentLoading: true,
-      setCurrentDocument: mockSetCurrentDocument,
-      setDocumentLoading: mockSetDocumentLoading
+      setCurrentDocument: jest.fn(),
+      setDocumentLoading: jest.fn()
+    } as MockDocumentStore);
+
+    render(<DocumentAnalysisLayout documentId="doc-123" />);
+    
+    // Check for loading indicator
+    expect(screen.getByText(/Loading/i)).toBeInTheDocument();
+  });
+
+  test('renders document when loaded successfully', async () => {
+    // Mock successful document load
+    (useDocumentStore as unknown as jest.Mock).mockReturnValue({
+      currentDocument: mockDocument,
+      isDocumentLoading: false,
+      setCurrentDocument: jest.fn(),
+      setDocumentLoading: jest.fn(),
+      setHighlightedSection: jest.fn()
+    } as MockDocumentStore);
+
+    render(<DocumentAnalysisLayout documentId="doc-123" />);
+    
+    // Wait for document to be rendered
+    await waitFor(() => {
+      expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
     });
     
-    render(<DocumentAnalysisLayout documentId="doc-123" />);
-    
-    // Check loading indicator is shown
-    expect(screen.getByText(/Loading document/i)).toBeInTheDocument();
+    // Check for the document viewer
+    expect(screen.getByTestId('document-viewer')).toBeInTheDocument();
   });
-  
-  test('renders layout with document viewer and voice assistant by default', () => {
-    render(<DocumentAnalysisLayout documentId="doc-123" />);
+
+  test('renders error state when document fetch fails', async () => {
+    // Mock the store to return an error state
+    (useDocumentStore as unknown as jest.Mock).mockReturnValue({
+      currentDocument: null,
+      isDocumentLoading: false,
+      loadError: 'Failed to load document', 
+      setCurrentDocument: jest.fn(),
+      setDocumentLoading: jest.fn()
+    } as MockDocumentStore);
+
+    render(<DocumentAnalysisLayout documentId="error-doc" />);
     
-    // Verify document viewer is rendered
-    expect(screen.getByTestId('mock-document-viewer')).toBeInTheDocument();
-    
-    // Verify voice assistant is rendered
-    expect(screen.getByTestId('mock-voice-assistant')).toBeInTheDocument();
-    
-    // Verify revisions panel is not shown initially (it should be there but hidden)
-    expect(screen.getByTestId('mock-revision-panel')).toBeInTheDocument();
-    
-    // Verify tabs are rendered
-    expect(screen.getByRole('tab', { name: /AI Assistant/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Revisions/i })).toBeInTheDocument();
+    // Check for error message
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to load document/i)).toBeInTheDocument();
+    });
   });
-  
-  test('switches between voice assistant and revisions tabs', () => {
+
+  test('switches between tabs', async () => {
+    // Mock successful document load
+    (useDocumentStore as unknown as jest.Mock).mockReturnValue({
+      currentDocument: mockDocument,
+      isDocumentLoading: false,
+      setCurrentDocument: jest.fn(),
+      setDocumentLoading: jest.fn(),
+      setHighlightedSection: jest.fn()
+    } as MockDocumentStore);
+
     render(<DocumentAnalysisLayout documentId="doc-123" />);
     
-    // Initial state should show voice assistant
-    expect(screen.getByTestId('mock-voice-assistant')).toBeVisible();
+    // Setup user event
+    const user = userEvent.setup();
+    
+    // Wait for document to be rendered
+    await waitFor(() => {
+      expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
+    });
+    
+    // Check that AI assistant tab is active by default
+    expect(screen.getByText(/Ask questions about/i)).toBeInTheDocument();
     
     // Click on Revisions tab
-    fireEvent.click(screen.getByRole('tab', { name: /Revisions/i }));
+    await user.click(screen.getByRole('tab', { name: /Revisions/i }));
     
-    // Mock state changes that would happen with real tabs
-    // In a real implementation, we'd need to check CSS classes or visibility
-    // This is a simplified version of the test
+    // Check that Revisions tab is now active
+    expect(screen.getByTestId('mock-revision-panel')).toBeInTheDocument();
     
     // Click back to AI Assistant tab
-    fireEvent.click(screen.getByRole('tab', { name: /AI Assistant/i }));
+    await user.click(screen.getByRole('tab', { name: /AI Assistant/i }));
     
-    // Verify the expected state after tab switches
-    // Again, in a real implementation we'd verify visibility changes
-  });
-  
-  test('passes documentId prop correctly', () => {
-    render(<DocumentAnalysisLayout documentId="doc-123" />);
-    
-    // Verify that document store was queried with the right ID
-    // This is implied by the useDocumentStore mock setup
-    
-    // We're assuming that inner components get the document from the store
-    // For a more comprehensive test, we could check props passed to mocked components
-  });
-  
-  test('properly renders the split layout', () => {
-    const { container } = render(<DocumentAnalysisLayout documentId="doc-123" />);
-    
-    // Get the main layout div which should have flex display
-    const layoutDiv = container.firstChild;
-    
-    // Check layout structure is correct (has two main sections)
-    expect(layoutDiv?.childNodes.length).toBeGreaterThan(0);
-    
-    // In a real test, we'd check for flex layout, but that requires
-    // either getComputedStyle or testing implementation details with class names
+    // Check that AI Assistant tab is active again
+    expect(screen.getByText(/Ask questions about/i)).toBeInTheDocument();
   });
 }); 
