@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
 import WidthWrapper from "../WidthWrapper";
 import { motion } from "framer-motion";
-import { Code } from "lucide-react";
+// import { Code } from "lucide-react";
 
 const items = [
-  { title: 'Whisper v3', detail: 'Streams speech → text in < 300 ms' },
-  { title: 'GPT‑4o function‑calls', detail: 'Plain English → JSON edits' },
-  { title: 'pgvector RAG', detail: 'Retrieves exact clause history' },
-  { title: 'React‑Diff‑View', detail: 'Side‑by‑side red / green diffs' },
-  { title: 'ElevenLabs', detail: 'Speaks "Clause updated." (optional)' },
-  { title: 'Supabase RLS', detail: 'Every edit scoped to user & doc' },
+  { title: "Whisper v3", detail: "Streams speech → text in < 300 ms" },
+  { title: "GPT‑4o function‑calls", detail: "Plain English → JSON edits" },
+  { title: "pgvector RAG", detail: "Retrieves exact clause history" },
+  { title: "React‑Diff‑View", detail: "Side‑by‑side red / green diffs" },
+  { title: "ElevenLabs", detail: 'Speaks "Clause updated." (optional)' },
+  { title: "Supabase RLS", detail: "Every edit scoped to user & doc" },
 ];
 
 const TechStackSection = () => {
@@ -31,7 +31,9 @@ const TechStackSection = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent blur-3xl" />
           <h2 className="text-7xl font-bold mb-6 relative">
             <span className="text-gray-300">How it</span>{" "}
-            <span className="bg-white text-black px-4 py-1 rounded-lg">works</span>
+            <span className="bg-white text-black px-4 py-1 rounded-lg">
+              works
+            </span>
           </h2>
         </motion.div>
 
@@ -48,9 +50,7 @@ const TechStackSection = () => {
               <div className="mb-4 text-2xl font-bold text-white group-hover:text-gray-300 transition-colors">
                 {item.title}
               </div>
-              <div className="text-gray-300 text-sm">
-                {item.detail}
-              </div>
+              <div className="text-gray-300 text-sm">{item.detail}</div>
             </motion.div>
           ))}
         </div>
@@ -59,4 +59,4 @@ const TechStackSection = () => {
   );
 };
 
-export default TechStackSection; 
+export default TechStackSection;

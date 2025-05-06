@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
 import { Button } from "@/components/ui/button";
 import WidthWrapper from "../WidthWrapper";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import LoomEmbed from "@/lib/heroVideo";
 
-function PhoneMock() {
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+// function PhoneMock() {
+//   const { scrollYProgress } = useScroll();
+//   const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
+//   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  return (
-    <motion.div 
-      style={{ y, opacity }}
-      className="w-[260px] md:w-[320px] aspect-[9/19] rounded-[32px] bg-black/90 shadow-2xl overflow-hidden ring-1 ring-white/10 relative group"
-    >
-      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-        <source src="/hero-loop.mp4" type="video/mp4" />
-      </video>
-    </motion.div>
-  );
-}
+//   return (
+//     <motion.div
+//       style={{ y, opacity }}
+//       className="w-[260px] md:w-[320px] aspect-[9/19] rounded-[32px] bg-black/90 shadow-2xl overflow-hidden ring-1 ring-white/10 relative group"
+//     >
+//       <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+//       <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+//         <source src="/hero-loop.mp4" type="video/mp4" />
+//       </video>
+//     </motion.div>
+//   );
+// }
 
 const Hero = () => {
   return (
@@ -33,12 +33,12 @@ const Hero = () => {
         <motion.div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
           animate={{
-            x: ['-100%', '100%'],
+            x: ["-100%", "100%"],
           }}
           transition={{
             duration: 20,
             repeat: Infinity,
-            ease: "linear"
+            ease: "linear",
           }}
         />
       </div>
@@ -49,7 +49,7 @@ const Hero = () => {
         transition={{ duration: 0.8 }}
         className="text-center relative"
       >
-        <motion.h1 
+        <motion.h1
           className="text-7xl font-bold tracking-tight mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -66,7 +66,7 @@ const Hero = () => {
             </span>
           </span>
         </motion.h1>
-        <motion.p 
+        <motion.p
           className="text-2xl text-gray-300 max-w-2xl mx-auto leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -74,7 +74,7 @@ const Hero = () => {
         >
           Smart, dynamic, and personalized.
         </motion.p>
-        <motion.h2 
+        <motion.h2
           className="text-6xl font-bold tracking-tight mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -84,7 +84,7 @@ const Hero = () => {
             TrustInk
           </span>
         </motion.h2>
-        <motion.p 
+        <motion.p
           className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -100,17 +100,25 @@ const Hero = () => {
         transition={{ duration: 0.8, delay: 1 }}
         className="flex gap-4 mt-8"
       >
-        <Button 
-          size="lg" 
+        <Button
+          size="lg"
           className="h-14 px-8 text-lg bg-white text-black hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
-          onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
+          onClick={() =>
+            document
+              .getElementById("demo")
+              ?.scrollIntoView({ behavior: "smooth" })
+          }
         >
           Watch 60‑sec prototype
         </Button>
-        <Button 
-          size="lg" 
+        <Button
+          size="lg"
           className="h-14 px-8 text-lg bg-black text-white border-2 border-white hover:bg-white/10 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
-          onClick={() => document.getElementById('cta')?.scrollIntoView({ behavior: 'smooth' })}
+          onClick={() =>
+            document
+              .getElementById("cta")
+              ?.scrollIntoView({ behavior: "smooth" })
+          }
         >
           Get Beta Invite →
         </Button>
@@ -123,7 +131,9 @@ const Hero = () => {
         className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
       >
         <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm border border-white/10">
-          <span className="text-sm text-gray-300">Prototype built in 6 weeks</span>
+          <span className="text-sm text-gray-300">
+            Prototype built in 6 weeks
+          </span>
         </div>
       </motion.div>
 

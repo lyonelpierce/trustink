@@ -1,8 +1,7 @@
-'use client';
+"use client";
 
 import { Button } from "../ui/button";
 import WidthWrapper from "../WidthWrapper";
-import { Input } from "../ui/input";
 import { motion } from "framer-motion";
 
 const CTASection = () => {
@@ -23,7 +22,9 @@ const CTASection = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent blur-3xl" />
           <h2 className="text-4xl font-bold mb-6 relative">
             <span className="text-gray-300">Be an</span>{" "}
-            <span className="bg-white text-black px-4 py-1 rounded-lg">Early Signer</span>
+            <span className="bg-white text-black px-4 py-1 rounded-lg">
+              Early Signer
+            </span>
           </h2>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
             Join the beta and shape the future of contracts.
@@ -33,14 +34,18 @@ const CTASection = () => {
             <Button
               size="lg"
               className="h-14 px-8 text-lg bg-white text-black hover:bg-gray-200 flex items-center gap-2"
-              onClick={() => window.open("https://calendly.com/trustink/demo", "_blank")}
+              onClick={() =>
+                window.open("https://calendly.com/trustink/demo", "_blank")
+              }
             >
               📅 Book a Demo Call
             </Button>
             <Button
               size="lg"
               className="h-14 px-8 text-lg bg-black text-white border-2 border-white hover:bg-white/10 flex items-center gap-2"
-              onClick={() => window.open("https://app.trustink.ai/sandbox", "_blank")}
+              onClick={() =>
+                window.open("https://app.trustink.ai/sandbox", "_blank")
+              }
             >
               📩 Get Beta Access
             </Button>
@@ -55,4 +60,4 @@ const CTASection = () => {
   );
 };
 
-export default CTASection; 
+export default CTASection;
