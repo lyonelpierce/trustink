@@ -77,9 +77,13 @@ const Elements = ({
     })[]
   >(fields);
 
+  const [currentLines, setCurrentLines] = useState<
+    Database["public"]["Tables"]["documents_lines"]["Row"][]
+  >([]);
+
   // State for document paragraphs - will be used for text analysis and field positioning
   const [documentParagraphs, setDocumentParagraphs] = useState<
-    Database["public"]["Tables"]["documents_paragraphs"]["Row"][]
+    Database["public"]["Tables"]["documents_lines"]["Row"][]
   >([]);
 
   const { selectedRecipient } = useSelectedRecipientStore();
@@ -107,6 +111,9 @@ const Elements = ({
 
   // Add this new state to track PDF readiness
   const [isPdfReady, setIsPdfReady] = useState(false);
+
+  // Add a state to track if a paragraph is being deleted
+  const [isDeletingParagraph, setIsDeletingParagraph] = useState(false);
 
   const createClerkSupabaseClient = useCallback(() => {
     return createClient(
@@ -189,23 +196,24 @@ const Elements = ({
 
     // Subscribe to document_text_paragraphs changes
     const paragraphsChannel = client
-      .channel("documents_paragraphs")
+      .channel("documents_lines")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "documents_paragraphs",
+          table: "documents_lines",
           filter: `document_id=eq.${documentId}`,
         },
         async (payload) => {
           if (payload.eventType === "INSERT") {
             const newParagraph =
-              payload.new as Database["public"]["Tables"]["documents_paragraphs"]["Row"];
+              payload.new as Database["public"]["Tables"]["documents_lines"]["Row"];
             setDocumentParagraphs((prev) => [...prev, newParagraph]);
+            setCurrentLines((prev) => [...prev, newParagraph]);
           } else if (payload.eventType === "UPDATE") {
             const updatedParagraph =
-              payload.new as Database["public"]["Tables"]["documents_paragraphs"]["Row"];
+              payload.new as Database["public"]["Tables"]["documents_lines"]["Row"];
             setDocumentParagraphs((prev) =>
               prev.map((paragraph) =>
                 paragraph.id === updatedParagraph.id
@@ -213,11 +221,19 @@ const Elements = ({
                   : paragraph
               )
             );
+            setCurrentLines((prev) =>
+              prev.map((line) =>
+                line.id === updatedParagraph.id ? updatedParagraph : line
+              )
+            );
           } else if (payload.eventType === "DELETE") {
             const oldParagraph =
-              payload.old as Database["public"]["Tables"]["documents_paragraphs"]["Row"];
+              payload.old as Database["public"]["Tables"]["documents_lines"]["Row"];
             setDocumentParagraphs((prev) =>
               prev.filter((paragraph) => paragraph.id !== oldParagraph.id)
+            );
+            setCurrentLines((prev) =>
+              prev.filter((line) => line.id !== oldParagraph.id)
             );
           }
         }
@@ -227,7 +243,7 @@ const Elements = ({
     // Initial fetch of document_text_paragraphs
     const fetchParagraphs = async () => {
       const { data: paragraphs, error } = await client
-        .from("documents_paragraphs")
+        .from("documents_lines")
         .select("*")
         .eq("document_id", documentId);
 
@@ -238,6 +254,7 @@ const Elements = ({
 
       if (paragraphs) {
         setDocumentParagraphs(paragraphs);
+        setCurrentLines(paragraphs); // Keep currentLines in sync initially
       }
     };
 
@@ -444,6 +461,34 @@ const Elements = ({
     [client, currentFields, isDeletingField]
   );
 
+  // Handler for paragraph removal
+  const handleParagraphRemove = useCallback(
+    async (index: number) => {
+      if (isDeletingParagraph) return; // Prevent multiple simultaneous deletions
+
+      const paragraph = currentLines[index];
+
+      try {
+        setIsDeletingParagraph(true);
+        const { error } = await client
+          .from("documents_lines")
+          .delete()
+          .eq("id", paragraph.id);
+        if (error) throw error;
+        // Optimistically update UI
+        setDocumentParagraphs((prev) =>
+          prev.filter((p) => p.id !== paragraph.id)
+        );
+        setCurrentLines((prev) => prev.filter((l) => l.id !== paragraph.id));
+      } catch (error) {
+        console.error("Error removing paragraph:", error);
+      } finally {
+        setIsDeletingParagraph(false);
+      }
+    },
+    [client, currentLines, isDeletingParagraph]
+  );
+
   useEffect(() => {
     if (selectedField) {
       window.addEventListener("mousemove", onMouseMove);
@@ -506,27 +551,34 @@ const Elements = ({
     };
   }, []);
 
-  // Function to handle paragraph removal
-  const handleParagraphRemove = async (paragraphId: string) => {
-    try {
-      const { error } = await client
-        .from("documents_paragraphs")
-        .delete()
-        .eq("id", paragraphId);
+  // Add this above the return in the Elements component
+  const onLineMove = useCallback(
+    async (node: HTMLElement, index: number) => {
+      // Find the page element for this paragraph
+      const line = currentLines[index];
 
-      if (error) {
-        console.error("Error removing paragraph:", error);
-        toast.error("Failed to remove paragraph");
-        return;
+      const $page = window.document.querySelector<HTMLElement>(
+        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${line.page_number}"]`
+      );
+
+      if (!$page) return;
+
+      const { x: pageX, y: pageY } = getFieldPosition($page, node);
+
+      try {
+        await client
+          .from("documents_lines")
+          .update({
+            position_x: pageX,
+            position_y: pageY,
+          })
+          .eq("id", line.id);
+      } catch (error) {
+        console.error("Error updating paragraph position:", error);
       }
-
-      toast.success("Paragraph removed");
-      setSelectedParagraph(null);
-    } catch (error) {
-      console.error("Error removing paragraph:", error);
-      toast.error("Failed to remove paragraph");
-    }
-  };
+    },
+    [client, getFieldPosition, currentLines]
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -585,7 +637,7 @@ const Elements = ({
               onRemove={() => handleFieldRemove(index)}
             />
           ))}
-          {documentParagraphs.map((paragraph) => (
+          {documentParagraphs.map((paragraph, index) => (
             <ParagraphItem
               key={paragraph.id}
               paragraph={paragraph}
@@ -595,7 +647,8 @@ const Elements = ({
               defaultWidth={DEFAULT_WIDTH_PX}
               isSelected={selectedParagraph === paragraph.id}
               onSelect={() => setSelectedParagraph(paragraph.id)}
-              onRemove={() => handleParagraphRemove(paragraph.id)}
+              onMove={(node) => onLineMove(node, index)}
+              onRemove={() => handleParagraphRemove(index)}
             />
           ))}
         </>

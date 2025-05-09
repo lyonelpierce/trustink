@@ -140,54 +140,54 @@ export type Database = {
           },
         ]
       }
-      documents_paragraphs: {
+      documents_lines: {
         Row: {
           bbox: number[] | null
-          color: string | null
+          color: number
           created_at: string
           document_id: string
-          font: string | null
-          formatting: Json
+          font: string
           height: number
           id: string
           page_number: number
           position_x: number
           position_y: number
-          size: number | null
+          size: number
+          style: string
           text: string
           user_id: string
           width: number
         }
         Insert: {
           bbox?: number[] | null
-          color?: string | null
+          color: number
           created_at?: string
           document_id: string
-          font?: string | null
-          formatting?: Json
+          font: string
           height: number
           id?: string
           page_number: number
           position_x: number
           position_y: number
-          size?: number | null
+          size: number
+          style: string
           text: string
           user_id: string
           width: number
         }
         Update: {
           bbox?: number[] | null
-          color?: string | null
+          color?: number
           created_at?: string
           document_id?: string
-          font?: string | null
-          formatting?: Json
+          font?: string
           height?: number
           id?: string
           page_number?: number
           position_x?: number
           position_y?: number
-          size?: number | null
+          size?: number
+          style?: string
           text?: string
           user_id?: string
           width?: number
