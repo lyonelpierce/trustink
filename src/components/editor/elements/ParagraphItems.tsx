@@ -6,11 +6,11 @@ import { PencilIcon, Trash } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Database } from "../../../../database.types";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-import { useCallback, useEffect, useRef, useState } from "react";
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { createClient } from "@supabase/supabase-js";
 import { useSession } from "@clerk/nextjs";
+import { AutosizeTextarea } from "@/components/ui/resizableTextarea";
 
 export type ParagraphItemProps = {
   paragraph: Database["public"]["Tables"]["documents_lines"]["Row"];
@@ -56,6 +56,7 @@ export const ParagraphItem = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(paragraph.text);
   const editableRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
@@ -121,6 +122,19 @@ export const ParagraphItem = ({
     }
   }, [isEditing]);
 
+  const autoResizeTextarea = () => {
+    if (editableRef.current) {
+      editableRef.current.style.height = "auto";
+      editableRef.current.style.height = `${editableRef.current.scrollHeight}px`;
+    }
+  };
+
+  useEffect(() => {
+    if (isEditing) {
+      autoResizeTextarea();
+    }
+  }, [isEditing, editText]);
+
   const handleClick = (e: React.MouseEvent) => {
     if (isEditing) return;
     e.stopPropagation();
@@ -161,7 +175,7 @@ export const ParagraphItem = ({
           x: coords.pageX,
           y: coords.pageY,
           height: coords.pageHeight,
-          width: coords.pageWidth,
+          width: coords.pageWidth + 10,
         }}
         minHeight={minHeight || "auto"}
         minWidth={minWidth || "auto"}
@@ -183,7 +197,6 @@ export const ParagraphItem = ({
           data-field-id={paragraph.id}
           style={{
             overflow: "visible",
-            whiteSpace: "nowrap",
             fontSize:
               paragraph.size && coords.pageScale
                 ? `${paragraph.size * coords.pageScale}px`
@@ -197,35 +210,71 @@ export const ParagraphItem = ({
           className="hover:outline-2 hover:outline-dashed hover:outline-gray-300 rounded"
         >
           {isEditing ? (
-            <input
-              ref={editableRef as React.RefObject<HTMLInputElement>}
-              value={editText}
-              onChange={(e) => {
-                const newText = e.target.value;
-                setEditText(newText);
-                debouncedSave(newText);
-              }}
-              onBlur={(e) => {
-                setIsEditing(false);
-                const newText = e.target.value;
-                setEditText(newText);
-                debouncedSave.flush(); // flush pending debounce
-                if (newText !== paragraph.text) {
-                  supabase
-                    .from("documents_lines")
-                    .update({ text: newText })
-                    .eq("id", paragraph.id);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  (editableRef.current as HTMLInputElement | null)?.blur();
-                }
-              }}
-              style={{}}
-              autoFocus
-            />
+            <>
+              <AutosizeTextarea
+                value={editText}
+                onChange={(e) => {
+                  const newText = e.target.value;
+                  setEditText(newText);
+                  debouncedSave(newText);
+                }}
+                minHeight={20}
+                onBlur={async (e) => {
+                  setIsEditing(false);
+                  const newText = e.target.value;
+                  setEditText(newText);
+                  debouncedSave.flush(); // flush pending debounce
+                  if (newText !== paragraph.text) {
+                    await supabase
+                      .from("documents_lines")
+                      .update({ text: newText })
+                      .eq("id", paragraph.id);
+                  }
+                  // --- Height update logic ---
+                  if (textareaRef.current) {
+                    const newPxHeight = textareaRef.current.scrollHeight;
+                    // Find the PDF page element
+                    const $page = document.querySelector<HTMLElement>(
+                      `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${paragraph.page_number}"]`
+                    );
+                    if ($page) {
+                      const pageHeightPx = $page.getBoundingClientRect().height;
+                      if (pageHeightPx > 0) {
+                        const newHeightPercent =
+                          (newPxHeight / pageHeightPx) * 100;
+                        // Only update if changed by at least 0.1%
+                        if (
+                          Math.abs(newHeightPercent - paragraph.height) > 0.1
+                        ) {
+                          await supabase
+                            .from("documents_lines")
+                            .update({ height: newHeightPercent })
+                            .eq("id", paragraph.id);
+                        }
+                      }
+                    }
+                  }
+                }}
+                rows={1}
+                style={{
+                  minWidth: 30,
+                  minHeight: 8,
+                  fontSize:
+                    paragraph.size && coords.pageScale
+                      ? `${paragraph.size * coords.pageScale}px`
+                      : paragraph.size
+                      ? `${paragraph.size}px`
+                      : undefined,
+                  fontStyle:
+                    paragraph.style === "italic" ? "italic" : undefined,
+                  fontWeight: paragraph.style === "bold" ? "bold" : undefined,
+                  resize: "none",
+                  overflow: "hidden",
+                }}
+                autoFocus
+                className="resize-none p-0 focus-visible:ring-0 border-0"
+              />
+            </>
           ) : (
             <div
               ref={editableRef}
@@ -233,6 +282,7 @@ export const ParagraphItem = ({
                 outline: "none",
                 minWidth: 30,
                 display: "inline-block",
+                whiteSpace: "pre-line",
               }}
             >
               {editText}
