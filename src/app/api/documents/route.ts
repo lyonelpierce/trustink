@@ -132,35 +132,33 @@ export async function POST(request: Request) {
     }
 
     after(async () => {
-      setTimeout(async () => {
-        try {
-          const formData = new FormData();
-          formData.append("user_id", userId);
-          formData.append("document_id", document.id);
-          formData.append("file", file);
+      try {
+        const formData = new FormData();
+        formData.append("user_id", userId);
+        formData.append("document_id", document.id);
+        formData.append("file", file);
 
-          const response = await fetch(
-            "https://trustink-api-production.up.railway.app/extract-from-file",
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to extract data from file");
+        const response = await fetch(
+          "https://trustink-api-production.up.railway.app/extract-from-file",
+          {
+            method: "POST",
+            body: formData,
           }
+        );
 
-          return NextResponse.json(
-            {
-              message: "Document analized successfully",
-            },
-            { status: 200 }
-          );
-        } catch (error) {
-          console.error("[API/documents] Error analyzing document:", error);
+        if (!response.ok) {
+          throw new Error("Failed to extract data from file");
         }
-      }, 1000);
+
+        return NextResponse.json(
+          {
+            message: "Document analized successfully",
+          },
+          { status: 200 }
+        );
+      } catch (error) {
+        console.error("[API/documents] Error analyzing document:", error);
+      }
     });
 
     return NextResponse.json({
