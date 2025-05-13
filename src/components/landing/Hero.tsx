@@ -106,16 +106,16 @@ const Hero = () => {
         </Button>
       </motion.div>
 
-      <motion.div
+      {/* <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 1.2 }}
         className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
       >
         <div className="flex items-center gap-2 bg-gray-700/10 px-4 py-2 rounded-full backdrop-blur-sm border border-white/10">
-          <span className="text-sm text-black">Prototype built in 6 weeks</span>
+          <span className="text-sm text-black">Prototype built in 2 weeks</span>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Hidden Loom modal */}
       <LoomEmbed id="your-loom-id" />
