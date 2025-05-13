@@ -10,6 +10,7 @@ export async function POST(
   props: { params: { id: string } }
 ) {
   const params = await props.params;
+
   const { id } = params;
   const { subject, message } = await req.json();
 
@@ -21,6 +22,18 @@ export async function POST(
   }
 
   try {
+    const { error: updateError } = await supabase
+      .from("documents")
+      .update({ status: "sent" })
+      .eq("id", id);
+
+    if (updateError) {
+      console.error(updateError);
+      return new NextResponse("Error updating document status", {
+        status: 500,
+      });
+    }
+
     const { data: recipients, error: recipientsError } = await supabase
       .from("recipients")
       .select("email")

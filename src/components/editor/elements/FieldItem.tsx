@@ -197,7 +197,7 @@ export const FieldItem = ({
           border: field.recipients.color
             ? `2px solid ${field.recipients.color}`
             : "none",
-          overflow: "visible",
+          overflow: "hidden",
         }}
       >
         <CardContent

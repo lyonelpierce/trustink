@@ -56,7 +56,11 @@ export const ParagraphItem = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(paragraph.text);
   const editableRef = useRef<HTMLDivElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const textareaRef = useRef<
+    import("@/components/ui/resizableTextarea").AutosizeTextAreaRef | null
+  >(null);
+  const [editWidth, setEditWidth] = useState<number | undefined>(undefined);
+  const mirrorSpanRef = useRef<HTMLSpanElement | null>(null);
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
@@ -135,6 +139,27 @@ export const ParagraphItem = ({
     }
   }, [isEditing, editText]);
 
+  useEffect(() => {
+    if (isEditing && mirrorSpanRef.current) {
+      // Mirror the text and style to the span
+      if (textareaRef.current?.textArea) {
+        const span = mirrorSpanRef.current;
+        span.textContent = editText || " ";
+        // Copy font styles
+        const style = window.getComputedStyle(textareaRef.current.textArea);
+        span.style.fontSize = style.fontSize;
+        span.style.fontFamily = style.fontFamily;
+        span.style.fontWeight = style.fontWeight;
+        span.style.fontStyle = style.fontStyle;
+        span.style.letterSpacing = style.letterSpacing;
+        span.style.whiteSpace = "pre";
+        // Add a little extra padding
+        const width = span.offsetWidth + 2;
+        setEditWidth(width);
+      }
+    }
+  }, [editText, isEditing]);
+
   const handleClick = (e: React.MouseEvent) => {
     if (isEditing) return;
     e.stopPropagation();
@@ -175,8 +200,13 @@ export const ParagraphItem = ({
           x: coords.pageX,
           y: coords.pageY,
           height: coords.pageHeight,
-          width: coords.pageWidth + 10,
+          width: isEditing && editWidth ? editWidth : coords.pageWidth,
         }}
+        size={
+          isEditing && editWidth
+            ? { width: editWidth, height: coords.pageHeight }
+            : undefined
+        }
         minHeight={minHeight || "auto"}
         minWidth={minWidth || "auto"}
         enableResizing={false}
@@ -197,6 +227,10 @@ export const ParagraphItem = ({
           data-field-id={paragraph.id}
           style={{
             overflow: "visible",
+            width:
+              isEditing && editWidth
+                ? Number(editWidth)
+                : Number(coords.pageWidth),
             fontSize:
               paragraph.size && coords.pageScale
                 ? `${paragraph.size * coords.pageScale}px`
@@ -219,6 +253,7 @@ export const ParagraphItem = ({
                   debouncedSave(newText);
                 }}
                 minHeight={20}
+                ref={textareaRef}
                 onBlur={async (e) => {
                   setIsEditing(false);
                   const newText = e.target.value;
@@ -231,14 +266,20 @@ export const ParagraphItem = ({
                       .eq("id", paragraph.id);
                   }
                   // --- Height update logic ---
-                  if (textareaRef.current) {
-                    const newPxHeight = textareaRef.current.scrollHeight;
+                  let newPxHeight = 0;
+                  let newPxWidth = 0;
+                  let pageHeightPx = 0;
+                  let pageWidthPx = 0;
+                  if (textareaRef.current?.textArea) {
+                    newPxHeight = textareaRef.current.textArea.scrollHeight;
+                    newPxWidth = textareaRef.current.textArea.scrollWidth;
                     // Find the PDF page element
                     const $page = document.querySelector<HTMLElement>(
                       `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${paragraph.page_number}"]`
                     );
                     if ($page) {
-                      const pageHeightPx = $page.getBoundingClientRect().height;
+                      pageHeightPx = $page.getBoundingClientRect().height;
+                      pageWidthPx = $page.getBoundingClientRect().width;
                       if (pageHeightPx > 0) {
                         const newHeightPercent =
                           (newPxHeight / pageHeightPx) * 100;
@@ -252,6 +293,16 @@ export const ParagraphItem = ({
                             .eq("id", paragraph.id);
                         }
                       }
+                      if (pageWidthPx > 0) {
+                        const newWidthPercent =
+                          (newPxWidth / pageWidthPx) * 100;
+                        if (Math.abs(newWidthPercent - paragraph.width) > 0.1) {
+                          await supabase
+                            .from("documents_lines")
+                            .update({ width: newWidthPercent })
+                            .eq("id", paragraph.id);
+                        }
+                      }
                     }
                   }
                 }}
@@ -259,6 +310,7 @@ export const ParagraphItem = ({
                 style={{
                   minWidth: 30,
                   minHeight: 8,
+                  width: editWidth ? `${editWidth}px` : undefined,
                   fontSize:
                     paragraph.size && coords.pageScale
                       ? `${paragraph.size * coords.pageScale}px`
@@ -269,10 +321,25 @@ export const ParagraphItem = ({
                     paragraph.style === "italic" ? "italic" : undefined,
                   fontWeight: paragraph.style === "bold" ? "bold" : undefined,
                   resize: "none",
-                  overflow: "hidden",
+                  overflow: "auto",
+                  whiteSpace: "nowrap",
                 }}
+                wrap="off"
                 autoFocus
                 className="resize-none p-0 focus-visible:ring-0 border-0"
+              />
+              {/* Hidden span for measuring width */}
+              <span
+                ref={mirrorSpanRef}
+                style={{
+                  position: "absolute",
+                  visibility: "hidden",
+                  height: 0,
+                  overflow: "scroll",
+                  whiteSpace: "pre",
+                  pointerEvents: "none",
+                }}
+                aria-hidden="true"
               />
             </>
           ) : (
@@ -282,14 +349,14 @@ export const ParagraphItem = ({
                 outline: "none",
                 minWidth: 30,
                 display: "inline-block",
-                whiteSpace: "pre-line",
+                whiteSpace: "nowrap",
               }}
             >
               {editText}
             </div>
           )}
           {isSelected && (
-            <div className="z-[60] flex justify-center items-center absolute -top-6 right-0">
+            <div className="z-[100] flex justify-center items-center absolute -top-6 right-0">
               <div className="dark:bg-background group flex items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
                 <button
                   className="cursor-pointer dark:text-muted-foreground/50 dark:hover:text-muted-foreground dark:hover:bg-foreground/10 rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"

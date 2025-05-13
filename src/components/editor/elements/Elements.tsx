@@ -649,6 +649,7 @@ const Elements = ({
               onSelect={() => setSelectedParagraph(paragraph.id)}
               onMove={(node) => onLineMove(node, index)}
               onRemove={() => handleParagraphRemove(index)}
+              passive={!!selectedRecipient}
             />
           ))}
         </>

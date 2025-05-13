@@ -210,9 +210,10 @@ export const PDFViewer = ({
                     pageNumber={i + 1}
                     width={width}
                     renderAnnotationLayer={false}
-                    renderTextLayer={true}
+                    renderTextLayer={false}
                     loading={() => ""}
                     onClick={(e) => onDocumentPageClick(e, i + 1)}
+                    className="[&_canvas]:opacity-0"
                   />
                 </div>
                 <p className="text-muted-foreground/80 my-2 text-center text-[11px]">

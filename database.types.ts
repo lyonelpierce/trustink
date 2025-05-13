@@ -155,6 +155,7 @@ export type Database = {
           size: number
           style: string
           text: string
+          updated_at: string
           user_id: string
           width: number
         }
@@ -172,6 +173,7 @@ export type Database = {
           size: number
           style: string
           text: string
+          updated_at?: string
           user_id: string
           width: number
         }
@@ -189,6 +191,7 @@ export type Database = {
           size?: number
           style?: string
           text?: string
+          updated_at?: string
           user_id?: string
           width?: number
         }

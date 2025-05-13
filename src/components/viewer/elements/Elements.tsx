@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 import { Button } from "@/components/ui/button";
+import ViewerParagraphItem from "./ParagraphItem";
 
 const formSchema = z.object({
   name: z.string().min(1),
@@ -121,6 +122,10 @@ const Elements = ({
   // Add this new state to track PDF readiness
   const [isPdfReady, setIsPdfReady] = useState(false);
 
+  const [documentParagraphs, setDocumentParagraphs] = useState<
+    Database["public"]["Tables"]["documents_lines"]["Row"][]
+  >([]);
+
   const createClerkSupabaseClient = useCallback(() => {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -199,8 +204,62 @@ const Elements = ({
       )
       .subscribe();
 
+    // Subscribe to paragraph changes
+    const paragraphsChannel = client
+      .channel("documents_lines")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "documents_lines",
+          filter: `document_id=eq.${documentId}`,
+        },
+        async (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newParagraph =
+              payload.new as Database["public"]["Tables"]["documents_lines"]["Row"];
+            setDocumentParagraphs((prev) => [...prev, newParagraph]);
+          } else if (payload.eventType === "UPDATE") {
+            const updatedParagraph =
+              payload.new as Database["public"]["Tables"]["documents_lines"]["Row"];
+            setDocumentParagraphs((prev) =>
+              prev.map((paragraph) =>
+                paragraph.id === updatedParagraph.id
+                  ? updatedParagraph
+                  : paragraph
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            const oldParagraph =
+              payload.old as Database["public"]["Tables"]["documents_lines"]["Row"];
+            setDocumentParagraphs((prev) =>
+              prev.filter((paragraph) => paragraph.id !== oldParagraph.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Initial fetch of paragraphs
+    const fetchParagraphs = async () => {
+      const { data: paragraphs, error } = await client
+        .from("documents_lines")
+        .select("*")
+        .eq("document_id", documentId);
+      if (error) {
+        console.error("Error fetching paragraphs:", error);
+        return;
+      }
+      if (paragraphs) {
+        setDocumentParagraphs(paragraphs);
+      }
+    };
+    fetchParagraphs();
+
     return () => {
       channel.unsubscribe();
+      paragraphsChannel.unsubscribe();
     };
   }, [documentId, createClerkSupabaseClient]);
 
@@ -479,6 +538,16 @@ const Elements = ({
               field={field}
               isSelected={field.id === selectedFieldId}
               onFieldClick={handleFieldClick}
+            />
+          ))}
+          {documentParagraphs.map((paragraph) => (
+            <ViewerParagraphItem
+              key={paragraph.id}
+              paragraph={paragraph}
+              minHeight={MIN_HEIGHT_PX}
+              minWidth={MIN_WIDTH_PX}
+              defaultHeight={DEFAULT_HEIGHT_PX}
+              defaultWidth={DEFAULT_WIDTH_PX}
             />
           ))}
         </>
