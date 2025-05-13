@@ -5,7 +5,7 @@ import WidthWrapper from "../WidthWrapper";
 import { motion } from "framer-motion";
 import LoomEmbed from "@/lib/heroVideo";
 import { ArrowRightIcon } from "lucide-react";
-
+import { useRouter } from "next/navigation";
 // function PhoneMock() {
 //   const { scrollYProgress } = useScroll();
 //   const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
@@ -25,6 +25,7 @@ import { ArrowRightIcon } from "lucide-react";
 // }
 
 const Hero = () => {
+  const router = useRouter();
   return (
     <WidthWrapper className="flex flex-col gap-6 items-center justify-center pt-20 h-screen z-20 relative">
       {/* Animated background elements */}
@@ -83,7 +84,7 @@ const Hero = () => {
         transition={{ duration: 0.8, delay: 1 }}
         className="flex gap-4 mt-8"
       >
-        <Button
+        {/* <Button
           size="lg"
           className="h-14 px-8 z-50 text-lg bg-white text-black border hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
           onClick={() =>
@@ -93,14 +94,12 @@ const Hero = () => {
           }
         >
           Watch 60‑sec prototype
-        </Button>
+        </Button> */}
         <Button
           size="lg"
           className="h-14 px-8 z-50 w-48 text-lg bg-black text-white hover:text-black border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
           onClick={() =>
-            document
-              .getElementById("cta")
-              ?.scrollIntoView({ behavior: "smooth" })
+            router.push(process.env.NEXT_PUBLIC_SUBDOMAIN_URL! + "/waitlist")
           }
         >
           Join Waitlist <ArrowRightIcon />
