@@ -9,7 +9,7 @@ import {
   getUserDocumentsWithMeta,
 } from "@/lib/supabase";
 import { auth } from "@clerk/nextjs/server";
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
 export const truncateStringByBytes = (str: string, bytes: number) => {
@@ -131,39 +131,37 @@ export async function POST(request: Request) {
       );
     }
 
-    after(async () => {
-      try {
-        const formData = new FormData();
-        formData.append("user_id", userId);
-        formData.append("document_id", document.id);
-        formData.append("file", file);
+    // Call external API to extract data from file before returning response
+    try {
+      const formData = new FormData();
+      formData.append("user_id", userId);
+      formData.append("document_id", document.id);
+      formData.append("file", file);
 
-        const response = await fetch(
-          "https://trustink-api-production.up.railway.app/extract-from-file",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to extract data from file");
+      const response = await fetch(
+        "https://trustink-api-production.up.railway.app/extract-from-file",
+        {
+          method: "POST",
+          body: formData,
         }
+      );
 
-        return NextResponse.json(
-          {
-            message: "Document analized successfully",
-          },
-          { status: 200 }
-        );
-      } catch (error) {
-        console.error("[API/documents] Error analyzing document:", error);
+      if (!response.ok) {
+        throw new Error("Failed to extract data from file");
       }
-    });
+    } catch (error) {
+      console.error("[API/documents] Error analyzing document:", error);
+      return NextResponse.json(
+        {
+          error: "Failed to analyze document",
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       id: document.id,
-      message: "Document uploaded successfully",
+      message: "Document uploaded and analyzed successfully",
     });
   } catch (error) {
     console.error("[API/documents] Error processing document:", error);
