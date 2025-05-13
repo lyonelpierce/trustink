@@ -1,4 +1,4 @@
-const DashbaordTitle = ({
+const DashboardTitle = ({
   title,
   description,
 }: {
@@ -13,4 +13,4 @@ const DashbaordTitle = ({
   );
 };
 
-export default DashbaordTitle;
+export default DashboardTitle;

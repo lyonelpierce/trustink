@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Dropzone from "react-dropzone";
 import { useRouter } from "next/navigation";
-import { FileTextIcon, Loader2Icon } from "lucide-react";
+import { ArrowUpIcon, FileIcon, Loader2Icon } from "lucide-react";
 
 const DocumentUpload = () => {
   const router = useRouter();
@@ -53,7 +53,7 @@ const DocumentUpload = () => {
         {({ getRootProps, getInputProps, isDragActive }) => (
           <div
             {...getRootProps()}
-            className={`border rounded-lg p-8 transition-all duration-300 text-center cursor-pointer h-72 bg-[#fafafa] dark:bg-[#1a1a1a] flex flex-col items-center justify-center
+            className={`border group rounded-lg p-8 transition-all duration-300 text-center cursor-pointer h-72 bg-[#fafafa] dark:bg-[#1a1a1a] flex flex-col items-center justify-center
                     ${
                       isDragActive
                         ? "border-blue-500 bg-blue-50"
@@ -68,10 +68,13 @@ const DocumentUpload = () => {
                 strokeWidth={1}
               />
             ) : (
-              <FileTextIcon
-                className="mx-auto h-24 w-24 text-gray-400"
-                strokeWidth={1}
-              />
+              <div className="flex flex-col items-center justify-center relative">
+                <FileIcon
+                  className="mx-auto h-24 w-24 text-gray-400"
+                  strokeWidth={1}
+                />
+                <ArrowUpIcon className="absolute top-14 left-1/2 -translate-x-1/2 -translate-y-1/2 mx-auto h-10 w-10 text-gray-400 transition-all duration-300 ease-in-out group-hover:animate-bounce" />
+              </div>
             )}
             {isDragActive ? (
               <p className="mt-2 text-sm text-gray-600">
