@@ -94,8 +94,8 @@ export const ViewerParagraphItem = ({
           paragraph.size && coords.pageScale
             ? `${paragraph.size * coords.pageScale}px`
             : paragraph.size
-            ? `${paragraph.size}px`
-            : undefined,
+              ? `${paragraph.size}px`
+              : undefined,
         fontStyle: paragraph.style === "italic" ? "italic" : undefined,
         fontWeight: paragraph.style === "bold" ? "bold" : undefined,
         background: "transparent",

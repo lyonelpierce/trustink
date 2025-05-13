@@ -17,7 +17,13 @@ const nextConfig = {
       ...config.resolve.alias,
       "pdfjs-dist": require.resolve("pdfjs-dist"),
     };
+
     return config;
+  },
+  turbo: {
+    resolveAlias: {
+      canvas: "./empty-module.ts",
+    },
   },
 };
 
