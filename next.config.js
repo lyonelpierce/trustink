@@ -17,12 +17,6 @@ const nextConfig = {
       ...config.resolve.alias,
       "pdfjs-dist": require.resolve("pdfjs-dist"),
     };
-
-    config.turboPack = {
-      resolveAlias: {
-        canvas: "./empty-module.ts",
-      },
-    };
     return config;
   },
 };
