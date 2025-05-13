@@ -160,7 +160,7 @@ export async function POST(request: Request) {
         } catch (error) {
           console.error("[API/documents] Error analyzing document:", error);
         }
-      }, 3000);
+      }, 1000);
     });
 
     return NextResponse.json({
