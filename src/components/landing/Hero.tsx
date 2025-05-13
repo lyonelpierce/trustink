@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import WidthWrapper from "../WidthWrapper";
 import { motion } from "framer-motion";
 import LoomEmbed from "@/lib/heroVideo";
+import { ArrowRightIcon } from "lucide-react";
 
 // function PhoneMock() {
 //   const { scrollYProgress } = useScroll();
@@ -59,7 +60,7 @@ const Hero = () => {
             <span className="absolute -inset-1 bg-gradient-to-r from-white/20 via-white/10 to-white/20 blur-xl" />
             <span className="relative">
               A new era of{" "}
-              <span className="dark:bg-white text-white bg-black dark:text-black px-4 py-1 rounded-lg">
+              <span className="dark:bg-white text-white bg-yellow-400/70 dark:text-black px-4 py-1">
                 digital agreements
               </span>
               .
@@ -67,30 +68,12 @@ const Hero = () => {
           </span>
         </motion.h1>
         <motion.p
-          className="text-2xl text-gray-300 max-w-2xl mx-auto leading-relaxed"
+          className="text-2xl text-gray-600 max-w-2xl mx-auto leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
           Smart, dynamic, and personalized.
-        </motion.p>
-        <motion.h2
-          className="text-6xl font-bold tracking-tight mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
-          <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-            TrustInk
-          </span>
-        </motion.h2>
-        <motion.p
-          className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-        >
-          Speak a change → risky clause glows → tap Sign.
         </motion.p>
       </motion.div>
 
@@ -102,7 +85,7 @@ const Hero = () => {
       >
         <Button
           size="lg"
-          className="h-14 px-8 text-lg bg-white text-black hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
+          className="h-14 px-8 text-lg bg-white text-black border hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
           onClick={() =>
             document
               .getElementById("demo")
@@ -113,14 +96,14 @@ const Hero = () => {
         </Button>
         <Button
           size="lg"
-          className="h-14 px-8 text-lg bg-black text-white border-2 border-white hover:bg-white/10 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
+          className="h-14 px-8 w-48 text-lg bg-black text-white border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
           onClick={() =>
             document
               .getElementById("cta")
               ?.scrollIntoView({ behavior: "smooth" })
           }
         >
-          Get Beta Invite →
+          Join Waitlist <ArrowRightIcon />
         </Button>
       </motion.div>
 
@@ -130,10 +113,8 @@ const Hero = () => {
         transition={{ duration: 1, delay: 1.2 }}
         className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
       >
-        <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm border border-white/10">
-          <span className="text-sm text-gray-300">
-            Prototype built in 6 weeks
-          </span>
+        <div className="flex items-center gap-2 bg-gray-700/10 px-4 py-2 rounded-full backdrop-blur-sm border border-white/10">
+          <span className="text-sm text-black">Prototype built in 6 weeks</span>
         </div>
       </motion.div>
 
