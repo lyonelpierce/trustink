@@ -24,7 +24,7 @@ export async function POST(
   try {
     const { error: updateError } = await supabase
       .from("documents")
-      .update({ status: "sent" })
+      .update({ status: "pending" })
       .eq("id", id);
 
     if (updateError) {
