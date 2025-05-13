@@ -60,7 +60,7 @@ const Hero = () => {
             <span className="absolute -inset-1 bg-gradient-to-r from-white/20 via-white/10 to-white/20 blur-xl" />
             <span className="relative">
               A new era of{" "}
-              <span className="dark:bg-white text-white bg-yellow-400/70 dark:text-black px-4 py-1">
+              <span className="dark:bg-white text-black bg-yellow-400/70 dark:text-black px-4 py-1">
                 digital agreements
               </span>
               .
@@ -85,7 +85,7 @@ const Hero = () => {
       >
         <Button
           size="lg"
-          className="h-14 px-8 text-lg bg-white text-black border hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
+          className="h-14 px-8 z-50 text-lg bg-white text-black border hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
           onClick={() =>
             document
               .getElementById("demo")
@@ -96,7 +96,7 @@ const Hero = () => {
         </Button>
         <Button
           size="lg"
-          className="h-14 px-8 w-48 text-lg bg-black text-white border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
+          className="h-14 px-8 z-50 w-48 text-lg bg-black text-white hover:text-black border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
           onClick={() =>
             document
               .getElementById("cta")
