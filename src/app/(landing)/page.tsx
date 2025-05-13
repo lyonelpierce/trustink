@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
 import Hero from "@/components/landing/Hero";
-import ProblemSection from "@/components/landing/ProblemSection";
-import DemoSection from "@/components/landing/DemoSection";
-import TechStackSection from "@/components/landing/TechStackSection";
-import TractionSection from "@/components/landing/TractionSection";
-import TeamSection from "@/components/landing/TeamSection";
-import CTASection from "@/components/landing/CTASection";
+// import ProblemSection from "@/components/landing/ProblemSection";
+// import DemoSection from "@/components/landing/DemoSection";
+// import TechStackSection from "@/components/landing/TechStackSection";
+// import TractionSection from "@/components/landing/TractionSection";
+// import TeamSection from "@/components/landing/TeamSection";
+// import CTASection from "@/components/landing/CTASection";
 
 export default function Home() {
   return (
