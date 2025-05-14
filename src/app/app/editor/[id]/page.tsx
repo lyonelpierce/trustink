@@ -22,7 +22,7 @@ const parseDocument = async (
 
     console.log(data.signedUrl);
 
-    await fetch(`https://2118-38-42-95-137.ngrok-free.app/extract-from-url`, {
+    await fetch(`${process.env.BACKEND_API}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
