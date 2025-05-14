@@ -59,10 +59,10 @@ const DocumentsPage = async () => {
         description="Sign or request document signatures"
       />
       <div className="flex gap-4">
-        <div className="w-2/3">
+        <div className="w-1/2">
           <DocumentUpload />
         </div>
-        <div className="w-1/3 relative group cursor-not-allowed">
+        <div className="w-1/2 relative group cursor-not-allowed">
           <Badge className="absolute -top-3 -right-2 p-2 z-50">
             Comming soon
           </Badge>
