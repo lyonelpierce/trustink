@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
+import { SignatureIcon } from "lucide-react";
 import DashbaordTitle from "@/components/dashboard/title";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 import SignaturesTable from "@/components/dashboard/signatures/SignaturesTable";
@@ -45,6 +46,7 @@ const SignaturesPage = async () => {
         <DashbaordTitle
           title="Signatures"
           description="Add or update your signatures"
+          icon={<SignatureIcon className="size-6 text-white" />}
         />
         <AddEditSignatureButton />
       </div>

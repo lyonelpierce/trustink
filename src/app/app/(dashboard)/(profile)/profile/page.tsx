@@ -1,3 +1,4 @@
+import { UserIcon } from "lucide-react";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import DashbaordTitle from "@/components/dashboard/title";
 import UserForm from "@/components/dashboard/profile/UserForm";
@@ -22,6 +23,7 @@ const UserPage = async () => {
       <DashbaordTitle
         title="Profile"
         description="Manage your profile information"
+        icon={<UserIcon className="size-6 text-white" />}
       />
       <UserForm user={userData} />
     </div>
