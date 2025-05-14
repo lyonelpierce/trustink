@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import Dropzone from "react-dropzone";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,7 @@ const DocumentUpload = () => {
 
       const data = await response.json();
 
+      toast.success("Document uploaded successfully");
       router.push(`/editor/${data.id}`);
     } catch (error) {
       console.error(error);
