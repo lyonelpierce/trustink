@@ -1,7 +1,43 @@
+import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import EditorWrapper from "@/components/editor/EditorWrapper";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+
+const parseDocument = async (
+  supabase: SupabaseClient,
+  userId: string,
+  documentId: string,
+  path: string
+) => {
+  try {
+    const { data, error } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(path, 3600);
+
+    if (error) {
+      console.error(error);
+      throw new Error(error.message);
+    }
+
+    console.log(data.signedUrl);
+
+    await fetch(`https://2118-38-42-95-137.ngrok-free.app/extract-from-url`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        pdf_url: data.signedUrl,
+        user_id: userId,
+        document_id: documentId,
+      }),
+    });
+  } catch (error) {
+    console.error(error);
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
+};
 
 const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   const { data, error } = await supabase
@@ -23,9 +59,7 @@ const getDocumentData = async (supabase: SupabaseClient, id: string) => {
   return data;
 };
 
-const getUserInfo = async (supabase: SupabaseClient) => {
-  const { userId } = await auth();
-
+const getUserInfo = async (supabase: SupabaseClient, userId: string) => {
   try {
     const { data, error } = await supabase
       .from("users")
@@ -86,11 +120,18 @@ const SingleDocumentPage = async (props: {
   params: Promise<{ id: string }>;
 }) => {
   const { id } = await props.params;
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
   const supabase = createServerSupabaseClient();
 
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
-  const userInfo = await getUserInfo(supabase);
+  const userInfo = await getUserInfo(supabase, userId);
+  await parseDocument(supabase, userId, id, document.path);
 
   return (
     <div className="bg-gray-50 min-h-screen">

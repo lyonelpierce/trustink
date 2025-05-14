@@ -1,13 +1,13 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
+import { Badge } from "@/components/ui/badge";
 import DashboardTitle from "@/components/dashboard/title";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { FileIcon, FileStackIcon, SparklesIcon } from "lucide-react";
 import { columns } from "@/components/dashboard/documents/Table/Columns";
 import DocumentUpload from "@/components/dashboard/documents/DocumentUpload";
 import { DocumentsTable } from "@/components/dashboard/documents/Table/DocumentsTable";
-import { FileIcon, FileStackIcon, SparklesIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Documents",

@@ -27,6 +27,7 @@ const DocumentUpload = () => {
       });
 
       if (!response.ok) {
+        toast.error("Upload failed");
         throw new Error("Upload failed");
       }
 
