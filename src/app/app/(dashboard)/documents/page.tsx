@@ -6,7 +6,7 @@ import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 import { columns } from "@/components/dashboard/documents/Table/Columns";
 import DocumentUpload from "@/components/dashboard/documents/DocumentUpload";
 import { DocumentsTable } from "@/components/dashboard/documents/Table/DocumentsTable";
-import { FileIcon, SparklesIcon } from "lucide-react";
+import { FileIcon, FileStackIcon, SparklesIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
@@ -57,6 +57,7 @@ const DocumentsPage = async () => {
       <DashboardTitle
         title="Documents"
         description="Sign or request document signatures"
+        icon={<FileStackIcon className="size-6 text-white" />}
       />
       <div className="flex gap-4">
         <div className="w-1/2">
