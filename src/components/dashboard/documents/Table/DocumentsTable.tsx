@@ -1,6 +1,13 @@
 "use client";
 
 import {
+  FileIcon,
+  InboxIcon,
+  FileStackIcon,
+  ClockFadingIcon,
+  CircleCheckBigIcon,
+} from "lucide-react";
+import {
   Table,
   TableRow,
   TableBody,
@@ -8,6 +15,13 @@ import {
   TableHead,
   TableHeader,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectItem,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+} from "@/components/ui/select";
 import {
   ColumnDef,
   flexRender,
@@ -21,25 +35,12 @@ import {
 } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { useSession } from "@clerk/nextjs";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../../../../../database.types";
-import { useEffect, useState } from "react";
-import {
-  FileStackIcon,
-  InboxIcon,
-  FileIcon,
-  CircleCheckBigIcon,
-  ClockFadingIcon,
-} from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
