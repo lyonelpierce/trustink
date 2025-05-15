@@ -52,7 +52,6 @@ const Elements = ({
   fields,
   documentId,
   isDocumentPdfLoaded,
-  documentUrl,
 }: {
   fields: (Database["public"]["Tables"]["fields"]["Row"] & {
     recipients: {
@@ -63,7 +62,6 @@ const Elements = ({
   })[];
   documentId: string;
   isDocumentPdfLoaded: boolean;
-  documentUrl: string;
 }) => {
   const { session } = useSession();
   const { getPage, isWithinPageBounds, getFieldPosition } =
@@ -116,9 +114,6 @@ const Elements = ({
 
   // Add a state to track if a paragraph is being deleted
   const [isDeletingParagraph, setIsDeletingParagraph] = useState(false);
-
-  // Add a state to track if the backend API call has been made for this document
-  const [hasCalledBackend, setHasCalledBackend] = useState(false);
 
   const createClerkSupabaseClient = useCallback(() => {
     return createClient(
@@ -257,50 +252,9 @@ const Elements = ({
         return;
       }
 
-      // Only set state if paragraphs is an array (could be empty)
-      if (Array.isArray(paragraphs)) {
+      if (paragraphs) {
         setDocumentParagraphs(paragraphs);
         setCurrentLines(paragraphs); // Keep currentLines in sync initially
-
-        // --- Fetch document status and call backend API if needed ---
-        try {
-          const { data: doc, error: docError } = await client
-            .from("documents")
-            .select("status")
-            .eq("id", documentId)
-            .maybeSingle();
-
-          if (docError) {
-            console.error("Error fetching document status:", docError);
-            return;
-          }
-          if (
-            doc &&
-            doc.status === "uploaded" &&
-            session?.user?.id &&
-            documentUrl &&
-            !hasCalledBackend
-          ) {
-            // Call backend API
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_API}`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                pdf_url: documentUrl,
-                user_id: session.user.id,
-                document_id: documentId,
-              }),
-            });
-            setHasCalledBackend(true);
-          } else {
-            // No document found or status is not 'uploaded', do nothing
-          }
-        } catch (err) {
-          console.error("Error in post-fetch status/API logic:", err);
-        }
-        // --- End status check and API call ---
       }
     };
 
@@ -310,13 +264,7 @@ const Elements = ({
       fieldsChannel.unsubscribe();
       paragraphsChannel.unsubscribe();
     };
-  }, [
-    documentId,
-    createClerkSupabaseClient,
-    session?.user?.id,
-    documentUrl,
-    hasCalledBackend,
-  ]);
+  }, [documentId, createClerkSupabaseClient]);
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -631,11 +579,6 @@ const Elements = ({
     },
     [client, getFieldPosition, currentLines]
   );
-
-  // Reset hasCalledBackend if documentId changes
-  useEffect(() => {
-    setHasCalledBackend(false);
-  }, [documentId]);
 
   return (
     <div className="flex flex-col gap-4">

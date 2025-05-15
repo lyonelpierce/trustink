@@ -11,7 +11,6 @@ const EditorWrapper = ({
   document,
   fields,
   userInfo,
-  documentUrl,
 }: {
   document: Database["public"]["Tables"]["documents"]["Row"] & {
     documents_data: Database["public"]["Tables"]["documents_data"]["Row"][];
@@ -54,7 +53,6 @@ const EditorWrapper = ({
               fields={fields}
               documentId={document.id}
               isDocumentPdfLoaded={isDocumentPdfLoaded}
-              documentUrl={documentUrl}
             />
           </div>
         </div>
