@@ -53,7 +53,7 @@ export function DocumentsTable<
       user_id: string;
     }[];
   },
-  TValue
+  TValue,
 >({ columns, data }: DataTableProps<TData, TValue>) {
   const { session } = useSession();
 
