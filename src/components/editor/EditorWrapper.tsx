@@ -26,7 +26,6 @@ const EditorWrapper = ({
     first_name: string;
     last_name: string;
   };
-  documentUrl: string;
 }) => {
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
 

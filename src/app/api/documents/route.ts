@@ -8,7 +8,7 @@ import {
   getDocumentAnalysis,
   getUserDocumentsWithMeta,
 } from "@/lib/supabase";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
@@ -96,7 +96,6 @@ export async function POST(request: Request) {
         path: storageData.path,
         size: file.size,
         user_id: userId,
-        status: "uploaded",
       })
       .select()
       .single();
@@ -131,6 +130,29 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    const { data: signedUrl, error: signedUrlError } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(document.path, 3600);
+
+    if (signedUrlError) {
+      console.error(signedUrlError);
+      throw new Error(signedUrlError.message);
+    }
+
+    after(() => {
+      fetch(`${process.env.BACKEND_API}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pdf_url: signedUrl.signedUrl,
+          user_id: userId,
+          document_id: document.id,
+        }),
+      });
+    });
 
     return NextResponse.json({
       id: document.id,

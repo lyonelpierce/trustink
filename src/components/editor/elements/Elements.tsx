@@ -162,7 +162,8 @@ const Elements = ({
               `
               )
               .eq("id", payload.new.id)
-              .single()) as unknown as {
+              .limit(1)
+              .maybeSingle()) as unknown as {
               data: Database["public"]["Tables"]["fields"]["Row"] & {
                 recipients: {
                   id: string;
@@ -245,8 +246,7 @@ const Elements = ({
       const { data: paragraphs, error } = await client
         .from("documents_lines")
         .select("*")
-        .eq("document_id", documentId)
-        .maybeSingle();
+        .eq("document_id", documentId);
 
       if (error) {
         console.error("Error fetching paragraphs:", error);
