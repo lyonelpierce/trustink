@@ -5,13 +5,11 @@ import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Database } from "../../../database.types";
 import Elements from "@/components/viewer/elements/Elements";
-import ChatComponent from "@/components/viewer/chat/ChatComponent";
 import { LazyPDFViewerNoLoader } from "@/components/viewer/LazyPDFViewer";
 
 const ViewerWrapper = ({
   document,
   fields,
-  chatMessages,
 }: {
   document: Database["public"]["Tables"]["documents"]["Row"] & {
     documents_data: {
@@ -61,13 +59,6 @@ const ViewerWrapper = ({
         </div>
         {document.recipients.some(
           (recipient) => recipient.signer_id === userId
-        ) && (
-          <div className="sticky top-14 bg-white h-[calc(100vh-4rem)] min-w-md max-w-md border-l">
-            <ChatComponent
-              documentId={document.id}
-              chatMessages={chatMessages}
-            />
-          </div>
         )}
       </div>
     </>
