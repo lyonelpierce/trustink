@@ -2,15 +2,15 @@
 
 import { Rnd } from "react-rnd";
 import { cn } from "@/lib/utils";
-import { PencilIcon, Trash } from "lucide-react";
 import { createPortal } from "react-dom";
-import { Database } from "../../../../database.types";
-import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useSession } from "@clerk/nextjs";
+import { PencilIcon, Trash } from "lucide-react";
 import { useDebouncedCallback } from "use-debounce";
 import { createClient } from "@supabase/supabase-js";
-import { useSession } from "@clerk/nextjs";
+import { Database } from "../../../../database.types";
+import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { AutosizeTextarea } from "@/components/ui/resizableTextarea";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 export type ParagraphItemProps = {
   paragraph: Database["public"]["Tables"]["documents_lines"]["Row"];
@@ -154,7 +154,7 @@ export const ParagraphItem = ({
         span.style.letterSpacing = style.letterSpacing;
         span.style.whiteSpace = "pre";
         // Add a little extra padding
-        const width = span.offsetWidth + 2;
+        const width = span.offsetWidth;
         setEditWidth(width);
       }
     }
@@ -235,8 +235,8 @@ export const ParagraphItem = ({
               paragraph.size && coords.pageScale
                 ? `${paragraph.size * coords.pageScale}px`
                 : paragraph.size
-                ? `${paragraph.size}px`
-                : undefined,
+                  ? `${paragraph.size}px`
+                  : undefined,
             fontStyle: paragraph.style === "italic" ? "italic" : undefined,
             fontWeight: paragraph.style === "bold" ? "bold" : undefined,
             cursor: isEditing ? "text" : "move",
@@ -315,8 +315,8 @@ export const ParagraphItem = ({
                     paragraph.size && coords.pageScale
                       ? `${paragraph.size * coords.pageScale}px`
                       : paragraph.size
-                      ? `${paragraph.size}px`
-                      : undefined,
+                        ? `${paragraph.size}px`
+                        : undefined,
                   fontStyle:
                     paragraph.style === "italic" ? "italic" : undefined,
                   fontWeight: paragraph.style === "bold" ? "bold" : undefined,

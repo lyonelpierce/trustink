@@ -4,12 +4,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import EditorWrapper from "@/components/editor/EditorWrapper";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
-const parseDocument = async (
-  supabase: SupabaseClient,
-  userId: string,
-  documentId: string,
-  path: string
-) => {
+const parseDocument = async (supabase: SupabaseClient, path: string) => {
   try {
     const { data, error } = await supabase.storage
       .from("documents")
@@ -20,19 +15,21 @@ const parseDocument = async (
       throw new Error(error.message);
     }
 
-    console.log(data.signedUrl);
+    // after(() => {
+    //   fetch(`${process.env.BACKEND_API}`, {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({
+    //       pdf_url: data.signedUrl,
+    //       user_id: userId,
+    //       document_id: documentId,
+    //     }),
+    //   });
+    // });
 
-    await fetch(`${process.env.BACKEND_API}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        pdf_url: data.signedUrl,
-        user_id: userId,
-        document_id: documentId,
-      }),
-    });
+    return data.signedUrl;
   } catch (error) {
     console.error(error);
     throw new Error(error instanceof Error ? error.message : "Unknown error");
@@ -131,7 +128,7 @@ const SingleDocumentPage = async (props: {
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
   const userInfo = await getUserInfo(supabase, userId);
-  await parseDocument(supabase, userId, id, document.path);
+  const documentUrl = await parseDocument(supabase, document.path);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -140,6 +137,7 @@ const SingleDocumentPage = async (props: {
         document={document}
         fields={fields}
         userInfo={userInfo}
+        documentUrl={documentUrl}
       />
     </div>
   );

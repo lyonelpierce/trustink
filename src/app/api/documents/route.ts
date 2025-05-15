@@ -96,6 +96,7 @@ export async function POST(request: Request) {
         path: storageData.path,
         size: file.size,
         user_id: userId,
+        status: "uploaded",
       })
       .select()
       .single();
