@@ -245,7 +245,8 @@ const Elements = ({
       const { data: paragraphs, error } = await client
         .from("documents_lines")
         .select("*")
-        .eq("document_id", documentId);
+        .eq("document_id", documentId)
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching paragraphs:", error);

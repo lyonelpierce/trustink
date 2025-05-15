@@ -1,10 +1,16 @@
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import EditorWrapper from "@/components/editor/EditorWrapper";
 import { createServerSupabaseClient } from "@/lib/supabaseSsr";
 
-const parseDocument = async (supabase: SupabaseClient, path: string) => {
+const parseDocument = async (
+  supabase: SupabaseClient,
+  path: string,
+  userId: string,
+  documentId: string
+) => {
   try {
     const { data, error } = await supabase.storage
       .from("documents")
@@ -15,19 +21,19 @@ const parseDocument = async (supabase: SupabaseClient, path: string) => {
       throw new Error(error.message);
     }
 
-    // after(() => {
-    //   fetch(`${process.env.BACKEND_API}`, {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify({
-    //       pdf_url: data.signedUrl,
-    //       user_id: userId,
-    //       document_id: documentId,
-    //     }),
-    //   });
-    // });
+    after(() => {
+      fetch(`${process.env.BACKEND_API}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pdf_url: data.signedUrl,
+          user_id: userId,
+          document_id: documentId,
+        }),
+      });
+    });
 
     return data.signedUrl;
   } catch (error) {
@@ -128,7 +134,7 @@ const SingleDocumentPage = async (props: {
   const document = await getDocumentData(supabase, id);
   const fields = await getDocumentFields(supabase, id);
   const userInfo = await getUserInfo(supabase, userId);
-  const documentUrl = await parseDocument(supabase, document.path);
+  const documentUrl = await parseDocument(supabase, document.path, userId, id);
 
   return (
     <div className="bg-gray-50 min-h-screen">
