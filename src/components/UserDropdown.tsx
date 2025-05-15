@@ -47,7 +47,7 @@ const UserDropdown = () => {
         <DropdownMenuSeparator />
         <DropdownMenuItem className="px-0 cursor-pointer text-xs h-10">
           <Link
-            href={`/profile`}
+            href={`${process.env.NEXT_PUBLIC_SUBDOMAIN_URL}/profile`}
             className={cn(
               buttonVariants({ variant: "ghost" }),
               "w-full justify-start flex items-center gap-2"
