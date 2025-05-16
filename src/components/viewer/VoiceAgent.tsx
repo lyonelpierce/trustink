@@ -6,11 +6,12 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
-import { useState, useRef, useEffect } from "react";
-import { useRecordVoice } from "@/hooks/useVoiceRecord";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import { ScrollArea } from "../ui/scroll-area";
+import { useState, useRef, useEffect } from "react";
+import { useRecordVoice } from "@/hooks/useVoiceRecord";
+import { Skeleton } from "../ui/skeleton";
 
 const VoiceAgent = ({ documentId }: { documentId: string }) => {
   const [input, setInput] = useState("");
@@ -19,7 +20,12 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; content: string }[]
-  >([]);
+  >([
+    {
+      role: "assistant",
+      content: "Hello! I am your AI assistant. How can I help you?",
+    },
+  ]);
   const [aiResponse, setAiResponse] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -233,45 +239,53 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
       <div className="border-b p-4">
         <p>AI Assistant</p>
       </div>
-      <div className="flex flex-col h-full">
-        <div className="p-4 flex-1 flex flex-col min-h-[300px] h-full overflow-y-auto">
-          {/* Chat message list */}
-          <ScrollArea className="flex-1 overflow-y-auto mb-2">
-            {messages.map((msg, idx) => (
+      <div className="flex-1 min-h-0 flex flex-col">
+        {/* Chat message list */}
+        <ScrollArea className="flex-1 overflow-y-auto p-4 min-h-[300px]">
+          {messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`mb-2 flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
               <div
-                key={idx}
-                className={`mb-2 flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`rounded-lg px-3 py-2 max-w-[80%] text-sm shadow-md ${
+                  msg.role === "user"
+                    ? "bg-blue-600 text-white self-end"
+                    : "bg-gray-200 text-gray-900 self-start"
+                }`}
               >
-                <div
-                  className={`rounded-lg px-3 py-2 max-w-[80%] text-sm shadow-md ${
-                    msg.role === "user"
-                      ? "bg-blue-600 text-white self-end"
-                      : "bg-gray-200 text-gray-900 self-start"
-                  }`}
-                >
-                  {msg.role === "assistant" ? (
-                    <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
-                      {msg.content}
-                    </ReactMarkdown>
-                  ) : (
-                    msg.content
-                  )}
-                </div>
-              </div>
-            ))}
-            {/* Streaming AI response */}
-            {loading && aiResponse && (
-              <div className="mb-2 flex justify-start">
-                <div className="rounded-lg px-3 py-2 max-w-[80%] text-sm shadow-md bg-gray-200 text-gray-900 self-start">
+                {msg.role === "assistant" ? (
                   <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
-                    {aiResponse}
+                    {msg.content}
                   </ReactMarkdown>
-                  <span className="animate-pulse ml-1">|</span>
-                </div>
+                ) : (
+                  msg.content
+                )}
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </ScrollArea>
+            </div>
+          ))}
+          {/* Streaming AI response */}
+          {loading && aiResponse && (
+            <div className="mb-2 flex justify-start">
+              <div className="rounded-lg px-3 py-2 max-w-[80%] text-sm shadow-md bg-gray-200 text-gray-900 self-start">
+                <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+                  {aiResponse}
+                </ReactMarkdown>
+                <span className="animate-pulse ml-1">|</span>
+              </div>
+            </div>
+          )}
+          {loading && !aiResponse && (
+            <div className="mb-2 flex justify-start">
+              <div className="rounded-lg max-w-[80%] text-sm shadow-md bg-gray-300 text-gray-900 self-start">
+                <Skeleton className="h-8 w-32" />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </ScrollArea>
+        {/* Input area always visible at the bottom */}
+        <div className="p-4 border-t rounded-b-lg bg-gray-50">
           {/* Waveform visualization */}
           {recording && (
             <canvas
@@ -287,10 +301,13 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
             value={input}
             onChange={handleInputChange}
             readOnly={recording || loading}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                sendToChatAPI(input);
+              }
+            }}
           />
-          {loading && !aiResponse && (
-            <div className="text-blue-500 text-sm mt-2">AI is thinking...</div>
-          )}
           {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
           <div className="flex flex-row gap-2 mt-2">
             <Button variant="outline">Analyze</Button>
