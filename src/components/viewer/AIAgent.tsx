@@ -16,7 +16,7 @@ import { Database } from "../../../database.types";
 import { useOptimistic, startTransition } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-
+import useWebRTCAudioSession from "@/hooks/use-webrtc";
 type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
 
 const initialAssistantMessage = {
@@ -31,6 +31,8 @@ const AIAgent = ({
   documentId: string;
   chatMessages?: ChatMessage[];
 }) => {
+  const { handleStartStopClick } = useWebRTCAudioSession("alloy");
+
   const [input, setInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -230,6 +232,7 @@ const AIAgent = ({
 
   // Handle overlay open with animation
   const handleShowOverlay = () => {
+    handleStartStopClick();
     setShowOverlay(true);
     // Allow next tick for CSS transition
     setTimeout(() => setCircleActive(true), 10);
