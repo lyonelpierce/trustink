@@ -14,6 +14,8 @@ import { useRecordVoice } from "@/hooks/useVoiceRecord";
 import { Skeleton } from "../ui/skeleton";
 import { Database } from "../../../database.types";
 import { useOptimistic, startTransition } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
 
@@ -220,6 +222,27 @@ const VoiceAgent = ({
   };
 
   const [optimisticInput, setOptimisticInput] = useOptimistic<string>("");
+  // Overlay state
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [circleActive, setCircleActive] = useState(false);
+  // Delay showing overlay content until animation finishes
+  const [showOverlayContent, setShowOverlayContent] = useState(false);
+
+  // Handle overlay open with animation
+  const handleShowOverlay = () => {
+    setShowOverlay(true);
+    // Allow next tick for CSS transition
+    setTimeout(() => setCircleActive(true), 10);
+    // Show content after animation duration (300ms)
+    setTimeout(() => setShowOverlayContent(true), 310);
+  };
+
+  // Handle overlay close and reset animation
+  const handleCloseOverlay = () => {
+    setCircleActive(false);
+    setShowOverlayContent(false);
+    setTimeout(() => setShowOverlay(false), 300); // match animation duration
+  };
 
   // Send input to /api/chat and stream response
   const sendToChatAPI = async (message: string) => {
@@ -264,8 +287,71 @@ const VoiceAgent = ({
     }
   };
 
+  useEffect(() => {
+    // Create Supabase client
+    const client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Subscribe to chat_messages changes for this document
+    const channel = client
+      .channel("chat-messages-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `document_id=eq.${documentId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as ChatMessage;
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: newMsg.role as "user" | "assistant",
+              content: newMsg.content,
+            },
+          ]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [documentId]);
+
   return (
     <div className="fixed pt-14 right-0 top-0 border-l h-screen bg-white min-w-lg flex flex-col justify-between max-w-[32rem]">
+      {/* Overlay with expanding circle */}
+      {showOverlay && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden">
+          <div
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 bg-white rounded-full transition-transform duration-300 ease-in-out ${circleActive ? "scale-[20]" : "scale-0"}`}
+            style={{ width: 400, height: 400 }}
+          />
+          {/* Only show inside items after animation */}
+          {showOverlayContent && (
+            <>
+              {/* X button inside overlay */}
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute top-16 right-4 z-[100]"
+                onClick={handleCloseOverlay}
+              >
+                <XIcon className="text-zinc-600 size-6" />
+              </Button>
+              <Avatar className="size-40">
+                <AvatarImage src="https://github.com/shadcn.png" />
+                <AvatarFallback>T</AvatarFallback>
+              </Avatar>
+            </>
+          )}
+        </div>
+      )}
       <div className="flex-1 min-h-0 flex flex-col">
         {/* Chat message list */}
         <ScrollArea className="flex-1 overflow-y-auto p-4 min-h-[300px]">
@@ -367,7 +453,11 @@ const VoiceAgent = ({
                 >
                   <MicIcon />
                 </Button>
-                <Button variant="outline" size="icon">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleShowOverlay}
+                >
                   <AudioWaveformIcon />
                 </Button>
                 <Button
