@@ -47,7 +47,7 @@ const ViewerWrapper = ({
               onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
             />
           </div>
-          <div className="sticky top-20 z-40 min-w-96 h-min">
+          <div className="sticky top-20 z-40 h-min">
             {isDocumentPdfLoaded && (
               <Elements
                 fields={fields}

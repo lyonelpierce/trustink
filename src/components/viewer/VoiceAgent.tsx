@@ -1,16 +1,58 @@
-import { useState, useRef, useEffect } from "react";
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition";
+import {
+  XIcon,
+  MicIcon,
+  AudioWaveformIcon,
+  SendHorizontalIcon,
+} from "lucide-react";
 import { Button } from "../ui/button";
-import { AudioWaveformIcon, MicIcon, XIcon, CheckIcon } from "lucide-react";
 import { Textarea } from "../ui/textarea";
+import { useState, useRef, useEffect } from "react";
+import { useRecordVoice } from "@/hooks/useVoiceRecord";
 
 const VoiceAgent = () => {
   const [input, setInput] = useState("");
   const [recording, setRecording] = useState(false);
-  const { transcript, resetTranscript, browserSupportsSpeechRecognition } =
-    useSpeechRecognition();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const {
+    recording: isRecording,
+    startRecording,
+    stopRecording,
+  } = useRecordVoice(async (audioBlob) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Convert blob to base64
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const base64Audio = btoa(
+        String.fromCharCode(...new Uint8Array(arrayBuffer))
+      );
+      // Send to API
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUBDOMAIN_URL}/api/stt`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ audio: base64Audio }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to transcribe audio");
+      }
+
+      const data = await res.json();
+      setInput(data.text || "");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error");
+      }
+    } finally {
+      setLoading(false);
+    }
+  });
 
   // --- Waveform visualization state ---
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -98,76 +140,41 @@ const VoiceAgent = () => {
     animationFrameRef.current = requestAnimationFrame(drawWaveform);
   };
 
-  // --- Start/stop waveform with recording ---
+  // Start/stop waveform visualization based on recording state
   useEffect(() => {
-    if (recording) {
+    if (isRecording) {
+      setRecording(true);
       startWaveform();
     } else {
+      setRecording(false);
       stopWaveform();
     }
     return () => {
       stopWaveform();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recording]);
-
-  const startRecording = () => {
-    if (!browserSupportsSpeechRecognition) {
-      alert("Browser does not support speech recognition.");
-      return;
-    }
-    resetTranscript();
-    setInput("");
-    setRecording(true);
-    SpeechRecognition.startListening({ continuous: true });
-  };
-
-  useEffect(() => {
-    if (recording) {
-      setInput(transcript);
-    }
-  }, [transcript, recording]);
-
-  const stopRecording = () => {
-    SpeechRecognition.stopListening();
-    setRecording(false);
-  };
+  }, [isRecording]);
 
   const handleMicClick = () => {
+    setInput("");
+    setError(null);
     startRecording();
   };
 
   const handleCancel = () => {
     stopRecording();
-    resetTranscript();
     setInput("");
-  };
-
-  const handleConfirm = () => {
-    setInput(transcript);
-    stopRecording();
+    setError(null);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
 
-  // Show transcript live if recording, otherwise show input
-  const displayValue = recording ? transcript : input;
-
-  // --- Sync transcript to input when recording stops ---
-  useEffect(() => {
-    if (!recording && transcript) {
-      setInput(transcript);
-    }
-    // Only update input if not recording and transcript is not empty
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recording]);
-
   return (
     <div className="fixed pt-14 right-0 top-0 border-l h-screen bg-white min-w-lg flex flex-col justify-between">
       <div className="border-b p-4">
-        <p>Voice assistant</p>
+        <p>AI Assistant</p>
       </div>
       <div className="p-4">
         <div className="p-4 bg-gray-50 rounded-lg border">
@@ -177,17 +184,20 @@ const VoiceAgent = () => {
               ref={canvasRef}
               width={400}
               height={60}
-              className="w-full h-16 mb-2 bg-white rounded border"
-              style={{ display: "block" }}
+              className="w-full h-16 mb-2 bg-white border rounded"
             />
           )}
           <Textarea
-            className={`resize-none bg-transparent border-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${recording ? "border-blue-500" : ""}`}
+            className={`rounded-none resize-none bg-transparent border-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${recording ? "border-blue-500" : ""}`}
             placeholder="Ask me anything..."
-            value={displayValue}
+            value={input}
             onChange={handleInputChange}
-            readOnly={recording}
+            readOnly={recording || loading}
           />
+          {loading && (
+            <div className="text-blue-500 text-sm mt-2">Transcribing...</div>
+          )}
+          {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
           <div className="flex flex-row gap-2">
             <Button variant="outline">Analyze</Button>
             {recording ? (
@@ -199,14 +209,6 @@ const VoiceAgent = () => {
                   title="Cancel recording"
                 >
                   <XIcon className="text-red-500" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleConfirm}
-                  title="Confirm transcript"
-                >
-                  <CheckIcon className="text-green-500" />
                 </Button>
               </>
             ) : (
@@ -221,6 +223,10 @@ const VoiceAgent = () => {
                 </Button>
                 <Button variant="outline" size="icon">
                   <AudioWaveformIcon />
+                </Button>
+                <Button variant="default" className="ml-auto">
+                  Send
+                  <SendHorizontalIcon />
                 </Button>
               </>
             )}

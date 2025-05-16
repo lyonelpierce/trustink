@@ -1,15 +1,15 @@
 "use client";
 
-import { z } from "zod";
+// import { z } from "zod";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useForm } from "react-hook-form";
+// import { useForm } from "react-hook-form";
 import { FieldItem } from "./FieldElement";
-import { Form } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+// import { Form } from "@/components/ui/form";
+// import { Input } from "@/components/ui/input";
 import { useAuth, useSession } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
-import { zodResolver } from "@hookform/resolvers/zod";
+// import { zodResolver } from "@hookform/resolvers/zod";
 import { Database } from "../../../../database.types";
 import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
@@ -17,14 +17,14 @@ import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import ViewerParagraphItem from "./ParagraphItem";
 
-const formSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email().optional(),
-  initials: z.string().min(1).optional(),
-});
+// const formSchema = z.object({
+//   name: z.string().min(1),
+//   email: z.string().email().optional(),
+//   initials: z.string().min(1).optional(),
+// });
 
 const MIN_HEIGHT_PX = 12;
 const MIN_WIDTH_PX = 36;
@@ -74,14 +74,14 @@ const Elements = ({
   const { session } = useSession();
   const { getPage, isWithinPageBounds } = useDocumentElement();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      initials: "",
-    },
-  });
+  // const form = useForm<z.infer<typeof formSchema>>({
+  //   resolver: zodResolver(formSchema),
+  //   defaultValues: {
+  //     name: "",
+  //     email: "",
+  //     initials: "",
+  //   },
+  // });
 
   const [currentFields, setCurrentFields] = useState<
     (Database["public"]["Tables"]["fields"]["Row"] & {
@@ -440,7 +440,7 @@ const Elements = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
+      {/* <div className="flex flex-col gap-2">
         {recipients.some((recipient) => recipient.signer_id === userId) && (
           <div className="flex flex-col">
             <p className="text-lg font-medium mb-2">Document Fields</p>
@@ -503,7 +503,7 @@ const Elements = ({
             </Form>
           </div>
         )}
-      </div>
+      </div> */}
       {selectedField && (
         <div
           className={cn(
