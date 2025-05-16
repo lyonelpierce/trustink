@@ -53,25 +53,36 @@ export async function POST(req: NextRequest) {
     });
 
     // 5. Reference the file ID in the chat completion request
+    // Build OpenAI messages array with full conversation history
+    const openAIMessages = messages.map(
+      (msg: { role: string; content: string }, idx: number) => {
+        // For the latest user message, attach the file
+        if (idx === messages.length - 1 && msg.role === "user") {
+          return {
+            role: "user",
+            content: [
+              {
+                type: "file",
+                file: { file_id: fileUpload.id },
+              },
+              {
+                type: "text",
+                text: msg.content,
+              },
+            ],
+          };
+        }
+        // For all other messages, just pass text
+        return {
+          role: msg.role,
+          content: [{ type: "text", text: msg.content }],
+        };
+      }
+    );
+
     const stream = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "file",
-              file: { file_id: fileUpload.id },
-            },
-            {
-              type: "text",
-              text:
-                latestMessage.content ||
-                "Please summarize this document and ask if I need legal help.",
-            },
-          ],
-        },
-      ],
+      messages: openAIMessages,
       stream: true,
       max_tokens: 512,
     });
