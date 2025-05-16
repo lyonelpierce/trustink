@@ -242,6 +242,8 @@ const AIAgent = ({
 
   // Handle overlay close and reset animation
   const handleCloseOverlay = () => {
+    handleStartStopClick();
+
     setCircleActive(false);
     setShowOverlayContent(false);
     setTimeout(() => setShowOverlay(false), 300); // match animation duration
