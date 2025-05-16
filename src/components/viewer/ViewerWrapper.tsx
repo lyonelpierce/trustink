@@ -2,10 +2,11 @@
 
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+// import { useAuth } from "@clerk/nextjs";
 import { Database } from "../../../database.types";
 import Elements from "@/components/viewer/elements/Elements";
 import { LazyPDFViewerNoLoader } from "@/components/viewer/LazyPDFViewer";
+import VoiceAgent from "./VoiceAgent";
 
 const ViewerWrapper = ({
   document,
@@ -32,14 +33,14 @@ const ViewerWrapper = ({
   })[];
   chatMessages: Database["public"]["Tables"]["chat_messages"]["Row"][];
 }) => {
-  const { userId } = useAuth();
+  // const { userId } = useAuth();
 
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
 
   return (
     <>
       <div className={cn("bg-gray-50 w-full flex flex-row")}>
-        <div className="flex gap-4 justify-center w-full pt-20 relative p-4">
+        <div className="flex gap-4 justify-center w-full pt-20 relative p-4 mr-[32rem]">
           <div className="flex-1 max-w-4xl">
             <LazyPDFViewerNoLoader
               document={document}
@@ -56,10 +57,8 @@ const ViewerWrapper = ({
               />
             )}
           </div>
+          <VoiceAgent />
         </div>
-        {document.recipients.some(
-          (recipient) => recipient.signer_id === userId
-        )}
       </div>
     </>
   );
