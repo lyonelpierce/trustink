@@ -8,12 +8,20 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { useState, useRef, useEffect } from "react";
 import { useRecordVoice } from "@/hooks/useVoiceRecord";
+import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
+import { ScrollArea } from "../ui/scroll-area";
 
-const VoiceAgent = () => {
+const VoiceAgent = ({ documentId }: { documentId: string }) => {
   const [input, setInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([]);
+  const [aiResponse, setAiResponse] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const {
     recording: isRecording,
     startRecording,
@@ -155,6 +163,11 @@ const VoiceAgent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRecording]);
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, aiResponse]);
+
   const handleMicClick = () => {
     setInput("");
     setError(null);
@@ -171,13 +184,94 @@ const VoiceAgent = () => {
     setInput(e.target.value);
   };
 
+  // Send input to /api/chat and stream response
+  const sendToChatAPI = async (message: string) => {
+    setLoading(true);
+    setError(null);
+    setAiResponse("");
+    setMessages((prev) => [...prev, { role: "user", content: message }]);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map((m) => ({ role: m.role, content: m.content })),
+            { role: "user", content: message },
+          ],
+          documentId,
+        }),
+      });
+
+      if (!response.body) {
+        setError("No response from server");
+        setLoading(false);
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiText = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        aiText += decoder.decode(value);
+        setAiResponse(aiText);
+      }
+      setMessages((prev) => [...prev, { role: "assistant", content: aiText }]);
+      setAiResponse("");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoading(false);
+      setInput("");
+    }
+  };
+
   return (
-    <div className="fixed pt-14 right-0 top-0 border-l h-screen bg-white min-w-lg flex flex-col justify-between">
+    <div className="fixed pt-14 right-0 top-0 border-l h-screen bg-white min-w-lg flex flex-col justify-between max-w-[32rem]">
       <div className="border-b p-4">
         <p>AI Assistant</p>
       </div>
-      <div className="p-4">
-        <div className="p-4 bg-gray-50 rounded-lg border">
+      <div className="flex flex-col h-full">
+        <div className="p-4 flex-1 flex flex-col min-h-[300px] h-full overflow-y-auto">
+          {/* Chat message list */}
+          <ScrollArea className="flex-1 overflow-y-auto mb-2">
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`mb-2 flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`rounded-lg px-3 py-2 max-w-[80%] text-sm shadow-md ${
+                    msg.role === "user"
+                      ? "bg-blue-600 text-white self-end"
+                      : "bg-gray-200 text-gray-900 self-start"
+                  }`}
+                >
+                  {msg.role === "assistant" ? (
+                    <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+              </div>
+            ))}
+            {/* Streaming AI response */}
+            {loading && aiResponse && (
+              <div className="mb-2 flex justify-start">
+                <div className="rounded-lg px-3 py-2 max-w-[80%] text-sm shadow-md bg-gray-200 text-gray-900 self-start">
+                  <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+                    {aiResponse}
+                  </ReactMarkdown>
+                  <span className="animate-pulse ml-1">|</span>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </ScrollArea>
           {/* Waveform visualization */}
           {recording && (
             <canvas
@@ -194,11 +288,11 @@ const VoiceAgent = () => {
             onChange={handleInputChange}
             readOnly={recording || loading}
           />
-          {loading && (
-            <div className="text-blue-500 text-sm mt-2">Transcribing...</div>
+          {loading && !aiResponse && (
+            <div className="text-blue-500 text-sm mt-2">AI is thinking...</div>
           )}
           {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row gap-2 mt-2">
             <Button variant="outline">Analyze</Button>
             {recording ? (
               <>
@@ -224,7 +318,12 @@ const VoiceAgent = () => {
                 <Button variant="outline" size="icon">
                   <AudioWaveformIcon />
                 </Button>
-                <Button variant="default" className="ml-auto">
+                <Button
+                  variant="default"
+                  className="ml-auto"
+                  onClick={() => sendToChatAPI(input)}
+                  disabled={!input || loading}
+                >
                   Send
                   <SendHorizontalIcon />
                 </Button>

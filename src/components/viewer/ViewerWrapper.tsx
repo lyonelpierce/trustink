@@ -57,7 +57,7 @@ const ViewerWrapper = ({
               />
             )}
           </div>
-          <VoiceAgent />
+          <VoiceAgent documentId={document.id} />
         </div>
       </div>
     </>
