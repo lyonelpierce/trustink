@@ -12,20 +12,49 @@ import { ScrollArea } from "../ui/scroll-area";
 import { useState, useRef, useEffect } from "react";
 import { useRecordVoice } from "@/hooks/useVoiceRecord";
 import { Skeleton } from "../ui/skeleton";
+import { Database } from "../../../database.types";
+import { useOptimistic, startTransition } from "react";
 
-const VoiceAgent = ({ documentId }: { documentId: string }) => {
+type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
+
+const initialAssistantMessage = {
+  role: "assistant" as const,
+  content: "Hello! I am your AI assistant. How can I help you?",
+};
+
+const VoiceAgent = ({
+  documentId,
+  chatMessages = [],
+}: {
+  documentId: string;
+  chatMessages?: ChatMessage[];
+}) => {
   const [input, setInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; content: string }[]
-  >([
-    {
-      role: "assistant",
-      content: "Hello! I am your AI assistant. How can I help you?",
-    },
-  ]);
+  >(() => {
+    const mapped = [...chatMessages]
+      .sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+      .map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+    if (mapped.length === 0) return [initialAssistantMessage];
+    // If the first message is not the initial assistant message, prepend it
+    if (
+      mapped[0].role !== initialAssistantMessage.role ||
+      mapped[0].content !== initialAssistantMessage.content
+    ) {
+      return [initialAssistantMessage, ...mapped];
+    }
+    return mapped;
+  });
   const [aiResponse, setAiResponse] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -190,6 +219,8 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
     setInput(e.target.value);
   };
 
+  const [optimisticInput, setOptimisticInput] = useOptimistic<string>("");
+
   // Send input to /api/chat and stream response
   const sendToChatAPI = async (message: string) => {
     setLoading(true);
@@ -210,9 +241,7 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
       });
 
       if (!response.body) {
-        setError("No response from server");
-        setLoading(false);
-        return;
+        throw new Error("No response from server");
       }
 
       const reader = response.body.getReader();
@@ -228,6 +257,7 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
       setAiResponse("");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
+      startTransition(() => setOptimisticInput(message));
     } finally {
       setLoading(false);
       setInput("");
@@ -236,9 +266,6 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
 
   return (
     <div className="fixed pt-14 right-0 top-0 border-l h-screen bg-white min-w-lg flex flex-col justify-between max-w-[32rem]">
-      <div className="border-b p-4">
-        <p>AI Assistant</p>
-      </div>
       <div className="flex-1 min-h-0 flex flex-col">
         {/* Chat message list */}
         <ScrollArea className="flex-1 overflow-y-auto p-4 min-h-[300px]">
@@ -298,19 +325,27 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
           <Textarea
             className={`rounded-none resize-none bg-transparent border-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${recording ? "border-blue-500" : ""}`}
             placeholder="Ask me anything..."
-            value={input}
+            value={optimisticInput === "" ? input : optimisticInput}
             onChange={handleInputChange}
             readOnly={recording || loading}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                sendToChatAPI(input);
+                if (input.trim()) {
+                  sendToChatAPI(input);
+                  setInput("");
+                }
               }
             }}
           />
           {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
           <div className="flex flex-row gap-2 mt-2">
-            <Button variant="outline">Analyze</Button>
+            <Button
+              variant="outline"
+              onClick={() => sendToChatAPI("Please analyze this contract.")}
+            >
+              Analyze
+            </Button>
             {recording ? (
               <>
                 <Button
@@ -338,7 +373,12 @@ const VoiceAgent = ({ documentId }: { documentId: string }) => {
                 <Button
                   variant="default"
                   className="ml-auto"
-                  onClick={() => sendToChatAPI(input)}
+                  onClick={() => {
+                    if (input.trim()) {
+                      sendToChatAPI(input);
+                      setInput("");
+                    }
+                  }}
                   disabled={!input || loading}
                 >
                   Send

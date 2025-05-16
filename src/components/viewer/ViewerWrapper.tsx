@@ -11,6 +11,7 @@ import VoiceAgent from "./VoiceAgent";
 const ViewerWrapper = ({
   document,
   fields,
+  chatMessages,
 }: {
   document: Database["public"]["Tables"]["documents"]["Row"] & {
     documents_data: {
@@ -57,7 +58,7 @@ const ViewerWrapper = ({
               />
             )}
           </div>
-          <VoiceAgent documentId={document.id} />
+          <VoiceAgent documentId={document.id} chatMessages={chatMessages} />
         </div>
       </div>
     </>
