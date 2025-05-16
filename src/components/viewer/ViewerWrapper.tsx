@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Database } from "../../../database.types";
 import Elements from "@/components/viewer/elements/Elements";
 import { LazyPDFViewerNoLoader } from "@/components/viewer/LazyPDFViewer";
-import VoiceAgent from "./VoiceAgent";
+import AIAgent from "./AIAgent";
 
 const ViewerWrapper = ({
   document,
@@ -58,7 +58,7 @@ const ViewerWrapper = ({
               />
             )}
           </div>
-          <VoiceAgent documentId={document.id} chatMessages={chatMessages} />
+          <AIAgent documentId={document.id} chatMessages={chatMessages} />
         </div>
       </div>
     </>

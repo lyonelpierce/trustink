@@ -24,7 +24,7 @@ const initialAssistantMessage = {
   content: "Hello! I am your AI assistant. How can I help you?",
 };
 
-const VoiceAgent = ({
+const AIAgent = ({
   documentId,
   chatMessages = [],
 }: {
@@ -483,4 +483,4 @@ const VoiceAgent = ({
   );
 };
 
-export default VoiceAgent;
+export default AIAgent;
