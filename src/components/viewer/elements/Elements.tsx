@@ -98,6 +98,8 @@ const Elements = ({
     })[]
   >(fields);
 
+  console.log(currentFields);
+
   const authorizedRecipient = recipients.find(
     (recipient) => recipient.signer_id === userId
   );

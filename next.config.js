@@ -21,7 +21,7 @@ const nextConfig = {
 
     return config;
   },
-  turbo: {
+  turbopack: {
     resolveAlias: {
       canvas: "./empty-module.ts",
     },
