@@ -27,9 +27,11 @@ const initialAssistantMessage = {
 const AIAgent = ({
   documentId,
   chatMessages = [],
+  setSelectedFieldId,
 }: {
   documentId: string;
   chatMessages?: ChatMessage[];
+  setSelectedFieldId: (id: number | null) => void;
 }) => {
   const { handleStartStopClick } = useWebRTCAudioSession("alloy");
 
@@ -251,6 +253,68 @@ const AIAgent = ({
 
   // Send input to /api/chat and stream response
   const sendToChatAPI = async (message: string) => {
+    // Detect signature-related questions
+    if (/where.*sign|where.*signature|where.*do.*i.*sign/i.test(message)) {
+      try {
+        const res = await fetch("/api/fields", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentId }),
+        });
+        if (res.ok) {
+          const { fields } = await res.json();
+          if (fields && fields.length > 0) {
+            setSelectedFieldId(fields[0].id);
+            setTimeout(() => {
+              const fieldElement = document.querySelector(
+                `[data-field-id='${fields[0].id}']`
+              );
+              if (fieldElement) {
+                fieldElement.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              }
+            }, 200);
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "I've highlighted where you need to sign.",
+              },
+            ]);
+          } else {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content:
+                  "I couldn't find any signature fields assigned to you in this document.",
+              },
+            ]);
+          }
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content:
+                "Sorry, I couldn't fetch your signature fields right now.",
+            },
+          ]);
+        }
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content:
+              "Sorry, something went wrong while looking for your signature fields.",
+          },
+        ]);
+      }
+      return;
+    }
     setLoading(true);
     setError(null);
     setAiResponse("");

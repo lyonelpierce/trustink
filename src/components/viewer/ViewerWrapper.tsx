@@ -37,6 +37,7 @@ const ViewerWrapper = ({
   // const { userId } = useAuth();
 
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
+  const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
 
   return (
     <>
@@ -55,10 +56,16 @@ const ViewerWrapper = ({
                 documentId={document.id}
                 isDocumentPdfLoaded={isDocumentPdfLoaded}
                 recipients={document.recipients}
+                selectedFieldId={selectedFieldId}
+                setSelectedFieldId={setSelectedFieldId}
               />
             )}
           </div>
-          <AIAgent documentId={document.id} chatMessages={chatMessages} />
+          <AIAgent
+            documentId={document.id}
+            chatMessages={chatMessages}
+            setSelectedFieldId={setSelectedFieldId}
+          />
         </div>
       </div>
     </>

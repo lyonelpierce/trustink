@@ -52,6 +52,8 @@ const Elements = ({
   documentId,
   isDocumentPdfLoaded,
   recipients,
+  selectedFieldId,
+  setSelectedFieldId,
 }: {
   fields: (Database["public"]["Tables"]["fields"]["Row"] & {
     recipients: {
@@ -69,6 +71,8 @@ const Elements = ({
     color: string;
     signer_id: string;
   }[];
+  selectedFieldId: number | null;
+  setSelectedFieldId: (id: number | null) => void;
 }) => {
   const { userId } = useAuth();
   const { session } = useSession();
@@ -106,7 +110,6 @@ const Elements = ({
   const { selectedRecipient } = useSelectedRecipientStore();
 
   const [selectedField, setSelectedField] = useState<FieldType | null>(null);
-  const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
 
   const [isFieldWithinBounds, setIsFieldWithinBounds] = useState(false);
   const [coords, setCoords] = useState({
@@ -420,7 +423,7 @@ const Elements = ({
     (fieldId: number) => {
       setSelectedFieldId(fieldId === selectedFieldId ? null : fieldId);
     },
-    [selectedFieldId]
+    [selectedFieldId, setSelectedFieldId]
   );
 
   useEffect(() => {
