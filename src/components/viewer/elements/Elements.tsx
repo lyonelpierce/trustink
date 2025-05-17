@@ -19,6 +19,7 @@ import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 // import { Button } from "@/components/ui/button";
 import ViewerParagraphItem from "./ParagraphItem";
+import ViewerHighlightItem from "./ViewerHighlightItem";
 
 // const formSchema = z.object({
 //   name: z.string().min(1),
@@ -97,8 +98,6 @@ const Elements = ({
     })[]
   >(fields);
 
-  console.log(currentFields);
-
   const authorizedRecipient = recipients.find(
     (recipient) => recipient.signer_id === userId
   );
@@ -127,6 +126,19 @@ const Elements = ({
 
   const [documentParagraphs, setDocumentParagraphs] = useState<
     Database["public"]["Tables"]["documents_lines"]["Row"][]
+  >([]);
+
+  const [documentHighlights, setDocumentHighlights] = useState<
+    {
+      id: string;
+      document_id: string;
+      user_id: string;
+      position_x: number;
+      position_y: number;
+      width: number;
+      height: number;
+      page: number;
+    }[]
   >([]);
 
   const createClerkSupabaseClient = useCallback(() => {
@@ -244,7 +256,51 @@ const Elements = ({
       )
       .subscribe();
 
-    // Initial fetch of paragraphs
+    // Subscribe to highlights changes
+    const highlightsChannel = client
+      .channel("highlights")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "highlights",
+          filter: `document_id=eq.${documentId}`,
+        },
+        async (payload) => {
+          type Highlight = {
+            id: string;
+            document_id: string;
+            user_id: string;
+            position_x: number;
+            position_y: number;
+            width: number;
+            height: number;
+            page: number;
+          };
+          if (payload.eventType === "INSERT") {
+            setDocumentHighlights((prev) => [
+              ...prev,
+              payload.new as Highlight,
+            ]);
+          } else if (payload.eventType === "UPDATE") {
+            setDocumentHighlights((prev) =>
+              prev.map((hl) =>
+                hl.id === (payload.new as Highlight).id
+                  ? (payload.new as Highlight)
+                  : hl
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            setDocumentHighlights((prev) =>
+              prev.filter((hl) => hl.id !== (payload.old as Highlight).id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Initial fetch of paragraphs and highlights
     const fetchParagraphs = async () => {
       const { data: paragraphs, error } = await client
         .from("documents_lines")
@@ -260,9 +316,37 @@ const Elements = ({
     };
     fetchParagraphs();
 
+    // Initial fetch of highlights
+    const fetchHighlights = async () => {
+      const { data: highlights, error } = await client
+        .from("highlights")
+        .select("*")
+        .eq("document_id", documentId);
+      if (error) {
+        console.error("Error fetching highlights:", error);
+        return;
+      }
+      if (highlights) {
+        setDocumentHighlights(
+          highlights as {
+            id: string;
+            document_id: string;
+            user_id: string;
+            position_x: number;
+            position_y: number;
+            width: number;
+            height: number;
+            page: number;
+          }[]
+        );
+      }
+    };
+    fetchHighlights();
+
     return () => {
       channel.unsubscribe();
       paragraphsChannel.unsubscribe();
+      highlightsChannel.unsubscribe();
     };
   }, [documentId, createClerkSupabaseClient]);
 
@@ -404,6 +488,23 @@ const Elements = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (isDocumentPdfLoaded && isPdfReady && documentHighlights.length > 0) {
+      // Give the DOM a tick to render highlights
+      setTimeout(() => {
+        const firstHighlight = document.querySelector(
+          `[data-highlight-id="${documentHighlights[0].id}"]`
+        );
+        if (firstHighlight) {
+          firstHighlight.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 100); // 100ms delay to ensure highlights are rendered
+    }
+  }, [documentHighlights, isDocumentPdfLoaded, isPdfReady]);
+
   // Sort fields by page, vertical position, and horizontal position
   const sortedFields = [...userFields].sort((a, b) => {
     // First sort by page
@@ -535,6 +636,17 @@ const Elements = ({
 
       {isDocumentPdfLoaded && isPdfReady && (
         <>
+          {/* Render highlights below */}
+          {documentHighlights.map((highlight) => (
+            <ViewerHighlightItem
+              key={highlight.id}
+              highlight={highlight}
+              minHeight={MIN_HEIGHT_PX}
+              minWidth={MIN_WIDTH_PX}
+              defaultHeight={DEFAULT_HEIGHT_PX}
+              defaultWidth={DEFAULT_WIDTH_PX}
+            />
+          ))}
           {sortedFields.map((field, index) => (
             <FieldItem
               key={index}

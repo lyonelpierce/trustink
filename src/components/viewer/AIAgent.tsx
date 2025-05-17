@@ -71,11 +71,15 @@ const AIAgent = ({
     setLoading(true);
     setError(null);
     try {
+      console.log("Transcribing audio...");
       // Convert blob to base64
       const arrayBuffer = await audioBlob.arrayBuffer();
       const base64Audio = btoa(
         String.fromCharCode(...new Uint8Array(arrayBuffer))
       );
+
+      console.log("Sending to API...");
+
       // Send to API
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_SUBDOMAIN_URL}/api/stt`,
@@ -207,7 +211,7 @@ const AIAgent = ({
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, aiResponse]);
+  }, [messages, aiResponse, loading]);
 
   const handleMicClick = () => {
     setInput("");
@@ -315,6 +319,25 @@ const AIAgent = ({
       }
       return;
     }
+
+    // Detect highlight requests
+    const highlightRegex = /highlight (.+)/i;
+    if (highlightRegex.test(message)) {
+      const match = message.match(highlightRegex);
+      const sectionQuery = match?.[1];
+      if (sectionQuery) {
+        await highlightSection(sectionQuery);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `I've highlighted the \"${sectionQuery}\" section.`,
+          },
+        ]);
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
     setAiResponse("");
@@ -355,6 +378,28 @@ const AIAgent = ({
       setInput("");
     }
   };
+
+  async function highlightSection(sectionQuery: string) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/highlight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId, query: sectionQuery }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to highlight section");
+      }
+      // Optionally: fetch highlights again or update UI
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to highlight section"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     // Create Supabase client
