@@ -57,7 +57,7 @@ export async function POST(
                 <p>Hello,</p>
                 <p>${message}</p>
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="https://app.trustink.ai/sign/${id}" 
+                  <a href="http://app.trustink.ai/sign/${id}" 
                      style="background-color: #0066cc; 
                             color: white; 
                             padding: 12px 24px; 

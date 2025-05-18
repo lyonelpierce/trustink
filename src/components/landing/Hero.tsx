@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import LoomEmbed from "@/lib/heroVideo";
 import { ArrowRightIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 // function PhoneMock() {
 //   const { scrollYProgress } = useScroll();
 //   const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
@@ -26,6 +27,7 @@ import { useRouter } from "next/navigation";
 
 const Hero = () => {
   const router = useRouter();
+
   return (
     <WidthWrapper className="flex flex-col gap-6 items-center justify-center pt-20 h-screen z-20 relative">
       {/* Animated background elements */}
@@ -95,15 +97,26 @@ const Hero = () => {
         >
           Watch 60‑sec prototype
         </Button> */}
-        <Button
-          size="lg"
-          className="h-14 px-8 z-50 w-48 text-lg bg-black text-white hover:text-black border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
-          onClick={() =>
-            router.push(process.env.NEXT_PUBLIC_SUBDOMAIN_URL! + "/waitlist")
-          }
-        >
-          Join Waitlist <ArrowRightIcon />
-        </Button>
+        <SignedOut>
+          <Button
+            size="lg"
+            className="h-14 px-8 z-50 w-48 text-lg bg-black text-white hover:text-black border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
+            onClick={() =>
+              router.push(process.env.NEXT_PUBLIC_SUBDOMAIN_URL! + "/waitlist")
+            }
+          >
+            Join Waitlist <ArrowRightIcon />
+          </Button>
+        </SignedOut>
+        <SignedIn>
+          <Button
+            size="lg"
+            className="h-14 px-8 z-50 w-48 text-lg bg-black text-white hover:text-black border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
+            onClick={() => router.push(process.env.NEXT_PUBLIC_SUBDOMAIN_URL!)}
+          >
+            Get Started <ArrowRightIcon />
+          </Button>
+        </SignedIn>
       </motion.div>
 
       {/* <motion.div
