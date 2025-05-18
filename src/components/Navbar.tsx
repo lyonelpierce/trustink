@@ -1,10 +1,13 @@
+"use client";
+
 import Logo from "./Logo";
 import WidthWrapper from "./WidthWrapper";
 import UserDropdown from "./UserDropdown";
+import { SignInButton } from "@clerk/nextjs";
 import { links } from "@/constants/MenuItems";
 import UnderlineText from "./ui/underlineText";
 import { Button } from "@/components/ui/button";
-import { SignedOut, SignInButton, SignedIn } from "@clerk/nextjs";
+import { Authenticated, Unauthenticated } from "convex/react";
 
 const Navbar = () => {
   return (
@@ -12,23 +15,23 @@ const Navbar = () => {
       <WidthWrapper className="flex items-center justify-between h-full">
         <div className="flex gap-8 items-center">
           <Logo isMainLogo={false} href="/" />
-          <SignedIn>
+          <Authenticated>
             {links.map((link) => (
               <UnderlineText key={link.id} text={link.label} link={link.href} />
             ))}
-          </SignedIn>
+          </Authenticated>
         </div>
         <div className="flex items-center gap-4">
-          <SignedOut>
+          <Unauthenticated>
             <SignInButton>
               <Button size="sm" className="h-10">
                 Get Started
               </Button>
             </SignInButton>
-          </SignedOut>
-          <SignedIn>
+          </Unauthenticated>
+          <Authenticated>
             <UserDropdown />
-          </SignedIn>
+          </Authenticated>
         </div>
       </WidthWrapper>
     </div>

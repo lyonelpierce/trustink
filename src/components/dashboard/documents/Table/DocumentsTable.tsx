@@ -39,7 +39,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "../../../../../database.types";
+import { Doc } from "../../../../../convex/_generated/dataModel";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -47,12 +47,8 @@ interface DataTableProps<TData, TValue> {
 }
 
 export function DocumentsTable<
-  TData extends Database["public"]["Tables"]["documents"]["Row"] & {
-    recipients: {
-      id: string;
-      signer_id: string;
-      user_id: string;
-    }[];
+  TData extends Doc<"documents"> & {
+    recipients: Doc<"recipients">[];
   },
   TValue,
 >({ columns, data }: DataTableProps<TData, TValue>) {
@@ -150,14 +146,13 @@ export function DocumentsTable<
           } else if (payload.eventType === "DELETE") {
             setDocuments((prev) =>
               prev.filter(
-                (doc: Database["public"]["Tables"]["documents"]["Row"]) =>
-                  doc.id !== payload.old.id
+                (doc: Doc<"documents">) => doc._id !== payload.old._id
               )
             );
           } else if (payload.eventType === "UPDATE") {
             setDocuments((prev) =>
               prev.map((doc) =>
-                doc.id === payload.new.id ? (payload.new as TData) : doc
+                doc._id === payload.new.id ? (payload.new as TData) : doc
               )
             );
           }
