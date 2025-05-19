@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { action, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 
 export const getDocumentsWithRecipients = query({
@@ -32,6 +32,14 @@ export const getDocumentsWithRecipients = query({
   },
 });
 
+// Generate a unique upload URL for a file (Large Size)
+export const generateUploadUrl = mutation({
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// Store a document (Up to 20MB controlled)
 export const storeDocument = action({
   args: {
     file: v.any(), // still required
@@ -53,5 +61,46 @@ export const storeDocument = action({
     const storageId: Id<"_storage"> = await ctx.storage.store(blob);
 
     return storageId;
+  },
+});
+
+export const createDocument = mutation({
+  args: {
+    name: v.string(),
+    size: v.number(),
+    storage_id: v.string(),
+    status: v.string(),
+    visibility: v.boolean(),
+    created_at: v.number(),
+    updated_at: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (identity === null) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_user_id", (q) => q.eq("user_id", identity.subject))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const documentId = await ctx.db.insert("documents", {
+      name: args.name,
+      size: args.size,
+      user_id: user._id,
+      storage_id: args.storage_id,
+      status: args.status,
+      visibility: args.visibility,
+      created_at: args.created_at,
+      updated_at: args.updated_at,
+    });
+
+    return documentId;
   },
 });

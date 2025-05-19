@@ -22,9 +22,9 @@ export const Signatures = {
 
 export const Document = {
   name: v.string(),
-  size: v.string(),
+  size: v.number(),
   user_id: v.id("users"),
-  path: v.string(),
+  storage_id: v.string(),
   status: v.string(),
   visibility: v.boolean(),
   created_at: v.number(),

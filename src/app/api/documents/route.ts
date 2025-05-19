@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 import { auth } from "@clerk/nextjs/server";
-import { after, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
+import { getAuth } from "@clerk/nextjs/server";
+
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const truncateStringByBytes = (str: string, bytes: number) => {
@@ -12,7 +14,14 @@ export const truncateStringByBytes = (str: string, bytes: number) => {
   return new TextDecoder("utf-8").decode(enc.encode(str).slice(0, bytes));
 };
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const { getToken } = getAuth(request);
+  const token = await getToken({ template: "convex" });
+
+  if (token) {
+    convex.setAuth(token);
+  }
+
   try {
     // Clerk auth
     const { userId } = await auth();
@@ -38,74 +47,29 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create a unique filename
-    const timestamp = new Date().getTime();
-    const fileExtension = file.name.split(".").pop();
-    const fileName = `${file.name.replace(
-      /\s+/g,
-      ""
-    )}_${timestamp}.${fileExtension}`;
-
     const documentName = file.name.replace(/\.[^/.]+$/, "");
 
-    // Upload the file
-    const storageId = await convex.action(api.documents.storeDocument, {
-      file: await file.arrayBuffer(),
+    const uploadUrl = await convex.mutation(api.documents.generateUploadUrl);
+
+    const fileUrl = await fetch(uploadUrl, {
+      method: "POST",
+      body: file,
+      headers: {
+        "Content-Type": file.type,
+      },
     });
 
-    console.log("storageId", storageId);
+    const { storageId, url } = await fileUrl.json();
 
-    return;
-
-    const { data: storageData, error: storageError } = await uploadDocumentFile(
-      fileName,
-      fileBuffer,
-      file.type
-    );
-
-    if (storageError) {
-      console.error(
-        "[API/documents] Error uploading to storage:",
-        storageError
-      );
-
-      return NextResponse.json(
-        {
-          error: "Failed to upload document",
-        },
-        { status: 500 }
-      );
-    }
-
-    if (file.type !== "application/pdf") {
-      return NextResponse.json(
-        {
-          error: "File must be a PDF",
-        },
-        { status: 400 }
-      );
-    }
-
-    const { data: document, error } = await supabase
-      .from("documents")
-      .insert({
-        name: documentName,
-        path: storageData.path,
-        size: file.size,
-        user_id: userId,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("[API/documents] Error creating document:", error);
-      return NextResponse.json(
-        {
-          error: "Failed to create document",
-        },
-        { status: 500 }
-      );
-    }
+    const document = await convex.mutation(api.documents.createDocument, {
+      name: documentName,
+      size: file.size,
+      storage_id: storageId,
+      status: "pending",
+      visibility: true,
+      created_at: Date.now(),
+      updated_at: Date.now(),
+    });
 
     after(() => {
       fetch(`${process.env.BACKEND_API}`, {
@@ -114,15 +78,15 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          pdf_url: signedUrl.signedUrl,
+          pdf_url: url,
           user_id: userId,
-          document_id: document.id,
+          document_id: document,
         }),
       });
     });
 
     return NextResponse.json({
-      id: document.id,
+      id: document,
       message: "Document uploaded successfully",
     });
   } catch (error) {
@@ -155,8 +119,6 @@ export async function GET(request: Request) {
     const includeAnalysis = url.searchParams.get("includeAnalysis") === "true";
     const includeContracts =
       url.searchParams.get("includeContracts") === "true";
-
-    const supabase = await createServerSupabaseClient();
 
     if (id) {
       // Get a specific document
@@ -234,8 +196,6 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
-
     // First get the document to get its storage path
     const { data: document, error: fetchError } = await supabase
       .from("documents")
