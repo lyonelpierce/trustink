@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { query } from "./_generated/server";
+import { action, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 export const getDocumentsWithRecipients = query({
   args: { userId: v.string() },
@@ -28,5 +29,29 @@ export const getDocumentsWithRecipients = query({
     );
 
     return documentsWithRecipients;
+  },
+});
+
+export const storeDocument = action({
+  args: {
+    file: v.any(), // still required
+  },
+  handler: async (ctx, args) => {
+    const { file } = args;
+
+    if (!file) {
+      throw new Error("No file provided");
+    }
+
+    if (!(file instanceof ArrayBuffer)) {
+      throw new Error("File must be provided as ArrayBuffer");
+    }
+
+    // Convert ArrayBuffer to Blob before storing
+    const blob = new Blob([file], { type: "application/pdf" }); // Optional: Set MIME type
+
+    const storageId: Id<"_storage"> = await ctx.storage.store(blob);
+
+    return storageId;
   },
 });

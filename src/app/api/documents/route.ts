@@ -1,16 +1,11 @@
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-import {
-  getDocumentById,
-  getUserDocuments,
-  uploadDocumentFile,
-  getDocumentAnalysis,
-  getUserDocumentsWithMeta,
-} from "@/lib/supabase";
-import { after, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { after, NextResponse } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../convex/_generated/api";
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const truncateStringByBytes = (str: string, bytes: number) => {
   const enc = new TextEncoder();
@@ -43,13 +38,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get file buffer and convert to base64
-    const fileBuffer = await file.arrayBuffer();
-    const base64Data = Buffer.from(fileBuffer).toString("base64");
-
-    // Upload file to Supabase storage
-    const supabase = createServerSupabaseClient();
-
     // Create a unique filename
     const timestamp = new Date().getTime();
     const fileExtension = file.name.split(".").pop();
@@ -59,7 +47,16 @@ export async function POST(request: Request) {
     )}_${timestamp}.${fileExtension}`;
 
     const documentName = file.name.replace(/\.[^/.]+$/, "");
+
     // Upload the file
+    const storageId = await convex.action(api.documents.storeDocument, {
+      file: await file.arrayBuffer(),
+    });
+
+    console.log("storageId", storageId);
+
+    return;
+
     const { data: storageData, error: storageError } = await uploadDocumentFile(
       fileName,
       fileBuffer,
@@ -108,36 +105,6 @@ export async function POST(request: Request) {
         },
         { status: 500 }
       );
-    }
-
-    const { error: documentDataError } = await supabase
-      .from("documents_data")
-      .insert({
-        document_id: document.id,
-        data: base64Data,
-        user_id: userId,
-      });
-
-    if (documentDataError) {
-      console.error(
-        "[API/documents] Error saving document data:",
-        documentDataError
-      );
-      return NextResponse.json(
-        {
-          error: "Failed to save document data",
-        },
-        { status: 500 }
-      );
-    }
-
-    const { data: signedUrl, error: signedUrlError } = await supabase.storage
-      .from("documents")
-      .createSignedUrl(document.path, 3600);
-
-    if (signedUrlError) {
-      console.error(signedUrlError);
-      throw new Error(signedUrlError.message);
     }
 
     after(() => {

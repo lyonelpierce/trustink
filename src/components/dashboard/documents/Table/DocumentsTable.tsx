@@ -38,7 +38,6 @@ import { useSession } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@supabase/supabase-js";
 import { Doc } from "../../../../../convex/_generated/dataModel";
 
 interface DataTableProps<TData, TValue> {
@@ -60,7 +59,6 @@ export function DocumentsTable<
       desc: true,
     },
   ]);
-  const [documents, setDocuments] = useState<TData[]>(data);
   const [filteredDocs, setFilteredDocs] = useState<TData[]>(data);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [filter, setFilter] = useState<
@@ -68,38 +66,38 @@ export function DocumentsTable<
   >("all");
 
   useEffect(() => {
-    let result = [...documents];
+    let result = [...data];
 
     switch (filter) {
       case "inbox":
-        result = documents.filter((doc) =>
+        result = data.filter((doc) =>
           doc.recipients.some(
             (recipient) => recipient.signer_id === session?.user.id
           )
         );
         break;
       case "pending":
-        result = documents.filter(
+        result = data.filter(
           (doc) => doc.user_id === session?.user.id && doc.status === "pending"
         );
         break;
       case "drafts":
-        result = documents.filter(
+        result = data.filter(
           (doc) => doc.user_id === session?.user.id && doc.status === "draft"
         );
         break;
       case "completed":
-        result = documents.filter(
+        result = data.filter(
           (doc) =>
             doc.user_id === session?.user.id && doc.status === "completed"
         );
         break;
       default:
-        result = documents;
+        result = data;
     }
 
     setFilteredDocs(result);
-  }, [filter, documents, session?.user.id]);
+  }, [filter, data, session?.user.id]);
 
   const table = useReactTable({
     data: filteredDocs,
@@ -115,55 +113,6 @@ export function DocumentsTable<
       sorting,
     },
   });
-
-  const createClerkSupabaseClient = () => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        async accessToken() {
-          return session?.getToken() ?? null;
-        },
-      }
-    );
-  };
-
-  const supabase = createClerkSupabaseClient();
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("documents-table")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "documents",
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setDocuments((prev) => [...prev, payload.new as TData]);
-          } else if (payload.eventType === "DELETE") {
-            setDocuments((prev) =>
-              prev.filter(
-                (doc: Doc<"documents">) => doc._id !== payload.old._id
-              )
-            );
-          } else if (payload.eventType === "UPDATE") {
-            setDocuments((prev) =>
-              prev.map((doc) =>
-                doc._id === payload.new.id ? (payload.new as TData) : doc
-              )
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
 
   return (
     <div>

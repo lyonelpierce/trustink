@@ -26,7 +26,6 @@ export const Document = {
   user_id: v.id("users"),
   path: v.string(),
   status: v.string(),
-  data: v.string(),
   visibility: v.boolean(),
   created_at: v.number(),
   updated_at: v.number(),
