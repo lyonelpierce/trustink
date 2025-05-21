@@ -24,9 +24,7 @@ import { Button } from "../ui/button";
 import { FormField } from "../ui/form";
 import { useForm } from "react-hook-form";
 import { Textarea } from "../ui/textarea";
-import { useSession } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState, useCallback } from "react";
 import { Doc } from "../../../convex/_generated/dataModel";
@@ -47,7 +45,6 @@ const SendModal = ({
   userInfo: Doc<"users">;
 }) => {
   const router = useRouter();
-  const { session } = useSession();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,20 +60,6 @@ const SendModal = ({
       message: `${userInfo.first_name} ${userInfo.last_name} invited you to sign ${documentName}`,
     },
   });
-
-  const createClerkSupabaseClient = () => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        async accessToken() {
-          return session?.getToken() ?? null;
-        },
-      }
-    );
-  };
-
-  const supabase = createClerkSupabaseClient();
 
   const documentStatus = useCallback(async () => {
     const { data, error } = await supabase
@@ -127,7 +110,7 @@ const SendModal = ({
     }
 
     setValidationErrors(errors);
-  }, [supabase, documentId]);
+  }, [documentId]);
 
   useEffect(() => {
     if (isOpen) {

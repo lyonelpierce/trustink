@@ -265,6 +265,7 @@ const Elements = ({
   // Handler for paragraph removal
   const removeLine = useMutation(api.lines.removeLine);
   const moveLine = useMutation(api.lines.moveLine);
+  const updateLine = useMutation(api.lines.updateLine);
 
   const handleLineRemove = useCallback(
     async (index: number) => {
@@ -419,7 +420,7 @@ const Elements = ({
               field={field}
               disabled={
                 !selectedRecipient ||
-                field.recipient_id !== selectedRecipient.id
+                field.recipient_id !== selectedRecipient._id
               }
               minHeight={MIN_HEIGHT_PX}
               minWidth={MIN_WIDTH_PX}
@@ -445,6 +446,7 @@ const Elements = ({
               onMove={(node) => onLineMove(node, index)}
               onRemove={() => handleLineRemove(index)}
               passive={!!selectedRecipient}
+              onUpdateLine={updateLine}
             />
           ))}
         </>

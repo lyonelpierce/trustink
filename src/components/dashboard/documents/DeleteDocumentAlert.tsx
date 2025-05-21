@@ -4,36 +4,33 @@ import { toast } from "sonner";
 import { useState } from "react";
 import {
   Credenza,
-  CredenzaContent,
-  CredenzaHeader,
   CredenzaTitle,
   CredenzaFooter,
-  CredenzaDescription,
+  CredenzaHeader,
   CredenzaTrigger,
+  CredenzaContent,
+  CredenzaDescription,
 } from "@/components/ui/credenza";
 import { TrashIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Database } from "../../../../database.types";
+import { Doc } from "../../../../convex/_generated/dataModel";
+import { useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 
-const DeleteDocumentAlert = ({
-  document,
-}: {
-  document: Database["public"]["Tables"]["documents"]["Row"];
-}) => {
+const DeleteDocumentAlert = ({ document }: { document: Doc<"documents"> }) => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleDelete = async () => {
-    const response = await fetch(`/api/documents?id=${document.id}`, {
-      method: "DELETE",
-    });
+  const deleteDocument = useMutation(api.documents.deleteDocument);
 
-    if (response.ok) {
+  const handleDelete = async () => {
+    try {
+      await deleteDocument({ documentId: document._id });
       toast.success("Document deleted successfully");
       setIsOpen(false);
       router.refresh();
-    } else {
+    } catch {
       toast.error("Failed to delete document");
     }
   };

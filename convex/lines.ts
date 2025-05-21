@@ -128,3 +128,31 @@ export const moveLine = mutation({
     return { success: true };
   },
 });
+
+export const updateLine = mutation({
+  args: {
+    line_id: v.id("lines"),
+    text: v.optional(v.string()),
+    height: v.optional(v.float64()),
+    width: v.optional(v.float64()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_user_id", (q) => q.eq("user_id", identity.subject))
+      .first();
+    if (!user) throw new Error("User not found");
+    const line = await ctx.db.get(args.line_id);
+    if (!line) throw new Error("Line not found");
+    if (line.user_id !== user._id) throw new Error("Unauthorized");
+    await ctx.db.patch(args.line_id, {
+      ...(args.text !== undefined && { text: args.text }),
+      ...(args.height !== undefined && { height: args.height }),
+      ...(args.width !== undefined && { width: args.width }),
+      updated_at: Date.now(),
+    });
+    return { success: true };
+  },
+});

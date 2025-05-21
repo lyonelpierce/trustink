@@ -123,3 +123,102 @@ export const getDocument = query({
     return document;
   },
 });
+
+export const updateDocumentName = mutation({
+  args: {
+    documentId: v.id("documents"),
+    name: v.string(),
+  },
+  handler: async (ctx, { documentId, name }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new Error("Not authenticated");
+    }
+    const document = await ctx.db.get(documentId);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+    // Optionally, check if the user is the owner
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_user_id", (q) => q.eq("user_id", identity.subject))
+      .first();
+    if (!user || document.user_id !== user._id) {
+      throw new Error("Unauthorized");
+    }
+    await ctx.db.patch(documentId, {
+      name,
+      updated_at: Date.now(),
+    });
+    return { success: true };
+  },
+});
+
+export const deleteDocument = mutation({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, { documentId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new Error("Not authenticated");
+    }
+    const document = await ctx.db.get(documentId);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+    // Optionally, check if the user is the owner
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_user_id", (q) => q.eq("user_id", identity.subject))
+      .first();
+    if (!user || document.user_id !== user._id) {
+      throw new Error("Unauthorized");
+    }
+    // Delete related fields
+    const fields = await ctx.db
+      .query("fields")
+      .withIndex("by_document_id", (q) => q.eq("document_id", documentId))
+      .collect();
+    for (const field of fields) {
+      await ctx.db.delete(field._id);
+    }
+    // Delete related lines
+    const lines = await ctx.db
+      .query("lines")
+      .withIndex("by_document_id", (q) => q.eq("document_id", documentId))
+      .collect();
+    for (const line of lines) {
+      await ctx.db.delete(line._id);
+    }
+    // Delete related recipients
+    const recipients = await ctx.db
+      .query("recipients")
+      .withIndex("by_document_id", (q) => q.eq("document_id", documentId))
+      .collect();
+    for (const recipient of recipients) {
+      await ctx.db.delete(recipient._id);
+    }
+    // Delete related highlights
+    // const highlights = await ctx.db
+    //   .query("highlights")
+    //   .filter((q) => q.eq("document_id", documentId))
+    //   .collect();
+    // for (const highlight of highlights) {
+    //   await ctx.db.delete(highlight._id);
+    // }
+    // // Delete related messages
+    // const messages = await ctx.db
+    //   .query("messages")
+    //   .filter((q) => q.eq("document_id", documentId))
+    //   .collect();
+    // for (const message of messages) {
+    //   await ctx.db.delete(message._id);
+    // }
+    // Delete the document itself
+    await ctx.storage.delete(document.storage_id as Id<"_storage">);
+
+    await ctx.db.delete(documentId);
+    return { success: true };
+  },
+});

@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { Database } from "../../database.types";
+import { Doc } from "../../convex/_generated/dataModel";
 
-type Recipient = Database["public"]["Tables"]["recipients"]["Row"];
+type Recipient = Doc<"recipients">;
 
 interface SelectedRecipientState {
   selectedRecipient: Recipient | null;

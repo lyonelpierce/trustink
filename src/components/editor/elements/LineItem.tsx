@@ -3,14 +3,12 @@
 import { Rnd } from "react-rnd";
 import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
-import { useSession } from "@clerk/nextjs";
 import { PencilIcon, Trash } from "lucide-react";
 import { useDebouncedCallback } from "use-debounce";
-import { createClient } from "@supabase/supabase-js";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
+import { Doc, Id } from "../../../../convex/_generated/dataModel";
 import { AutosizeTextarea } from "@/components/ui/resizableTextarea";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Doc } from "../../../../convex/_generated/dataModel";
 
 export type ParagraphItemProps = {
   paragraph: Doc<"lines">;
@@ -28,6 +26,12 @@ export type ParagraphItemProps = {
   onFieldActivate?: () => void;
   isSelected?: boolean;
   onSelect?: () => void;
+  onUpdateLine?: (args: {
+    line_id: Id<"lines">;
+    text?: string;
+    height?: number;
+    width?: number;
+  }) => Promise<unknown>;
 };
 
 export const LineItem = ({
@@ -43,8 +47,8 @@ export const LineItem = ({
   onFieldActivate,
   isSelected,
   onSelect,
+  onUpdateLine,
 }: ParagraphItemProps) => {
-  const { session } = useSession();
   const [coords, setCoords] = useState({
     pageX: 0,
     pageY: 0,
@@ -166,25 +170,9 @@ export const LineItem = ({
     onSelect?.();
   };
 
-  const createClerkSupabaseClient = () => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        async accessToken() {
-          return session?.getToken() ?? null;
-        },
-      }
-    );
-  };
-  const supabase = createClerkSupabaseClient();
-
   const debouncedSave = useDebouncedCallback(async (newText: string) => {
-    if (newText !== paragraph.text) {
-      await supabase
-        .from("documents_lines")
-        .update({ text: newText })
-        .eq("id", paragraph._id);
+    if (onUpdateLine && newText !== paragraph.text) {
+      await onUpdateLine({ line_id: paragraph._id, text: newText });
     }
   }, 500);
 
@@ -259,11 +247,11 @@ export const LineItem = ({
                   const newText = e.target.value;
                   setEditText(newText);
                   debouncedSave.flush(); // flush pending debounce
-                  if (newText !== paragraph.text) {
-                    await supabase
-                      .from("documents_lines")
-                      .update({ text: newText })
-                      .eq("id", paragraph._id);
+                  if (onUpdateLine && newText !== paragraph.text) {
+                    await onUpdateLine({
+                      line_id: paragraph._id,
+                      text: newText,
+                    });
                   }
                   // --- Height update logic ---
                   let newPxHeight = 0;
@@ -287,20 +275,24 @@ export const LineItem = ({
                         if (
                           Math.abs(newHeightPercent - paragraph.height) > 0.1
                         ) {
-                          await supabase
-                            .from("documents_lines")
-                            .update({ height: newHeightPercent })
-                            .eq("id", paragraph._id);
+                          if (onUpdateLine) {
+                            await onUpdateLine({
+                              line_id: paragraph._id,
+                              height: newHeightPercent,
+                            });
+                          }
                         }
                       }
                       if (pageWidthPx > 0) {
                         const newWidthPercent =
                           (newPxWidth / pageWidthPx) * 100;
                         if (Math.abs(newWidthPercent - paragraph.width) > 0.1) {
-                          await supabase
-                            .from("documents_lines")
-                            .update({ width: newWidthPercent })
-                            .eq("id", paragraph._id);
+                          if (onUpdateLine) {
+                            await onUpdateLine({
+                              line_id: paragraph._id,
+                              width: newWidthPercent,
+                            });
+                          }
                         }
                       }
                     }
