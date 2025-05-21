@@ -7,13 +7,13 @@ import { useSession } from "@clerk/nextjs";
 import { PencilIcon, Trash } from "lucide-react";
 import { useDebouncedCallback } from "use-debounce";
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "../../../../database.types";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { AutosizeTextarea } from "@/components/ui/resizableTextarea";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 export type ParagraphItemProps = {
-  paragraph: Database["public"]["Tables"]["documents_lines"]["Row"];
+  paragraph: Doc<"lines">;
   passive?: boolean;
   minHeight?: number;
   minWidth?: number;
@@ -30,7 +30,7 @@ export type ParagraphItemProps = {
   onSelect?: () => void;
 };
 
-export const ParagraphItem = ({
+export const LineItem = ({
   paragraph,
   passive,
   minHeight,
@@ -184,7 +184,7 @@ export const ParagraphItem = ({
       await supabase
         .from("documents_lines")
         .update({ text: newText })
-        .eq("id", paragraph.id);
+        .eq("id", paragraph._id);
     }
   }, 500);
 
@@ -224,7 +224,7 @@ export const ParagraphItem = ({
       >
         <div
           ref={$el}
-          data-field-id={paragraph.id}
+          data-field-id={paragraph._id}
           style={{
             overflow: "visible",
             width:
@@ -263,7 +263,7 @@ export const ParagraphItem = ({
                     await supabase
                       .from("documents_lines")
                       .update({ text: newText })
-                      .eq("id", paragraph.id);
+                      .eq("id", paragraph._id);
                   }
                   // --- Height update logic ---
                   let newPxHeight = 0;
@@ -290,7 +290,7 @@ export const ParagraphItem = ({
                           await supabase
                             .from("documents_lines")
                             .update({ height: newHeightPercent })
-                            .eq("id", paragraph.id);
+                            .eq("id", paragraph._id);
                         }
                       }
                       if (pageWidthPx > 0) {
@@ -300,7 +300,7 @@ export const ParagraphItem = ({
                           await supabase
                             .from("documents_lines")
                             .update({ width: newWidthPercent })
-                            .eq("id", paragraph.id);
+                            .eq("id", paragraph._id);
                         }
                       }
                     }

@@ -23,6 +23,7 @@ export const Signatures = {
 export const Document = {
   name: v.string(),
   size: v.number(),
+  url: v.string(),
   user_id: v.id("users"),
   storage_id: v.string(),
   status: v.string(),
@@ -44,7 +45,7 @@ export const Lines = {
   height: v.float64(),
   font: v.string(),
   size: v.number(),
-  color: v.string(),
+  color: v.number(),
   text: v.string(),
   style: v.optional(v.string()),
 };
@@ -53,7 +54,6 @@ export const Fields = {
   document_id: v.id("documents"),
   user_id: v.id("users"),
   recipient_id: v.optional(v.id("recipients")),
-  secondary_id: v.optional(v.string()),
   page: v.number(),
   position_x: v.float64(),
   position_y: v.float64(),
@@ -101,8 +101,10 @@ export default defineSchema({
   users: defineTable(User).index("by_user_id", ["user_id"]),
   signatures: defineTable(Signatures),
   documents: defineTable(Document).index("by_user_id", ["user_id"]),
-  lines: defineTable(Lines),
-  fields: defineTable(Fields),
+  lines: defineTable(Lines).index("by_document_id", ["document_id"]),
+  fields: defineTable(Fields)
+    .index("by_document_id", ["document_id"])
+    .index("by_recipient_id", ["recipient_id"]),
   highlights: defineTable(Highlights),
   recipients: defineTable(Recipients).index("by_document_id", ["document_id"]),
   messages: defineTable(Messages),

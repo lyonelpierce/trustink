@@ -29,8 +29,6 @@ export async function POST(request: NextRequest) {
       .select("*")
       .eq("clerk_id", userId);
 
-    console.log(user);
-
     if (userError || !user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
 

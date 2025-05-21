@@ -38,19 +38,23 @@ import { useSession } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { api } from "../../../../../convex/_generated/api";
+import { Preloaded, usePreloadedQuery } from "convex/react";
 import { Doc } from "../../../../../convex/_generated/dataModel";
-
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-}
 
 export function DocumentsTable<
   TData extends Doc<"documents"> & {
     recipients: Doc<"recipients">[];
   },
   TValue,
->({ columns, data }: DataTableProps<TData, TValue>) {
+>(props: {
+  columns: ColumnDef<TData, TValue>[];
+  data: Preloaded<typeof api.documents.getDocumentsWithRecipients>;
+}) {
+  const { columns, data } = props;
+
+  const preloadedData = usePreloadedQuery(data);
+
   const { session } = useSession();
 
   const [sorting, setSorting] = useState<SortingState>([
@@ -59,45 +63,47 @@ export function DocumentsTable<
       desc: true,
     },
   ]);
-  const [filteredDocs, setFilteredDocs] = useState<TData[]>(data);
+  const [filteredDocs, setFilteredDocs] = useState<TData[]>(
+    preloadedData as TData[]
+  );
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [filter, setFilter] = useState<
     "all" | "inbox" | "pending" | "drafts" | "completed"
   >("all");
 
   useEffect(() => {
-    let result = [...data];
+    let result = [...preloadedData];
 
     switch (filter) {
       case "inbox":
-        result = data.filter((doc) =>
+        result = preloadedData.filter((doc) =>
           doc.recipients.some(
             (recipient) => recipient.signer_id === session?.user.id
           )
         );
         break;
       case "pending":
-        result = data.filter(
+        result = preloadedData.filter(
           (doc) => doc.user_id === session?.user.id && doc.status === "pending"
         );
         break;
       case "drafts":
-        result = data.filter(
+        result = preloadedData.filter(
           (doc) => doc.user_id === session?.user.id && doc.status === "draft"
         );
         break;
       case "completed":
-        result = data.filter(
+        result = preloadedData.filter(
           (doc) =>
             doc.user_id === session?.user.id && doc.status === "completed"
         );
         break;
       default:
-        result = data;
+        result = preloadedData;
     }
 
-    setFilteredDocs(result);
-  }, [filter, data, session?.user.id]);
+    setFilteredDocs(result as TData[]);
+  }, [filter, preloadedData, session?.user.id]);
 
   const table = useReactTable({
     data: filteredDocs,

@@ -29,6 +29,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState, useCallback } from "react";
+import { Doc } from "../../../convex/_generated/dataModel";
 import { SendIcon, Loader2Icon, TriangleAlert } from "lucide-react";
 
 const formSchema = z.object({
@@ -43,10 +44,7 @@ const SendModal = ({
 }: {
   documentName: string;
   documentId: string;
-  userInfo: {
-    first_name: string;
-    last_name: string;
-  };
+  userInfo: Doc<"users">;
 }) => {
   const router = useRouter();
   const { session } = useSession();

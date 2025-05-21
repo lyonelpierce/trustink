@@ -9,8 +9,9 @@ export const getDocumentsWithRecipients = query({
       .query("users")
       .withIndex("by_user_id", (q) => q.eq("user_id", userId))
       .first();
+
     if (!user) {
-      return [];
+      throw new Error("User not found");
     }
 
     const documents = await ctx.db
@@ -90,9 +91,12 @@ export const createDocument = mutation({
       throw new Error("User not found");
     }
 
+    const url = await ctx.storage.getUrl(args.storage_id as Id<"_storage">);
+
     const documentId = await ctx.db.insert("documents", {
       name: args.name,
       size: args.size,
+      url: url!,
       user_id: user._id,
       storage_id: args.storage_id,
       status: args.status,
@@ -102,5 +106,20 @@ export const createDocument = mutation({
     });
 
     return documentId;
+  },
+});
+
+export const getDocument = query({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, { documentId }) => {
+    const document = await ctx.db.get(documentId);
+
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    return document;
   },
 });

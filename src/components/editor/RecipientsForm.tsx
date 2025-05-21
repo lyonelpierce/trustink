@@ -14,13 +14,13 @@ import { cn } from "@/lib/utils";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
-import { Database } from "../../../database.types";
-import { useAuth, useSession } from "@clerk/nextjs";
-import { createClient } from "@supabase/supabase-js";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { useEffect, useState } from "react";
+import { api } from "../../../convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Avatar, AvatarFallback } from "../ui/avatar";
 import { UserPlus2Icon, Trash2Icon } from "lucide-react";
-import { useEffect, useCallback, useState } from "react";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 
 const formSchema = z.object({
@@ -39,13 +39,19 @@ const RECIPIENT_COLORS = [
   "#64DD17", // Lime
 ] as const;
 
-const RecipientsForm = ({ documentId }: { documentId: string }) => {
-  const { userId } = useAuth();
-  const { session } = useSession();
-
-  const [recipients, setRecipients] = useState<
-    Database["public"]["Tables"]["recipients"]["Row"][]
-  >([]);
+const RecipientsForm = ({
+  documentId,
+  recipients,
+}: {
+  documentId: string;
+  recipients: Doc<"recipients">[];
+}) => {
+  // Convex hooks
+  const addRecipient = useMutation(api.recipients.addRecipient);
+  const deleteRecipient = useMutation(api.recipients.deleteRecipient);
+  const allRecipients = useQuery(api.recipients.getRecipients, {
+    document_id: documentId as Id<"documents">,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -57,114 +63,30 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
   const { selectedRecipient, setSelectedRecipient } =
     useSelectedRecipientStore();
 
-  const createClerkSupabaseClient = useCallback(() => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        async accessToken() {
-          return session?.getToken() ?? null;
-        },
-      }
-    );
-  }, [session]);
-
+  // Local state for recipients (for optimistic UI)
+  const [localRecipients, setLocalRecipients] =
+    useState<Doc<"recipients">[]>(recipients);
   useEffect(() => {
-    const supabase = createClerkSupabaseClient();
-
-    const channel = supabase
-      .channel("recipients")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "recipients",
-          filter: `document_id=eq.${documentId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setRecipients((prev) => [
-              ...prev,
-              payload.new as Database["public"]["Tables"]["recipients"]["Row"],
-            ]);
-          } else if (payload.eventType === "DELETE") {
-            setRecipients((prev) =>
-              prev.filter((recipient) => recipient.id !== payload.old.id)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    // Initial fetch of recipients
-    const fetchDocumentRecipients = async () => {
-      const { data, error } = await supabase
-        .from("recipients")
-        .select("*")
-        .eq("document_id", documentId);
-
-      if (error) {
-        toast.error("Failed to fetch document recipients");
-        console.log(error);
-        return;
-      }
-
-      if (data) {
-        setRecipients(data);
-      }
-    };
-
-    fetchDocumentRecipients();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [documentId, createClerkSupabaseClient]);
+    if (allRecipients) setLocalRecipients(allRecipients);
+  }, [allRecipients]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const supabase = createClerkSupabaseClient();
-
       // Check if recipient limit is reached
-      if (recipients.length >= 5) {
+      if (localRecipients.length >= 5) {
         toast.error("Maximum of 5 signers allowed per document");
         return;
       }
 
       // Check if recipient already exists
-      const { data: existingRecipients, error: existingError } = await supabase
-        .from("recipients")
-        .select("*")
-        .eq("document_id", documentId)
-        .eq("email", values.email);
-
-      if (existingError) {
-        toast.error("Failed to check existing recipients");
-        console.log(existingError);
-        return;
-      }
-
-      if (existingRecipients && existingRecipients.length > 0) {
+      if (localRecipients.some((r) => r.email === values.email)) {
         toast.error("This recipient has already been added");
-        return;
-      }
-
-      // Check if user exists with this email
-      const { data: existingUsers, error: existingUserError } = await supabase
-        .from("users")
-        .select("clerk_id")
-        .eq("email", values.email);
-
-      if (existingUserError) {
-        toast.error("Failed to check existing users");
-        console.log(existingUserError);
         return;
       }
 
       // Get currently used colors
       const usedColors = new Set(
-        recipients.map((recipient) => recipient.color)
+        localRecipients.map((recipient) => recipient.color)
       );
 
       // Filter out used colors and pick a random one from remaining
@@ -174,19 +96,12 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
       const randomColor =
         availableColors[Math.floor(Math.random() * availableColors.length)];
 
-      const { error } = await supabase.from("recipients").insert({
+      await addRecipient({
+        document_id: documentId as Id<"documents">,
         email: values.email,
-        document_id: documentId,
-        user_id: userId ?? "",
-        signer_id: existingUsers?.[0]?.clerk_id ?? null,
+        name: values.email.split("@")[0], // fallback name
         color: randomColor,
       });
-
-      if (error) {
-        toast.error("Failed to add signer");
-        console.log(error);
-        return;
-      }
 
       toast.success("Signer added successfully");
       form.reset();
@@ -199,45 +114,25 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
   const handleDelete = async (recipientId: string) => {
     try {
       // Optimistically update UI
-      setRecipients((prev) => prev.filter((r) => r.id !== recipientId));
+      setLocalRecipients((prev) => prev.filter((r) => r._id !== recipientId));
 
       // If this recipient was selected, deselect it
-      if (selectedRecipient?.id === recipientId) {
+      if (selectedRecipient?._id === recipientId) {
         setSelectedRecipient(null);
       }
 
-      const supabase = createClerkSupabaseClient();
-      const { error } = await supabase
-        .from("recipients")
-        .delete()
-        .eq("id", recipientId);
-
-      if (error) {
-        // Revert optimistic update on error
-        const supabase = createClerkSupabaseClient();
-        const { data } = await supabase
-          .from("recipients")
-          .select("*")
-          .eq("document_id", documentId);
-
-        if (data) {
-          setRecipients(data);
-        }
-        toast.error("Failed to delete signer");
-        console.log(error);
-      } else {
-        toast.success("Signer deleted successfully");
-      }
+      await deleteRecipient({ recipient_id: recipientId as Id<"recipients"> });
+      toast.success("Signer deleted successfully");
     } catch (error) {
-      console.log(error);
       toast.error("Failed to delete signer");
+      console.log(error);
     }
   };
 
   const handleRecipientClick = (
-    recipient: Database["public"]["Tables"]["recipients"]["Row"]
+    recipient: Doc<"recipients"> // Use Convex Doc type
   ) => {
-    if (selectedRecipient?.id === recipient.id) {
+    if (selectedRecipient?._id === recipient._id) {
       setSelectedRecipient(null);
     } else {
       setSelectedRecipient(recipient);
@@ -270,7 +165,7 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
                   <Input
                     placeholder="Email"
                     {...field}
-                    disabled={recipients.length >= 5}
+                    disabled={localRecipients.length >= 5}
                   />
                 </FormControl>
                 <FormMessage />
@@ -281,10 +176,12 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
           <Button
             type="submit"
             className="w-full rounded-lg"
-            disabled={recipients.length >= 5}
+            disabled={localRecipients.length >= 5}
           >
             <UserPlus2Icon />
-            {recipients.length >= 5 ? "Maximum Signers Reached" : "Add Signer"}
+            {localRecipients.length >= 5
+              ? "Maximum Signers Reached"
+              : "Add Signer"}
           </Button>
         </form>
       </Form>
@@ -295,21 +192,21 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
           </p>
           <p className="text-xs text-gray-500">Select a signer to add fields</p>
         </div>
-        {recipients.length > 0 ? (
+        {localRecipients.length > 0 ? (
           <>
-            {recipients.map((recipient) => (
+            {localRecipients.map((recipient) => (
               <div
                 className={cn(
                   "flex items-center justify-between gap-2 p-4 border rounded-lg shadow-sm bg-white cursor-pointer transition-all ease-in-out",
-                  selectedRecipient?.id === recipient.id && "ring-2"
+                  selectedRecipient?._id === recipient._id && "ring-2"
                 )}
                 style={{
                   boxShadow:
-                    selectedRecipient?.id === recipient.id
+                    selectedRecipient?._id === recipient._id
                       ? `0 0 0 2px ${recipient.color}`
                       : "none",
                 }}
-                key={recipient.id}
+                key={recipient._id}
                 onClick={() => handleRecipientClick(recipient)}
               >
                 <div className="flex items-center gap-2">
@@ -332,7 +229,7 @@ const RecipientsForm = ({ documentId }: { documentId: string }) => {
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDelete(recipient.id);
+                    handleDelete(recipient._id);
                   }}
                   className="group"
                 >

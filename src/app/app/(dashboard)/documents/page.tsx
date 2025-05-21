@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { fetchQuery } from "convex/nextjs";
+import { preloadQuery } from "convex/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { Badge } from "@/components/ui/badge";
 import DashboardTitle from "@/components/dashboard/title";
@@ -14,23 +14,23 @@ export const metadata: Metadata = {
   description: "Sign or request document signatures",
 };
 
-const getDocumentsWithData = async (userId: string) => {
+const getDocuments = async (userId: string) => {
   try {
-    const data = await fetchQuery(api.documents.getDocumentsWithRecipients, {
+    const data = await preloadQuery(api.documents.getDocumentsWithRecipients, {
       userId,
     });
 
     return data;
   } catch (error) {
     console.error(error);
-    return [];
+    throw new Error("Error fetching documents");
   }
 };
 
 const DocumentsPage = async () => {
   const { userId } = await auth();
 
-  const documents = await getDocumentsWithData(userId!);
+  const preloadedDocuments = await getDocuments(userId!);
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -61,7 +61,7 @@ const DocumentsPage = async () => {
           </div>
         </div>
       </div>
-      <DocumentsTable columns={columns} data={documents ?? []} />
+      <DocumentsTable columns={columns} data={preloadedDocuments} />
     </div>
   );
 };

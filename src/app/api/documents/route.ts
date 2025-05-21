@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 import { auth } from "@clerk/nextjs/server";
-import { after, NextRequest, NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
-import { getAuth } from "@clerk/nextjs/server";
+import { after, NextRequest, NextResponse } from "next/server";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const { storageId, url } = await fileUrl.json();
+    const { storageId } = await fileUrl.json();
 
     const document = await convex.mutation(api.documents.createDocument, {
       name: documentName,
@@ -72,17 +72,21 @@ export async function POST(request: NextRequest) {
     });
 
     after(() => {
-      fetch(`${process.env.BACKEND_API}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          pdf_url: url,
-          user_id: userId,
-          document_id: document,
-        }),
-      });
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("user_id", userId);
+        form.append("document_id", document);
+        fetch(`${process.env.BACKEND_API}`, {
+          method: "POST",
+          body: form,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.error("[API/documents] Error processing document:", error);
+      }
     });
 
     return NextResponse.json({

@@ -10,20 +10,18 @@ import {
   // CircleDotIcon,
   // SquareCheckIcon,
 } from "lucide-react";
-import React from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LineItem } from "./LineItem";
 import { FieldItem } from "./FieldItem";
-import { useSession } from "@clerk/nextjs";
+import { useMutation } from "convex/react";
 import { Card } from "@/components/ui/card";
-import { ParagraphItem } from "./ParagraphItems";
 import { CardContent } from "@/components/ui/card";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "../../../../database.types";
-import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
+import { api } from "../../../../convex/_generated/api";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useDocumentElement } from "@/hooks/useDocumentElement";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Doc, Id } from "../../../../convex/_generated/dataModel";
 import { getBoundingClientRect } from "@/hooks/get-bounding-client-rect";
 import { useSelectedRecipientStore } from "@/store/SelectedRecipientStore";
 
@@ -33,14 +31,12 @@ const MIN_WIDTH_PX = 36;
 const DEFAULT_HEIGHT_PX = MIN_HEIGHT_PX * 2.5;
 const DEFAULT_WIDTH_PX = MIN_WIDTH_PX * 2.5;
 
-type FieldType = Database["public"]["Enums"]["field_type"];
-
 export type FieldFormType = {
   nativeId?: number;
   formId: string;
   secondary_id: string;
   pageNumber: number;
-  type: FieldType;
+  type: string;
   pageX: number;
   pageY: number;
   pageWidth: number;
@@ -48,47 +44,38 @@ export type FieldFormType = {
   recipient_id: string;
 };
 
+const FRIENDLY_FIELD_TYPE: Record<Doc<"fields">["type"], string> = {
+  signature: "Signature",
+  initials: "Initials",
+  email: "Email",
+  name: "Name",
+  date: "Date",
+  text: "Text",
+};
+
 const Elements = ({
-  fields,
   documentId,
   isDocumentPdfLoaded,
+  currentLines,
+  currentFields,
+  recipients,
 }: {
-  fields: (Database["public"]["Tables"]["fields"]["Row"] & {
-    recipients: {
-      id: string;
-      email: string;
-      color: string;
-    };
-  })[];
   documentId: string;
   isDocumentPdfLoaded: boolean;
+  currentLines: Doc<"lines">[];
+  currentFields: Doc<"fields">[];
+  recipients: Doc<"recipients">[];
 }) => {
-  const { session } = useSession();
   const { getPage, isWithinPageBounds, getFieldPosition } =
     useDocumentElement();
 
-  const [currentFields, setCurrentFields] = useState<
-    (Database["public"]["Tables"]["fields"]["Row"] & {
-      recipients: {
-        id: string;
-        email: string;
-        color: string;
-      };
-    })[]
-  >(fields);
-
-  const [currentLines, setCurrentLines] = useState<
-    Database["public"]["Tables"]["documents_lines"]["Row"][]
-  >([]);
-
-  // State for document paragraphs - will be used for text analysis and field positioning
-  const [documentParagraphs, setDocumentParagraphs] = useState<
-    Database["public"]["Tables"]["documents_lines"]["Row"][]
-  >([]);
+  // const [currentLines, setCurrentLines] = useState<Doc<"lines">[]>(lines);
 
   const { selectedRecipient } = useSelectedRecipientStore();
 
-  const [selectedField, setSelectedField] = useState<FieldType | null>(null);
+  const [selectedField, setSelectedField] = useState<
+    Doc<"fields">["type"] | null
+  >(null);
 
   // Add state for selected paragraph
   const [selectedParagraph, setSelectedParagraph] = useState<string | null>(
@@ -115,157 +102,20 @@ const Elements = ({
   // Add a state to track if a paragraph is being deleted
   const [isDeletingParagraph, setIsDeletingParagraph] = useState(false);
 
-  const createClerkSupabaseClient = useCallback(() => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        async accessToken() {
-          return session?.getToken() ?? null;
-        },
-      }
-    );
-  }, [session]);
-
-  const client = createClerkSupabaseClient();
-
-  useEffect(() => {
-    const client = createClerkSupabaseClient();
-
-    // Subscribe to fields changes
-    const fieldsChannel = client
-      .channel("fields")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "fields",
-          filter: `document_id=eq.${documentId}`,
-        },
-        async (payload) => {
-          if (
-            payload.eventType === "INSERT" ||
-            payload.eventType === "UPDATE"
-          ) {
-            // Fetch the full field data including recipients
-            const { data: fieldWithRecipient } = (await client
-              .from("fields")
-              .select(
-                `
-                *,
-                recipients:fields_recipient_id_fkey (
-                  id,
-                  email,
-                  color
-                )
-              `
-              )
-              .eq("id", payload.new.id)
-              .limit(1)
-              .maybeSingle()) as unknown as {
-              data: Database["public"]["Tables"]["fields"]["Row"] & {
-                recipients: {
-                  id: string;
-                  email: string;
-                  color: string;
-                };
-              };
-            };
-
-            if (fieldWithRecipient) {
-              if (payload.eventType === "INSERT") {
-                setCurrentFields((prev) => [...prev, fieldWithRecipient]);
-              } else {
-                setCurrentFields((prev) =>
-                  prev.map((field) =>
-                    field.id === fieldWithRecipient.id
-                      ? fieldWithRecipient
-                      : field
-                  )
-                );
-              }
-            }
-          } else if (payload.eventType === "DELETE") {
-            setCurrentFields((prev) =>
-              prev.filter((field) => field.id !== payload.old.id)
-            );
+  // Enrich fields with recipient data
+  const fieldsWithRecipients = currentFields.map((field) => {
+    const recipient = recipients.find((r) => r._id === field.recipient_id);
+    return {
+      ...field,
+      recipients: recipient
+        ? {
+            id: recipient._id,
+            email: recipient.email,
+            color: recipient.color || "",
           }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to document_text_paragraphs changes
-    const paragraphsChannel = client
-      .channel("documents_lines")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "documents_lines",
-          filter: `document_id=eq.${documentId}`,
-        },
-        async (payload) => {
-          if (payload.eventType === "INSERT") {
-            const newParagraph =
-              payload.new as Database["public"]["Tables"]["documents_lines"]["Row"];
-            setDocumentParagraphs((prev) => [...prev, newParagraph]);
-            setCurrentLines((prev) => [...prev, newParagraph]);
-          } else if (payload.eventType === "UPDATE") {
-            const updatedParagraph =
-              payload.new as Database["public"]["Tables"]["documents_lines"]["Row"];
-            setDocumentParagraphs((prev) =>
-              prev.map((paragraph) =>
-                paragraph.id === updatedParagraph.id
-                  ? updatedParagraph
-                  : paragraph
-              )
-            );
-            setCurrentLines((prev) =>
-              prev.map((line) =>
-                line.id === updatedParagraph.id ? updatedParagraph : line
-              )
-            );
-          } else if (payload.eventType === "DELETE") {
-            const oldParagraph =
-              payload.old as Database["public"]["Tables"]["documents_lines"]["Row"];
-            setDocumentParagraphs((prev) =>
-              prev.filter((paragraph) => paragraph.id !== oldParagraph.id)
-            );
-            setCurrentLines((prev) =>
-              prev.filter((line) => line.id !== oldParagraph.id)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    // Initial fetch of document_text_paragraphs
-    const fetchParagraphs = async () => {
-      const { data: paragraphs, error } = await client
-        .from("documents_lines")
-        .select("*")
-        .eq("document_id", documentId);
-
-      if (error) {
-        console.error("Error fetching paragraphs:", error);
-        return;
-      }
-
-      if (paragraphs) {
-        setDocumentParagraphs(paragraphs);
-        setCurrentLines(paragraphs); // Keep currentLines in sync initially
-      }
+        : { id: "", email: "", color: "" },
     };
-
-    fetchParagraphs();
-
-    return () => {
-      fieldsChannel.unsubscribe();
-      paragraphsChannel.unsubscribe();
-    };
-  }, [documentId, createClerkSupabaseClient]);
+  });
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -286,12 +136,15 @@ const Elements = ({
     [isWithinPageBounds]
   );
 
+  // Convex mutations
+  const addField = useMutation(api.fields.addField);
+  const updateField = useMutation(api.fields.updateField);
+  const removeField = useMutation(api.fields.removeField);
+
   const onMouseClick = useCallback(
     async (event: MouseEvent) => {
       if (!selectedField) return;
-
       const $page = getPage(event, PDF_VIEWER_PAGE_SELECTOR);
-
       if (
         !$page ||
         !isWithinPageBounds(
@@ -304,190 +157,133 @@ const Elements = ({
         setSelectedField(null);
         return;
       }
-
       const { top, left, height, width } = getBoundingClientRect($page);
-
       const pageNumber = parseInt(
         $page.getAttribute("data-page-number") ?? "1",
         10
       );
-
-      // Calculate x and y as a percentage of the page width and height
       let pageX = ((event.pageX - left) / width) * 100;
       let pageY = ((event.pageY - top) / height) * 100;
-
-      // Get the bounds as a percentage of the page width and height
       const fieldPageWidth = (fieldBounds.current.width / width) * 100;
       const fieldPageHeight = (fieldBounds.current.height / height) * 100;
-
-      // And center it based on the bounds
       pageX -= fieldPageWidth / 2;
       pageY -= fieldPageHeight / 2;
-
       try {
-        const { data, error } = await client
-          .from("fields")
-          .insert({
-            type: selectedField,
-            user_id: session?.user.id,
-            document_id: documentId,
-            page: pageNumber,
-            position_x: pageX,
-            position_y: pageY,
-            height: fieldPageHeight,
-            width: fieldPageWidth,
-            recipient_id: selectedRecipient?.id,
-          })
-          .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) throw new Error("No data returned");
-
+        await addField({
+          document_id: documentId as Id<"documents">,
+          page: pageNumber,
+          position_x: pageX,
+          position_y: pageY,
+          width: fieldPageWidth,
+          height: fieldPageHeight,
+          type: selectedField,
+          recipient_id: selectedRecipient?._id,
+          secondary_id: undefined,
+        });
         setIsFieldWithinBounds(false);
         setSelectedField(null);
       } catch (error) {
         toast.error("Error saving field");
         console.error("Error saving field:", error);
-        // You might want to show an error toast here
       }
     },
     [
       isWithinPageBounds,
       selectedField,
       getPage,
-      client,
       documentId,
-      session?.user.id,
-      selectedRecipient?.id,
+      selectedRecipient?._id,
+      addField,
     ]
   );
 
   const onFieldResize = useCallback(
     async (node: HTMLElement, index: number) => {
       const field = currentFields[index];
-
       const $page = window.document.querySelector<HTMLElement>(
         `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
       );
-
-      if (!$page) {
-        return;
-      }
-
+      if (!$page) return;
       const {
         x: pageX,
         y: pageY,
         width: pageWidth,
         height: pageHeight,
       } = getFieldPosition($page, node);
-
       try {
-        // Update the database
-        const { error } = await client
-          .from("fields")
-          .update({
-            position_x: pageX,
-            position_y: pageY,
-            width: pageWidth,
-            height: pageHeight,
-          })
-          .eq("secondary_id", field.secondary_id);
-
-        if (error) throw error;
-
-        // Update local state
+        await updateField({
+          field_id: field._id,
+          position_x: pageX,
+          position_y: pageY,
+          width: pageWidth,
+          height: pageHeight,
+        });
       } catch (error) {
         console.error("Error updating field position and size:", error);
       }
     },
-    [getFieldPosition, client, currentFields]
+    [getFieldPosition, currentFields, updateField]
   );
 
   const onFieldMove = useCallback(
     async (node: HTMLElement, index: number) => {
       const field = currentFields[index];
-
       const $page = window.document.querySelector<HTMLElement>(
         `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${field.page}"]`
       );
-
-      if (!$page) {
-        return;
-      }
-
+      if (!$page) return;
       const { x: pageX, y: pageY } = getFieldPosition($page, node);
-
       try {
-        // Update the database
-        const { error } = await client
-          .from("fields")
-          .update({
-            position_x: pageX,
-            position_y: pageY,
-          })
-          .eq("secondary_id", field.secondary_id);
-
-        if (error) throw error;
-
-        // Update local state
+        await updateField({
+          field_id: field._id,
+          position_x: pageX,
+          position_y: pageY,
+        });
       } catch (error) {
         console.error("Error updating field position:", error);
       }
     },
-    [getFieldPosition, client, currentFields]
+    [getFieldPosition, currentFields, updateField]
   );
 
-  // Add new handler for field removal
   const handleFieldRemove = useCallback(
     async (index: number) => {
-      if (isDeletingField) return; // Prevent multiple simultaneous deletions
-
+      if (isDeletingField) return;
       const field = currentFields[index];
-
       try {
         setIsDeletingField(true);
-
-        const { error } = await client
-          .from("fields")
-          .delete()
-          .eq("secondary_id", field.secondary_id);
-
-        if (error) throw error;
+        await removeField({ field_id: field._id });
       } catch (error) {
         console.error("Error removing field:", error);
       } finally {
         setIsDeletingField(false);
       }
     },
-    [client, currentFields, isDeletingField]
+    [currentFields, isDeletingField, removeField]
   );
 
   // Handler for paragraph removal
-  const handleParagraphRemove = useCallback(
+  const removeLine = useMutation(api.lines.removeLine);
+  const moveLine = useMutation(api.lines.moveLine);
+
+  const handleLineRemove = useCallback(
     async (index: number) => {
       if (isDeletingParagraph) return; // Prevent multiple simultaneous deletions
 
       const paragraph = currentLines[index];
+      console.log("Attempting to remove paragraph:", paragraph);
 
       try {
         setIsDeletingParagraph(true);
-        const { error } = await client
-          .from("documents_lines")
-          .delete()
-          .eq("id", paragraph.id);
-        if (error) throw error;
-        // Optimistically update UI
-        setDocumentParagraphs((prev) =>
-          prev.filter((p) => p.id !== paragraph.id)
-        );
-        setCurrentLines((prev) => prev.filter((l) => l.id !== paragraph.id));
+        await removeLine({ line_id: paragraph._id });
       } catch (error) {
         console.error("Error removing paragraph:", error);
+        toast.error("Error removing paragraph: " + (error as Error).message);
       } finally {
         setIsDeletingParagraph(false);
       }
     },
-    [client, currentLines, isDeletingParagraph]
+    [currentLines, isDeletingParagraph, removeLine]
   );
 
   useEffect(() => {
@@ -556,29 +352,27 @@ const Elements = ({
   const onLineMove = useCallback(
     async (node: HTMLElement, index: number) => {
       // Find the page element for this paragraph
-      const line = currentLines[index];
+      const line = currentLines?.[index];
 
       const $page = window.document.querySelector<HTMLElement>(
-        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${line.page_number}"]`
+        `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${line?.page_number}"]`
       );
 
-      if (!$page) return;
+      if (!$page || !line) return;
 
       const { x: pageX, y: pageY } = getFieldPosition($page, node);
 
       try {
-        await client
-          .from("documents_lines")
-          .update({
-            position_x: pageX,
-            position_y: pageY,
-          })
-          .eq("id", line.id);
+        await moveLine({
+          line_id: line._id,
+          position_x: pageX,
+          position_y: pageY,
+        });
       } catch (error) {
         console.error("Error updating paragraph position:", error);
       }
     },
-    [client, getFieldPosition, currentLines]
+    [getFieldPosition, currentLines, moveLine]
   );
 
   return (
@@ -612,16 +406,16 @@ const Elements = ({
           }}
         >
           <span className="text-[clamp(0.425rem,25cqw,0.825rem)]">
-            {FRIENDLY_FIELD_TYPE[selectedField as FieldType]}
+            {FRIENDLY_FIELD_TYPE[selectedField as Doc<"fields">["type"]]}
           </span>
         </div>
       )}
 
       {isDocumentPdfLoaded && isPdfReady && (
         <>
-          {currentFields.map((field, index) => (
+          {fieldsWithRecipients.map((field, index) => (
             <FieldItem
-              key={index}
+              key={field._id}
               field={field}
               disabled={
                 !selectedRecipient ||
@@ -638,18 +432,18 @@ const Elements = ({
               onRemove={() => handleFieldRemove(index)}
             />
           ))}
-          {documentParagraphs.map((paragraph, index) => (
-            <ParagraphItem
-              key={paragraph.id}
-              paragraph={paragraph}
+          {currentLines?.map((line, index) => (
+            <LineItem
+              key={line._id}
+              paragraph={line}
               minHeight={MIN_HEIGHT_PX}
               minWidth={MIN_WIDTH_PX}
               defaultHeight={DEFAULT_HEIGHT_PX}
               defaultWidth={DEFAULT_WIDTH_PX}
-              isSelected={selectedParagraph === paragraph.id}
-              onSelect={() => setSelectedParagraph(paragraph.id)}
+              isSelected={selectedParagraph === line._id}
+              onSelect={() => setSelectedParagraph(line._id)}
               onMove={(node) => onLineMove(node, index)}
-              onRemove={() => handleParagraphRemove(index)}
+              onRemove={() => handleLineRemove(index)}
               passive={!!selectedRecipient}
             />
           ))}
@@ -663,8 +457,12 @@ const Elements = ({
           <button
             type="button"
             className="group h-full w-full"
-            onClick={() => setSelectedField("signature" as FieldType)}
-            onMouseDown={() => setSelectedField("signature" as FieldType)}
+            onClick={() =>
+              setSelectedField("signature" as Doc<"fields">["type"])
+            }
+            onMouseDown={() =>
+              setSelectedField("signature" as Doc<"fields">["type"])
+            }
             data-selected={selectedField === "signature" ? true : undefined}
           >
             <Card
@@ -688,8 +486,12 @@ const Elements = ({
           <button
             type="button"
             className="group h-full w-full"
-            onClick={() => setSelectedField("initials" as FieldType)}
-            onMouseDown={() => setSelectedField("initials" as FieldType)}
+            onClick={() =>
+              setSelectedField("initials" as Doc<"fields">["type"])
+            }
+            onMouseDown={() =>
+              setSelectedField("initials" as Doc<"fields">["type"])
+            }
             data-selected={selectedField === "initials" ? true : undefined}
           >
             <Card
@@ -713,8 +515,10 @@ const Elements = ({
           <button
             type="button"
             className="group h-full w-full"
-            onClick={() => setSelectedField("email" as FieldType)}
-            onMouseDown={() => setSelectedField("email" as FieldType)}
+            onClick={() => setSelectedField("email" as Doc<"fields">["type"])}
+            onMouseDown={() =>
+              setSelectedField("email" as Doc<"fields">["type"])
+            }
             data-selected={selectedField === "email" ? true : undefined}
           >
             <Card
@@ -736,8 +540,10 @@ const Elements = ({
           <button
             type="button"
             className="group h-full w-full"
-            onClick={() => setSelectedField("name" as FieldType)}
-            onMouseDown={() => setSelectedField("name" as FieldType)}
+            onClick={() => setSelectedField("name" as Doc<"fields">["type"])}
+            onMouseDown={() =>
+              setSelectedField("name" as Doc<"fields">["type"])
+            }
             data-selected={selectedField === "name" ? true : undefined}
           >
             <Card
@@ -759,8 +565,10 @@ const Elements = ({
           <button
             type="button"
             className="group h-full w-full"
-            onClick={() => setSelectedField("date" as FieldType)}
-            onMouseDown={() => setSelectedField("date" as FieldType)}
+            onClick={() => setSelectedField("date" as Doc<"fields">["type"])}
+            onMouseDown={() =>
+              setSelectedField("date" as Doc<"fields">["type"])
+            }
             data-selected={selectedField === "date" ? true : undefined}
           >
             <Card
@@ -782,8 +590,10 @@ const Elements = ({
           <button
             type="button"
             className="group h-full w-full"
-            onClick={() => setSelectedField("text" as FieldType)}
-            onMouseDown={() => setSelectedField("text" as FieldType)}
+            onClick={() => setSelectedField("text" as Doc<"fields">["type"])}
+            onMouseDown={() =>
+              setSelectedField("text" as Doc<"fields">["type"])
+            }
             data-selected={selectedField === "text" ? true : undefined}
           >
             <Card
@@ -805,8 +615,8 @@ const Elements = ({
           {/* <button
             type="button"
             className="group h-full w-full"
-            onClick={() => setSelectedField("radio" as FieldType)}
-            onMouseDown={() => setSelectedField("radio" as FieldType)}
+            onClick={() => setSelectedField("radio" as Doc<"fields">["type"])}
+            onMouseDown={() => setSelectedField("radio" as Doc<"fields">["type"])}
             data-selected={selectedField === "radio" ? true : undefined}
           >
             <Card
@@ -828,8 +638,8 @@ const Elements = ({
           <button
             type="button"
             className="group h-full w-full"
-            onClick={() => setSelectedField("checkbox" as FieldType)}
-            onMouseDown={() => setSelectedField("checkbox" as FieldType)}
+            onClick={() => setSelectedField("checkbox" as Doc<"fields">["type"])}
+            onMouseDown={() => setSelectedField("checkbox" as Doc<"fields">["type"])}
             data-selected={selectedField === "checkbox" ? true : undefined}
           >
             <Card
