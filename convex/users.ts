@@ -53,9 +53,11 @@ export const updateUserProfile = mutation({
       .query("users")
       .withIndex("by_user_id", (q) => q.eq("user_id", clerkId))
       .first();
+
     if (!user) {
       throw new Error("User not found");
     }
+
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     if (first_name !== undefined) patch.first_name = first_name;
     if (last_name !== undefined) patch.last_name = last_name;

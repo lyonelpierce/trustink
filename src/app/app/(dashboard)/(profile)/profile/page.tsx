@@ -1,21 +1,30 @@
+import { convex } from "@/lib/convex";
 import { UserIcon } from "lucide-react";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import DashbaordTitle from "@/components/dashboard/title";
+import { api } from "../../../../../../convex/_generated/api";
 import UserForm from "@/components/dashboard/profile/UserForm";
 
 const UserPage = async () => {
   const { userId } = await auth();
 
-  const clerk = await clerkClient();
-  const user = await clerk.users.getUser(userId!);
+  // Fetch user from Convex by Clerk ID
+  const user = await convex.query(api.users.getUserByClerkId, {
+    clerkId: userId!,
+  });
 
-  // Extract only the needed user properties
+  if (!user) {
+    // Optionally handle user not found (could redirect or show error)
+    return <div>User not found</div>;
+  }
+
+  // Map Convex user fields to UserForm props
   const userData = {
-    id: user.id,
-    firstName: user.firstName ?? "",
-    lastName: user.lastName ?? "",
-    emailAddress: user.emailAddresses[0]?.emailAddress ?? "",
-    imageUrl: user.imageUrl,
+    id: user.user_id,
+    firstName: user.first_name ?? "",
+    lastName: user.last_name ?? "",
+    emailAddress: user.email ?? "",
+    imageUrl: user.image_url ?? "",
   };
 
   return (
