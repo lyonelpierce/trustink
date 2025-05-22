@@ -29,6 +29,8 @@ const EditorWrapper = ({
   const preloadedFields = usePreloadedQuery(fields);
   const preloadedRecipients = usePreloadedQuery(recipients);
 
+  console.log("PRELOADEDLINES", preloadedLines);
+
   return (
     <>
       <EditorNavbar
