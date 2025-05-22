@@ -54,3 +54,30 @@ export const deleteRecipient = mutation({
     return { success: true };
   },
 });
+
+export const getRecipientsWithFields = query({
+  args: {
+    document_id: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    // Get all recipients for the document
+    const recipients = await ctx.db
+      .query("recipients")
+      .withIndex("by_document_id", (q) => q.eq("document_id", args.document_id))
+      .collect();
+
+    // For each recipient, get their fields
+    const recipientsWithFields = await Promise.all(
+      recipients.map(async (recipient) => {
+        const fields = await ctx.db
+          .query("fields")
+          .withIndex("by_recipient_id", (q) =>
+            q.eq("recipient_id", recipient._id)
+          )
+          .collect();
+        return { ...recipient, fields };
+      })
+    );
+    return recipientsWithFields;
+  },
+});

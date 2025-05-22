@@ -1,13 +1,11 @@
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
+import { convex } from "@/lib/convex";
 import { auth } from "@clerk/nextjs/server";
 import { getAuth } from "@clerk/nextjs/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 import { after, NextRequest, NextResponse } from "next/server";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const truncateStringByBytes = (str: string, bytes: number) => {
   const enc = new TextEncoder();

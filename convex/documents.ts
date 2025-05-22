@@ -242,3 +242,20 @@ export const deleteDocument = mutation({
     return { success: true };
   },
 });
+
+export const updateDocumentStatus = mutation({
+  args: {
+    document_id: v.id("documents"),
+    status: v.string(),
+  },
+  handler: async (ctx, { document_id, status }) => {
+    const document = await ctx.db.get(document_id);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+    await ctx.db.patch(document_id, {
+      status,
+    });
+    return { success: true };
+  },
+});

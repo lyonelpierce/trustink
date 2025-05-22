@@ -26,9 +26,11 @@ import { useForm } from "react-hook-form";
 import { Textarea } from "../ui/textarea";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState, useCallback } from "react";
-import { Doc } from "../../../convex/_generated/dataModel";
+import { useEffect, useState } from "react";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { SendIcon, Loader2Icon, TriangleAlert } from "lucide-react";
+import { api } from "../../../convex/_generated/api";
+import { useQuery } from "convex/react";
 
 const formSchema = z.object({
   subject: z.string().min(1),
@@ -61,62 +63,40 @@ const SendModal = ({
     },
   });
 
-  const documentStatus = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("recipients")
-      .select(
-        `
-        id, 
-        signer_id, 
-        user_id,
-        fields!fields_recipient_id_fkey (
-          id,
-          type,
-          page,
-          position_x,
-          position_y,
-          width,
-          height
-        )
-      `
-      )
-      .eq("document_id", documentId);
+  // Fetch recipients with fields using Convex
+  const recipientsWithFields = useQuery(
+    api.recipients.getRecipientsWithFields,
+    documentId ? { document_id: documentId as Id<"documents"> } : "skip"
+  );
 
-    if (error) {
-      console.log("error");
-      console.error(error);
-      return;
-    }
+  useEffect(() => {
+    if (!isOpen) return;
+    if (recipientsWithFields === undefined) return; // still loading
 
-    const errors: {
-      noRecipients?: boolean;
-      noSignature?: string[];
-    } = {};
+    const errors: { noRecipients?: boolean; noSignature?: string[] } = {};
 
-    if (!data?.length) {
+    if (!recipientsWithFields.length) {
       errors.noRecipients = true;
       setValidationErrors(errors);
       return;
     }
 
     // Check for recipients with no signature field
-    const recipientsWithNoSignature = data.filter(
-      (recipient) =>
-        !recipient.fields?.some((field) => field.type === "signature")
+    const recipientsWithNoSignature = recipientsWithFields.filter(
+      (recipient: Doc<"recipients"> & { fields: Doc<"fields">[] }) =>
+        !recipient.fields?.some(
+          (field: Doc<"fields">) => field.type === "signature"
+        )
     );
 
     if (recipientsWithNoSignature.length > 0) {
-      errors.noSignature = recipientsWithNoSignature.map((r) => r.user_id);
+      errors.noSignature = recipientsWithNoSignature
+        .map((r) => (r.user_id ? String(r.user_id) : null))
+        .filter((id): id is string => Boolean(id));
     }
 
     setValidationErrors(errors);
-  }, [documentId]);
-
-  useEffect(() => {
-    if (isOpen) {
-      documentStatus();
-    }
-  }, [isOpen, documentStatus]); // Only run when modal is opened
+  }, [isOpen, recipientsWithFields]);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
