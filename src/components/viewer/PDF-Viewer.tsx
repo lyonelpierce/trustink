@@ -1,12 +1,9 @@
 "use client";
 
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { base64 } from "@scure/base";
 import { Loader2Icon } from "lucide-react";
 import { PDFDocumentProxy } from "pdfjs-dist";
-import { Database } from "../../../database.types";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { Document as PDFDocument, Page as PDFPage, pdfjs } from "react-pdf";
 
@@ -35,38 +32,22 @@ const PDFLoader = () => {
 
 export const PDFViewer = ({
   className,
-  document,
+  documentUrl,
   onDocumentLoad,
   onPageClick,
   ...props
 }: {
   className?: string;
-  document: Database["public"]["Tables"]["documents"]["Row"] & {
-    documents_data: {
-      data: string;
-    };
-  };
+  documentUrl: string;
   onDocumentLoad?: (_doc: LoadedPDFDocument) => void;
   onPageClick?: OnPDFViewerPageClick;
   [key: string]: unknown;
 }) => {
   const $el = useRef<HTMLDivElement>(null);
 
-  const [documentBytes, setDocumentBytes] = useState<Uint8Array | null>(null);
-  const [isDocumentBytesLoading, setIsDocumentBytesLoading] = useState(false);
-
   const [width, setWidth] = useState(0);
   const [numPages, setNumPages] = useState(0);
   const [pdfError, setPdfError] = useState(false);
-
-  // console.log("documentData", document.documents_data);
-
-  const memoizedData = useMemo(
-    () => ({ data: document.documents_data.data }),
-    [document.documents_data.data]
-  );
-
-  const isLoading = isDocumentBytesLoading || !documentBytes;
 
   const onDocumentLoaded = (doc: LoadedPDFDocument) => {
     setNumPages(doc.numPages);
@@ -129,66 +110,21 @@ export const PDFViewer = ({
     }
   }, []);
 
-  useEffect(() => {
-    const fetchDocumentBytes = async () => {
-      try {
-        setIsDocumentBytesLoading(true);
-
-        const binaryData = base64.decode(memoizedData.data);
-
-        setDocumentBytes(binaryData);
-        setIsDocumentBytesLoading(false);
-      } catch (err) {
-        console.error(err);
-
-        toast.error("An error occurred while loading the document.");
-        setIsDocumentBytesLoading(false);
-      }
-    };
-
-    void fetchDocumentBytes();
-  }, [memoizedData]);
-
   return (
     <div ref={$el} className={cn("overflow-hidden", className)} {...props}>
-      {isLoading ? (
-        <div
-          className={cn(
-            "flex h-[80vh] max-h-[60rem] w-full flex-col items-center justify-center overflow-hidden rounded"
-          )}
-        >
-          <PDFLoader />
-        </div>
-      ) : (
-        <PDFDocument
-          // @ts-expect-error - TODO: FIX THIS
-          file={documentBytes.buffer}
-          className={cn("w-full overflow-hidden rounded", {
-            "h-[80vh] max-h-[60rem]": numPages === 0,
-          })}
-          onLoadSuccess={(d) => onDocumentLoaded(d)}
-          onSourceError={() => {
-            setPdfError(true);
-          }}
-          externalLinkTarget="_blank"
-          loading={
-            <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
-              {pdfError ? (
-                <div className="text-muted-foreground text-center">
-                  <div>
-                    <p>Something went wrong while loading the document.</p>
-                  </div>
-                  <div className="mt-1 text-sm">
-                    <p>Please try again or contact our support.</p>
-                  </div>
-                </div>
-              ) : (
-                <PDFLoader />
-              )}
-            </div>
-          }
-          error={
-            <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
+      <PDFDocument
+        file={documentUrl}
+        className={cn("w-full overflow-hidden rounded", {
+          "h-[80vh] max-h-[60rem]": numPages === 0,
+        })}
+        onLoadSuccess={(d) => onDocumentLoaded(d)}
+        onSourceError={() => {
+          setPdfError(true);
+        }}
+        externalLinkTarget="_blank"
+        loading={
+          <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
+            {pdfError ? (
               <div className="text-muted-foreground text-center">
                 <div>
                   <p>Something went wrong while loading the document.</p>
@@ -197,33 +133,47 @@ export const PDFViewer = ({
                   <p>Please try again or contact our support.</p>
                 </div>
               </div>
-            </div>
-          }
-        >
-          {Array(numPages)
-            .fill(null)
-            .map((_, i) => (
-              <div key={i}>
-                <div className="border-border overflow-hidden rounded border will-change-transform">
-                  <PDFPage
-                    pageNumber={i + 1}
-                    width={width}
-                    renderAnnotationLayer={false}
-                    renderTextLayer={false}
-                    loading={() => ""}
-                    onClick={(e) => onDocumentPageClick(e, i + 1)}
-                    className="[&_canvas]:opacity-0"
-                  />
-                </div>
-                <p className="text-muted-foreground/80 my-2 text-center text-[11px]">
-                  <span>
-                    Page {i + 1} of {numPages}
-                  </span>
-                </p>
+            ) : (
+              <PDFLoader />
+            )}
+          </div>
+        }
+        error={
+          <div className="dark:bg-background flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50">
+            <div className="text-muted-foreground text-center">
+              <div>
+                <p>Something went wrong while loading the document.</p>
               </div>
-            ))}
-        </PDFDocument>
-      )}
+              <div className="mt-1 text-sm">
+                <p>Please try again or contact our support.</p>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        {Array(numPages)
+          .fill(null)
+          .map((_, i) => (
+            <div key={i}>
+              <div className="border-border overflow-hidden rounded border will-change-transform">
+                <PDFPage
+                  pageNumber={i + 1}
+                  width={width}
+                  renderAnnotationLayer={false}
+                  renderTextLayer={false}
+                  loading={() => ""}
+                  onClick={(e) => onDocumentPageClick(e, i + 1)}
+                  className="[&_canvas]:opacity-0"
+                />
+              </div>
+              <p className="text-muted-foreground/80 my-2 text-center text-[11px]">
+                <span>
+                  Page {i + 1} of {numPages}
+                </span>
+              </p>
+            </div>
+          ))}
+      </PDFDocument>
     </div>
   );
 };

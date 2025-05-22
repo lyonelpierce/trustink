@@ -1,52 +1,60 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseSsr";
-import OpenAI from "openai";
 import fs from "fs";
-import { auth } from "@clerk/nextjs/server";
+import OpenAI from "openai";
+import { convex } from "@/lib/convex";
+import { getAuth, auth } from "@clerk/nextjs/server";
+import { api } from "../../../../convex/_generated/api";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  const { getToken } = getAuth(req);
+  const token = await getToken({ template: "convex" });
+
+  if (token) {
+    convex.setAuth(token);
+  }
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const supabase = createServerSupabaseClient();
     const { documentId, query } = await req.json();
 
-    // 1. Get the document path from the documents table
-    const { data: docMeta, error: docMetaError } = await supabase
-      .from("documents")
-      .select("path")
-      .eq("id", documentId)
-      .single();
-    if (docMetaError || !docMeta) {
+    // 1. Get the document from Convex (for the url)
+    const document = await convex.query(api.documents.getDocument, {
+      documentId,
+    });
+    if (!document || !document.url) {
       throw new Error("Could not fetch document metadata.");
     }
-    const docPath = docMeta.path;
+    const docUrl = document.url;
 
-    // 2. Download the file from Supabase storage
-    const { data: fileData, error: fileError } = await supabase.storage
-      .from("documents")
-      .download(docPath);
-    if (fileError || !fileData) {
+    // 2. Download the file from storage using the url
+    const response = await fetch(docUrl);
+    if (!response.ok) {
       throw new Error("Could not download document file from storage.");
     }
-
-    // 3. Write the file to a temporary location (required for OpenAI SDK)
+    const fileBuffer = Buffer.from(await response.arrayBuffer());
     const tempFilePath = `/tmp/${documentId}.pdf`;
-    const fileBuffer = Buffer.from(await fileData.arrayBuffer());
     fs.writeFileSync(tempFilePath, fileBuffer);
 
-    // 4. Upload the file to OpenAI's files API
+    // 3. Upload the file to OpenAI's files API (if needed)
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // 6. Fetch all lines for the document from documents_lines
-    const { data: lines, error: linesError } = await supabase
-      .from("documents_lines")
-      .select("id, text, page_number, position_x, position_y, width, height")
-      .eq("document_id", documentId);
-    if (linesError || !lines) {
+    // 4. Fetch all lines for the document from Convex
+    type Line = {
+      _id: string;
+      text: string;
+      page_number: number;
+      position_x: number;
+      position_y: number;
+      width: number;
+      height: number;
+    };
+    const lines: Line[] = await convex.query(api.lines.getLines, {
+      document_id: documentId,
+    });
+    if (!lines) {
       return NextResponse.json(
         { error: "Could not fetch document lines." },
         { status: 500 }
@@ -55,12 +63,12 @@ export async function POST(req: NextRequest) {
 
     // Prepare lines for AI context
     const linesForAI = lines.map((line) => ({
-      id: line.id,
+      id: line._id,
       text: line.text,
       page_number: line.page_number,
     }));
 
-    // 7. Ask OpenAI which lines to highlight
+    // 5. Ask OpenAI which lines to highlight
     const aiPrompt = `A user wants to highlight the entire section titled \"${query}\" in this contract.\n\nHere is a list of lines from the document, each with an id, text, and page_number:\n\n${JSON.stringify(linesForAI, null, 2)}\n\nPlease return a JSON array of the IDs of the lines that should be highlighted for the section \"${query}\". Only include the lines that are part of the section, starting from the heading (such as \"Section 4\" or \"4.\") up to but not including the next section heading (e.g., \"Section 5\" or \"5.\"). Example response: [\"line_id_1\", \"line_id_2\", ...]`;
 
     const aiResponse = await openai.chat.completions.create({
@@ -103,31 +111,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 8. Insert highlights for each matching line using their positions
+    // 6. Insert highlights for each matching line using their positions
     const highlightIds: string[] = [];
     const highlightErrors: { lineId: string; error: unknown }[] = [];
     for (const lineId of lineIdsToHighlight) {
-      const line = lines.find((l) => l.id === lineId);
+      const line = lines.find((l) => l._id === lineId);
       if (!line) continue;
       const { position_x, position_y, width, height, page_number } = line;
-      const { data, error } = await supabase
-        .from("highlights")
-        .insert({
-          document_id: documentId,
-          user_id: userId,
-          position_x,
-          position_y,
-          width,
-          height,
-          page: page_number,
-        })
-        .select("id")
-        .single();
-      if (error) {
+      try {
+        const highlightId = await convex.mutation(
+          api.highlights.createHighlight,
+          {
+            document_id: documentId,
+            user_id: document.user_id,
+            position_x,
+            position_y,
+            width,
+            height,
+            page: page_number,
+          }
+        );
+        highlightIds.push(highlightId);
+      } catch (error) {
         console.error(error);
         highlightErrors.push({ lineId, error });
-      } else if (data && data.id) {
-        highlightIds.push(data.id);
       }
     }
 

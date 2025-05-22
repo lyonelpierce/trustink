@@ -38,24 +38,23 @@ import { useSession } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "../../../../../database.types";
-
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-}
+import { api } from "../../../../../convex/_generated/api";
+import { Preloaded, usePreloadedQuery } from "convex/react";
+import { Doc } from "../../../../../convex/_generated/dataModel";
 
 export function DocumentsTable<
-  TData extends Database["public"]["Tables"]["documents"]["Row"] & {
-    recipients: {
-      id: string;
-      signer_id: string;
-      user_id: string;
-    }[];
+  TData extends Doc<"documents"> & {
+    recipients: Doc<"recipients">[];
   },
   TValue,
->({ columns, data }: DataTableProps<TData, TValue>) {
+>(props: {
+  columns: ColumnDef<TData, TValue>[];
+  data: Preloaded<typeof api.documents.getDocumentsWithRecipients>;
+}) {
+  const { columns, data } = props;
+
+  const preloadedData = usePreloadedQuery(data);
+
   const { session } = useSession();
 
   const [sorting, setSorting] = useState<SortingState>([
@@ -64,46 +63,47 @@ export function DocumentsTable<
       desc: true,
     },
   ]);
-  const [documents, setDocuments] = useState<TData[]>(data);
-  const [filteredDocs, setFilteredDocs] = useState<TData[]>(data);
+  const [filteredDocs, setFilteredDocs] = useState<TData[]>(
+    preloadedData as TData[]
+  );
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [filter, setFilter] = useState<
     "all" | "inbox" | "pending" | "drafts" | "completed"
   >("all");
 
   useEffect(() => {
-    let result = [...documents];
+    let result = [...preloadedData];
 
     switch (filter) {
       case "inbox":
-        result = documents.filter((doc) =>
+        result = preloadedData.filter((doc) =>
           doc.recipients.some(
             (recipient) => recipient.signer_id === session?.user.id
           )
         );
         break;
       case "pending":
-        result = documents.filter(
+        result = preloadedData.filter(
           (doc) => doc.user_id === session?.user.id && doc.status === "pending"
         );
         break;
       case "drafts":
-        result = documents.filter(
+        result = preloadedData.filter(
           (doc) => doc.user_id === session?.user.id && doc.status === "draft"
         );
         break;
       case "completed":
-        result = documents.filter(
+        result = preloadedData.filter(
           (doc) =>
             doc.user_id === session?.user.id && doc.status === "completed"
         );
         break;
       default:
-        result = documents;
+        result = preloadedData;
     }
 
-    setFilteredDocs(result);
-  }, [filter, documents, session?.user.id]);
+    setFilteredDocs(result as TData[]);
+  }, [filter, preloadedData, session?.user.id]);
 
   const table = useReactTable({
     data: filteredDocs,
@@ -119,56 +119,6 @@ export function DocumentsTable<
       sorting,
     },
   });
-
-  const createClerkSupabaseClient = () => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        async accessToken() {
-          return session?.getToken() ?? null;
-        },
-      }
-    );
-  };
-
-  const supabase = createClerkSupabaseClient();
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("documents-table")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "documents",
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setDocuments((prev) => [...prev, payload.new as TData]);
-          } else if (payload.eventType === "DELETE") {
-            setDocuments((prev) =>
-              prev.filter(
-                (doc: Database["public"]["Tables"]["documents"]["Row"]) =>
-                  doc.id !== payload.old.id
-              )
-            );
-          } else if (payload.eventType === "UPDATE") {
-            setDocuments((prev) =>
-              prev.map((doc) =>
-                doc.id === payload.new.id ? (payload.new as TData) : doc
-              )
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
 
   return (
     <div>

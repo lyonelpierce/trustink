@@ -24,12 +24,13 @@ import { Button } from "../ui/button";
 import { FormField } from "../ui/form";
 import { useForm } from "react-hook-form";
 import { Textarea } from "../ui/textarea";
-import { useSession } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { SendIcon, Loader2Icon, TriangleAlert } from "lucide-react";
+import { api } from "../../../convex/_generated/api";
+import { useQuery } from "convex/react";
 
 const formSchema = z.object({
   subject: z.string().min(1),
@@ -43,13 +44,9 @@ const SendModal = ({
 }: {
   documentName: string;
   documentId: string;
-  userInfo: {
-    first_name: string;
-    last_name: string;
-  };
+  userInfo: Doc<"users">;
 }) => {
   const router = useRouter();
-  const { session } = useSession();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,76 +63,40 @@ const SendModal = ({
     },
   });
 
-  const createClerkSupabaseClient = () => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        async accessToken() {
-          return session?.getToken() ?? null;
-        },
-      }
-    );
-  };
+  // Fetch recipients with fields using Convex
+  const recipientsWithFields = useQuery(
+    api.recipients.getRecipientsWithFields,
+    documentId ? { document_id: documentId as Id<"documents"> } : "skip"
+  );
 
-  const supabase = createClerkSupabaseClient();
+  useEffect(() => {
+    if (!isOpen) return;
+    if (recipientsWithFields === undefined) return; // still loading
 
-  const documentStatus = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("recipients")
-      .select(
-        `
-        id, 
-        signer_id, 
-        user_id,
-        fields!fields_recipient_id_fkey (
-          id,
-          type,
-          page,
-          position_x,
-          position_y,
-          width,
-          height
-        )
-      `
-      )
-      .eq("document_id", documentId);
+    const errors: { noRecipients?: boolean; noSignature?: string[] } = {};
 
-    if (error) {
-      console.log("error");
-      console.error(error);
-      return;
-    }
-
-    const errors: {
-      noRecipients?: boolean;
-      noSignature?: string[];
-    } = {};
-
-    if (!data?.length) {
+    if (!recipientsWithFields.length) {
       errors.noRecipients = true;
       setValidationErrors(errors);
       return;
     }
 
     // Check for recipients with no signature field
-    const recipientsWithNoSignature = data.filter(
-      (recipient) =>
-        !recipient.fields?.some((field) => field.type === "signature")
+    const recipientsWithNoSignature = recipientsWithFields.filter(
+      (recipient: Doc<"recipients"> & { fields: Doc<"fields">[] }) =>
+        !recipient.fields?.some(
+          (field: Doc<"fields">) => field.type === "signature"
+        )
     );
 
     if (recipientsWithNoSignature.length > 0) {
-      errors.noSignature = recipientsWithNoSignature.map((r) => r.user_id);
+      errors.noSignature = recipientsWithNoSignature
+        .map((r) => (r.user_id ? String(r.user_id) : null))
+        .filter((id): id is string => Boolean(id));
     }
 
     setValidationErrors(errors);
-  }, [supabase, documentId]);
-
-  useEffect(() => {
-    if (isOpen) {
-      documentStatus();
-    }
-  }, [isOpen, documentStatus]); // Only run when modal is opened
+  }, [isOpen, recipientsWithFields]);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {

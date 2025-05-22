@@ -3,6 +3,7 @@ import SendModal from "./SendModal";
 import Logo from "@/components/Logo";
 import DocumentName from "./DocumentName";
 import { ChevronLeftIcon } from "lucide-react";
+import { Doc } from "../../../convex/_generated/dataModel";
 
 const EditorNavbar = ({
   documentName,
@@ -11,10 +12,7 @@ const EditorNavbar = ({
 }: {
   documentName: string;
   documentId: string;
-  userInfo: {
-    first_name: string;
-    last_name: string;
-  };
+  userInfo: Doc<"users">;
 }) => {
   return (
     <div className="h-14 flex items-center justify-between px-4 fixed top-0 z-[50] w-full backdrop-blur-3xl border-b bg-white/40">

@@ -6,18 +6,16 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { Skeleton } from "../ui/skeleton";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import { ScrollArea } from "../ui/scroll-area";
 import { useState, useRef, useEffect } from "react";
-import { useRecordVoice } from "@/hooks/useVoiceRecord";
-import { Skeleton } from "../ui/skeleton";
-import { Database } from "../../../database.types";
-import { useOptimistic, startTransition } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import useWebRTCAudioSession from "@/hooks/use-webrtc";
-type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
+import { useOptimistic, startTransition } from "react";
+import { useRecordVoice } from "@/hooks/useVoiceRecord";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const initialAssistantMessage = {
   role: "assistant" as const,
@@ -30,8 +28,8 @@ const AIAgent = ({
   setSelectedFieldId,
 }: {
   documentId: string;
-  chatMessages?: ChatMessage[];
-  setSelectedFieldId: (id: number | null) => void;
+  chatMessages?: Doc<"messages">[];
+  setSelectedFieldId: (id: Id<"fields"> | null) => void;
 }) => {
   const { handleStartStopClick } = useWebRTCAudioSession("alloy");
 
@@ -400,42 +398,6 @@ const AIAgent = ({
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    // Create Supabase client
-    const client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Subscribe to chat_messages changes for this document
-    const channel = client
-      .channel("chat-messages-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-          filter: `document_id=eq.${documentId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as ChatMessage;
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: newMsg.role as "user" | "assistant",
-              content: newMsg.content,
-            },
-          ]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      client.removeChannel(channel);
-    };
-  }, [documentId]);
 
   return (
     <div className="fixed pt-14 right-0 top-0 border-l h-screen bg-white min-w-lg flex flex-col justify-between max-w-[32rem]">

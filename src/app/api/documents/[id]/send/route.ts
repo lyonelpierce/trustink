@@ -1,7 +1,10 @@
 import { Resend } from "resend";
+import { convex } from "@/lib/convex";
 import { auth } from "@clerk/nextjs/server";
-import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { getAuth } from "@clerk/nextjs/server";
+import { api } from "../../../../../../convex/_generated/api";
 import { after, NextRequest, NextResponse } from "next/server";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -9,40 +12,33 @@ export async function POST(
   req: NextRequest,
   props: { params: { id: string } }
 ) {
+  const { getToken } = getAuth(req);
+  const token = await getToken({ template: "convex" });
+
+  if (token) {
+    convex.setAuth(token);
+  }
+
   const params = await props.params;
 
   const { id } = params;
   const { subject, message } = await req.json();
 
   const { userId } = await auth();
-  const supabase = createServerSupabaseClient();
 
   if (!userId) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   try {
-    const { error: updateError } = await supabase
-      .from("documents")
-      .update({ status: "pending" })
-      .eq("id", id);
+    await convex.mutation(api.documents.updateDocumentStatus, {
+      document_id: id as Id<"documents">,
+      status: "pending",
+    });
 
-    if (updateError) {
-      console.error(updateError);
-      return new NextResponse("Error updating document status", {
-        status: 500,
-      });
-    }
-
-    const { data: recipients, error: recipientsError } = await supabase
-      .from("recipients")
-      .select("email")
-      .eq("document_id", id);
-
-    if (recipientsError) {
-      console.error(recipientsError);
-      return new NextResponse("Error creating recipients", { status: 500 });
-    }
+    const recipients = await convex.query(api.recipients.getRecipients, {
+      document_id: id as Id<"documents">,
+    });
 
     after(async () => {
       try {

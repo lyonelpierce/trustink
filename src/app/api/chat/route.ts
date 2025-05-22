@@ -1,48 +1,59 @@
 import fs from "fs";
 import OpenAI from "openai";
+import { convex } from "@/lib/convex";
 import { auth } from "@clerk/nextjs/server";
+import { api } from "../../../../convex/_generated/api";
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { Id } from "../../../../convex/_generated/dataModel";
 
 // export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
     const { messages, documentId } = await req.json();
     const { userId } = await auth();
 
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Map Clerk userId to Convex user_id
+    const user = await convex.query(api.users.getUserByClerkId, {
+      clerkId: userId,
+    });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    const convexUserId = user._id;
+
     // Save the user's message first
     const latestMessage = messages[messages.length - 1];
-    await supabase.from("chat_messages").insert({
-      document_id: documentId,
-      user_id: userId,
+    await convex.mutation(api.messages.saveChatMessage, {
+      document_id: documentId as Id<"documents">,
+      user_id: convexUserId,
       role: latestMessage.role,
       content: latestMessage.content,
     });
 
-    // 1. Get the document path from the documents table
-    const { data: docMeta, error: docMetaError } = await supabase
-      .from("documents")
-      .select("path")
-      .eq("id", documentId)
-      .single();
-    if (docMetaError || !docMeta) {
+    // 1. Get the document from Convex
+    const document = await convex.query(api.documents.getDocument, {
+      documentId: documentId as Id<"documents">,
+    });
+    if (!document || !document.url) {
       throw new Error("Could not fetch document metadata.");
     }
-    const docPath = docMeta.path;
+    const fileUrl = document.url;
 
-    // 2. Download the file from Supabase storage
-    const { data: fileData, error: fileError } = await supabase.storage
-      .from("documents")
-      .download(docPath);
-    if (fileError || !fileData) {
+    // 2. Download the file from the document's URL
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
       throw new Error("Could not download document file from storage.");
     }
+    const arrayBuffer = await response.arrayBuffer();
 
     // 3. Write the file to a temporary location (required for OpenAI SDK)
     const tempFilePath = `/tmp/${documentId}.pdf`;
-    const fileBuffer = Buffer.from(await fileData.arrayBuffer());
+    const fileBuffer = Buffer.from(arrayBuffer);
     fs.writeFileSync(tempFilePath, fileBuffer);
 
     // 4. Upload the file to OpenAI's files API
@@ -101,9 +112,9 @@ export async function POST(req: NextRequest) {
         }
         controller.close();
         // Save the full summary as the assistant's message after streaming
-        await supabase.from("chat_messages").insert({
-          document_id: documentId,
-          user_id: userId,
+        await convex.mutation(api.messages.saveChatMessage, {
+          document_id: documentId as Id<"documents">,
+          user_id: convexUserId,
           role: "assistant",
           content: fullText,
         });

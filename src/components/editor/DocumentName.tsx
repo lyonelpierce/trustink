@@ -1,10 +1,11 @@
 "use client";
 
 import { Input } from "../ui/input";
-import { useSession } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { createClient } from "@supabase/supabase-js";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 
 const DocumentName = ({
   documentName,
@@ -13,23 +14,10 @@ const DocumentName = ({
   documentName: string;
   documentId: string;
 }) => {
-  const { session } = useSession();
   const [name, setName] = useState(documentName || "Untitled document");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const createClerkSupabaseClient = () => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        async accessToken() {
-          return session?.getToken() ?? null;
-        },
-      }
-    );
-  };
-
-  const supabase = createClerkSupabaseClient();
+  const updateDocumentName = useMutation(api.documents.updateDocumentName);
 
   // Add resize effect
   useEffect(() => {
@@ -54,14 +42,10 @@ const DocumentName = ({
   const debouncedUpdate = useDebouncedCallback(async (newName: string) => {
     const finalName = newName.trim() || "Untitled document";
     try {
-      const { error } = await supabase
-        .from("documents")
-        .update({ name: finalName })
-        .eq("id", documentId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      await updateDocumentName({
+        documentId: documentId as Id<"documents">,
+        name: finalName,
+      });
       setName(finalName);
 
       // Update metadata after successful save

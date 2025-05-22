@@ -4,14 +4,13 @@ import { Rnd } from "react-rnd";
 import { cn } from "@/lib/utils";
 import { Trash } from "lucide-react";
 import { createPortal } from "react-dom";
-import { Database } from "../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
-import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
+import { Doc } from "../../../../convex/_generated/dataModel";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type FieldItemProps = {
-  field: Database["public"]["Tables"]["fields"]["Row"] & {
+  field: Doc<"fields"> & {
     recipients: {
       id: string;
       email: string;
@@ -192,7 +191,7 @@ export const FieldItem = ({
           onFocus?.();
         }}
         ref={$el}
-        data-field-id={field.id}
+        data-field-id={field._id}
         style={{
           border: field.recipients.color
             ? `2px solid ${field.recipients.color}`
@@ -213,7 +212,7 @@ export const FieldItem = ({
             position: "relative",
           }}
         >
-          {FRIENDLY_FIELD_TYPE[field.type]}
+          {field.type}
           <p className="text-xs hidden">{field.recipients.email}</p>
         </CardContent>
       </Card>

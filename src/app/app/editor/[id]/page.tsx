@@ -1,41 +1,67 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { SupabaseClient } from "@supabase/supabase-js";
+import { preloadQuery } from "convex/nextjs";
+import { api } from "../../../../../convex/_generated/api";
 import EditorWrapper from "@/components/editor/EditorWrapper";
-import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { Id } from "../../../../../convex/_generated/dataModel";
 
-const getDocumentData = async (supabase: SupabaseClient, id: string) => {
-  const { data, error } = await supabase
-    .from("documents")
-    .select(
-      `
-      *,
-      documents_data (*)
-    `
-    )
-    .eq("id", id)
-    .single();
+const getDocument = async (id: string) => {
+  try {
+    const data = await preloadQuery(api.documents.getDocument, {
+      documentId: id as Id<"documents">,
+    });
 
-  if (error) {
+    return data;
+  } catch (error) {
     console.error(error);
-    throw new Error(error.message);
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
   }
-
-  return data;
 };
 
-const getUserInfo = async (supabase: SupabaseClient, userId: string) => {
+const getUserInfo = async (userId: string) => {
   try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("first_name, last_name")
-      .eq("clerk_id", userId)
-      .single();
+    const data = await preloadQuery(api.users.getUserByClerkId, {
+      clerkId: userId,
+    });
 
-    if (error) {
-      console.error(error);
-      throw new Error(error.message);
-    }
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
+};
+
+const getLines = async (id: string) => {
+  try {
+    const data = await preloadQuery(api.lines.getLines, {
+      document_id: id as Id<"documents">,
+    });
+
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
+};
+
+const getFields = async (id: string) => {
+  try {
+    const data = await preloadQuery(api.fields.getFields, {
+      document_id: id as Id<"documents">,
+    });
+
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
+};
+
+const getRecipients = async (id: string) => {
+  try {
+    const data = await preloadQuery(api.recipients.getRecipients, {
+      document_id: id as Id<"documents">,
+    });
 
     return data;
   } catch (error) {
@@ -49,36 +75,17 @@ export const generateMetadata = async (props: {
 }) => {
   const { id } = await props.params;
 
-  const supabase = createServerSupabaseClient();
-  const document = await getDocumentData(supabase, id);
+  const document = await getDocument(id);
+
+  const value =
+    typeof document._valueJSON === "string"
+      ? JSON.parse(document._valueJSON)
+      : document._valueJSON;
 
   return {
-    title: document.name,
-    description: document.name,
+    title: value.name,
+    description: value.name,
   };
-};
-
-const getDocumentFields = async (supabase: SupabaseClient, id: string) => {
-  const { data, error } = await supabase
-    .from("fields")
-    .select(
-      `
-      *,
-      recipients!fields_recipient_id_fkey (
-        id,
-        email,
-        color
-      )
-    `
-    )
-    .eq("document_id", id);
-
-  if (error) {
-    console.error(error);
-    throw new Error(error.message);
-  }
-
-  return data;
 };
 
 const SingleDocumentPage = async (props: {
@@ -91,19 +98,28 @@ const SingleDocumentPage = async (props: {
     redirect("/sign-in");
   }
 
-  const supabase = createServerSupabaseClient();
+  const [document, userInfo, lines, fields, recipients] = await Promise.all([
+    getDocument(id),
+    getUserInfo(userId),
+    getLines(id),
+    getFields(id),
+    getRecipients(id),
+  ]);
 
-  const document = await getDocumentData(supabase, id);
-  const fields = await getDocumentFields(supabase, id);
-  const userInfo = await getUserInfo(supabase, userId);
+  const value =
+    typeof document._valueJSON === "string"
+      ? JSON.parse(document._valueJSON)
+      : document._valueJSON;
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <EditorWrapper
-        key={document.id}
+        key={value._id}
         document={document}
-        fields={fields}
         userInfo={userInfo}
+        lines={lines}
+        fields={fields}
+        recipients={recipients}
       />
     </div>
   );

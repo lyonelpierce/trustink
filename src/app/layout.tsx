@@ -2,9 +2,8 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import ConvexProvider from "@/providers/ConvexProvider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { DemoModeProvider } from "@/contexts/DemoModeContext";
-import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: {
@@ -21,21 +20,21 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className="font-sans antialiased">
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <DemoModeProvider>
-              <ErrorBoundary>{children}</ErrorBoundary>
+      <ConvexProvider>
+        <html lang="en" suppressHydrationWarning>
+          <body className="font-sans antialiased">
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
               <Toaster position="bottom-right" richColors />
-            </DemoModeProvider>
-          </ThemeProvider>
-        </body>
-      </html>
+            </ThemeProvider>
+          </body>
+        </html>
+      </ConvexProvider>
     </ClerkProvider>
   );
 }

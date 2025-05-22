@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import LoomEmbed from "@/lib/heroVideo";
 import { ArrowRightIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { Authenticated, Unauthenticated } from "convex/react";
 // function PhoneMock() {
 //   const { scrollYProgress } = useScroll();
 //   const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
@@ -97,7 +97,7 @@ const Hero = () => {
         >
           Watch 60‑sec prototype
         </Button> */}
-        <SignedOut>
+        <Unauthenticated>
           <Button
             size="lg"
             className="h-14 px-8 z-50 w-48 text-lg bg-black text-white hover:text-black border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
@@ -107,8 +107,8 @@ const Hero = () => {
           >
             Join Waitlist <ArrowRightIcon />
           </Button>
-        </SignedOut>
-        <SignedIn>
+        </Unauthenticated>
+        <Authenticated>
           <Button
             size="lg"
             className="h-14 px-8 z-50 w-48 text-lg bg-black text-white hover:text-black border-2 border-white hover:bg-yellow-400/70 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-white/20"
@@ -116,7 +116,7 @@ const Hero = () => {
           >
             Get Started <ArrowRightIcon />
           </Button>
-        </SignedIn>
+        </Authenticated>
       </motion.div>
 
       {/* <motion.div

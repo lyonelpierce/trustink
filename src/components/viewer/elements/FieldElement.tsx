@@ -2,24 +2,18 @@
 
 import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
-import { Database } from "../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCallback, useEffect, useState } from "react";
-import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-
+import { Doc, Id } from "../../../../convex/_generated/dataModel";
 const INDICATOR_HEIGHT = 32; // Fixed height for the indicator
 
 export type FieldItemProps = {
-  field: Database["public"]["Tables"]["fields"]["Row"] & {
-    recipients: {
-      id: string;
-      email: string;
-      color: string;
-    };
+  field: Doc<"fields"> & {
+    recipients: Doc<"recipients">;
   };
   isSelected?: boolean;
-  onFieldClick?: (fieldId: number) => void;
+  onFieldClick?: (fieldId: Id<"fields">) => void;
 };
 
 export const FieldItem = ({
@@ -88,11 +82,11 @@ export const FieldItem = ({
 
   const handleClick = useCallback(() => {
     if (onFieldClick) {
-      onFieldClick(field.id);
+      onFieldClick(field._id);
 
       // Find the field element and scroll it into view
       const fieldElement = document.querySelector(
-        `[data-field-id="${field.id}"]`
+        `[data-field-id="${field._id}"]`
       );
       if (fieldElement) {
         fieldElement.scrollIntoView({
@@ -101,7 +95,7 @@ export const FieldItem = ({
         });
       }
     }
-  }, [field.id, onFieldClick]);
+  }, [field._id, onFieldClick]);
 
   return createPortal(
     <div
@@ -132,7 +126,7 @@ export const FieldItem = ({
           "bg-field-card/80 h-full w-full backdrop-blur-[1px] overflow-hidden border-field-card-border cursor-pointer transition-all duration-200",
           isSelected && "ring-2 ring-blue-500 ring-offset-2"
         )}
-        data-field-id={field.id}
+        data-field-id={field._id}
         style={{
           border: field.recipients.color
             ? `2px solid ${field.recipients.color}`
@@ -147,7 +141,7 @@ export const FieldItem = ({
             }
           )}
         >
-          {FRIENDLY_FIELD_TYPE[field.type]}
+          {field.type === "signature" ? "Signature" : field.type}
           <p className="text-xs hidden">{field.recipients.email}</p>
         </CardContent>
       </Card>
