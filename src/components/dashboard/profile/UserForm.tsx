@@ -97,7 +97,7 @@ const UserForm = ({
           <FormLabel>Avatar</FormLabel>
           <div className="flex items-center gap-2">
             <Avatar className="h-32 w-32 border">
-              <AvatarImage src={avatarPreview} />
+              <AvatarImage src={avatarPreview} className="object-cover" />
               <AvatarFallback>
                 {user.firstName?.[0]}
                 {user.lastName?.[0]}
