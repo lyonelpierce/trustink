@@ -4,19 +4,10 @@ import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 export type ViewerHighlightItemProps = {
-  highlight: {
-    id: string;
-    document_id: string;
-    user_id: string;
-    position_x: number;
-    position_y: number;
-    width: number;
-    height: number;
-    page: number;
-    // add any other fields if needed
-  };
+  highlight: Doc<"highlights">;
   minHeight?: number;
   minWidth?: number;
   defaultHeight?: number;
@@ -73,7 +64,7 @@ const ViewerHighlightItem = ({
   return createPortal(
     <div
       ref={$el}
-      data-highlight-id={highlight.id}
+      data-highlight-id={highlight._id}
       style={{
         position: "absolute",
         left: coords.pageX,

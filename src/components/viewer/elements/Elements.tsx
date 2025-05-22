@@ -1,11 +1,11 @@
 "use client";
 
-import ViewerHighlightItem from "./ViewerHighlightItem";
-import { Doc, Id } from "../../../../convex/_generated/dataModel";
-import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { FieldItem } from "./FieldElement";
 import ViewerParagraphItem from "./ParagraphItem";
+import ViewerHighlightItem from "./ViewerHighlightItem";
+import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Doc, Id } from "../../../../convex/_generated/dataModel";
 
 const MIN_HEIGHT_PX = 12;
 const MIN_WIDTH_PX = 36;
@@ -31,11 +31,17 @@ const Elements = ({
   lines,
   isDocumentPdfLoaded,
   recipients,
+  documentHighlights,
+  setSelectedFieldId,
+  selectedFieldId,
 }: {
   fields: Doc<"fields">[];
   lines: Doc<"lines">[];
   isDocumentPdfLoaded: boolean;
   recipients: Doc<"recipients">[];
+  documentHighlights: Doc<"highlights">[];
+  setSelectedFieldId: (fieldId: Id<"fields"> | null) => void;
+  selectedFieldId: Id<"fields"> | null;
 }) => {
   const fieldBounds = useRef({
     height: 0,
@@ -81,7 +87,7 @@ const Elements = ({
       // Give the DOM a tick to render highlights
       setTimeout(() => {
         const firstHighlight = document.querySelector(
-          `[data-highlight-id="${documentHighlights[0].id}"]`
+          `[data-highlight-id="${documentHighlights[0]._id}"]`
         );
         if (firstHighlight) {
           firstHighlight.scrollIntoView({
@@ -141,7 +147,7 @@ const Elements = ({
           {/* Render highlights below */}
           {documentHighlights.map((highlight) => (
             <ViewerHighlightItem
-              key={highlight.id}
+              key={highlight._id}
               highlight={highlight}
               minHeight={MIN_HEIGHT_PX}
               minWidth={MIN_WIDTH_PX}

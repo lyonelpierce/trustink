@@ -14,7 +14,7 @@ import { useState, useRef, useEffect } from "react";
 import useWebRTCAudioSession from "@/hooks/use-webrtc";
 import { useOptimistic, startTransition } from "react";
 import { useRecordVoice } from "@/hooks/useVoiceRecord";
-import { Doc } from "../../../convex/_generated/dataModel";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const initialAssistantMessage = {
@@ -29,7 +29,7 @@ const AIAgent = ({
 }: {
   documentId: string;
   chatMessages?: Doc<"messages">[];
-  setSelectedFieldId: (id: number | null) => void;
+  setSelectedFieldId: (id: Id<"fields"> | null) => void;
 }) => {
   const { handleStartStopClick } = useWebRTCAudioSession("alloy");
 

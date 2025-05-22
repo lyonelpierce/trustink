@@ -7,25 +7,30 @@ import { api } from "../../../convex/_generated/api";
 import { Preloaded, usePreloadedQuery } from "convex/react";
 import Elements from "@/components/viewer/elements/Elements";
 import { LazyPDFViewerNoLoader } from "@/components/viewer/LazyPDFViewer";
+import { Id } from "../../../convex/_generated/dataModel";
 
 const ViewerWrapper = ({
   document,
   lines,
   fields,
+  highlights,
   chatMessages,
 }: {
   document: Preloaded<typeof api.documents.getDocumentWithRecipients>;
   fields: Preloaded<typeof api.fields.getFields>;
   chatMessages: Preloaded<typeof api.messages.getChatMessages>;
   lines: Preloaded<typeof api.lines.getLines>;
+  highlights: Preloaded<typeof api.highlights.getHighlights>;
 }) => {
   const preloadedDocument = usePreloadedQuery(document);
   const preloadedLines = usePreloadedQuery(lines);
   const preloadedFields = usePreloadedQuery(fields);
   const preloadedChatMessages = usePreloadedQuery(chatMessages);
-
+  const preloadedHighlights = usePreloadedQuery(highlights);
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
-  const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
+  const [selectedFieldId, setSelectedFieldId] = useState<Id<"fields"> | null>(
+    null
+  );
 
   return (
     <>
@@ -42,8 +47,11 @@ const ViewerWrapper = ({
               <Elements
                 fields={preloadedFields}
                 lines={preloadedLines}
+                documentHighlights={preloadedHighlights}
                 isDocumentPdfLoaded={isDocumentPdfLoaded}
                 recipients={preloadedDocument.recipients}
+                selectedFieldId={selectedFieldId}
+                setSelectedFieldId={setSelectedFieldId}
               />
             )}
           </div>
