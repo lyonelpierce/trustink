@@ -43,7 +43,7 @@ const UserDropdown = () => {
         <Avatar className="w-8 h-8 rounded-full">
           <AvatarImage
             src={convexUser.image_url}
-            className="rounded-full size-8"
+            className="rounded-full size-8 object-cover"
           />
           <AvatarFallback>{convexUser.first_name?.charAt(0)}</AvatarFallback>
         </Avatar>
@@ -53,7 +53,7 @@ const UserDropdown = () => {
           <Avatar className="w-12 h-12 rounded-full flex items-center">
             <AvatarImage
               src={convexUser.image_url}
-              className="rounded-full size-10"
+              className="rounded-full size-10 object-cover"
             />
             <AvatarFallback>{convexUser.first_name?.charAt(0)}</AvatarFallback>
           </Avatar>
