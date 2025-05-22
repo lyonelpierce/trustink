@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { useState, useRef, useEffect } from "react";
 
 interface Conversation {
   id: string; // Unique ID for react rendering and loggin purposes
@@ -435,7 +435,6 @@ export default function useWebRTCAudioSession(
 
   useEffect(() => {
     return () => stopSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
