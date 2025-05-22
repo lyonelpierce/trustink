@@ -124,6 +124,26 @@ export const getDocument = query({
   },
 });
 
+export const getDocumentWithRecipients = query({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, { documentId }) => {
+    const document = await ctx.db.get(documentId);
+
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    const recipients = await ctx.db
+      .query("recipients")
+      .withIndex("by_document_id", (q) => q.eq("document_id", documentId))
+      .collect();
+
+    return { ...document, recipients };
+  },
+});
+
 export const updateDocumentName = mutation({
   args: {
     documentId: v.id("documents"),

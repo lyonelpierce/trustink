@@ -2,24 +2,18 @@
 
 import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
-import { Database } from "../../../../database.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCallback, useEffect, useState } from "react";
-import { FRIENDLY_FIELD_TYPE } from "@/constants/FieldTypes";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
-
+import { Doc, Id } from "../../../../convex/_generated/dataModel";
 const INDICATOR_HEIGHT = 32; // Fixed height for the indicator
 
 export type FieldItemProps = {
-  field: Database["public"]["Tables"]["fields"]["Row"] & {
-    recipients: {
-      id: string;
-      email: string;
-      color: string;
-    };
+  field: Doc<"fields"> & {
+    recipients: Doc<"recipients">;
   };
   isSelected?: boolean;
-  onFieldClick?: (fieldId: number) => void;
+  onFieldClick?: (fieldId: Id<"fields">) => void;
 };
 
 export const FieldItem = ({

@@ -15,8 +15,10 @@ import type {
 } from "convex/server";
 import type * as documents from "../documents.js";
 import type * as fields from "../fields.js";
+import type * as highlights from "../highlights.js";
 import type * as http from "../http.js";
 import type * as lines from "../lines.js";
+import type * as messages from "../messages.js";
 import type * as recipients from "../recipients.js";
 import type * as users from "../users.js";
 
@@ -31,8 +33,10 @@ import type * as users from "../users.js";
 declare const fullApi: ApiFromModules<{
   documents: typeof documents;
   fields: typeof fields;
+  highlights: typeof highlights;
   http: typeof http;
   lines: typeof lines;
+  messages: typeof messages;
   recipients: typeof recipients;
   users: typeof users;
 }>;

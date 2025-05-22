@@ -2,12 +2,12 @@
 
 import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
-import { Database } from "../../../../database.types";
 import { PDF_VIEWER_PAGE_SELECTOR } from "@/constants/Viewer";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 export type ViewerParagraphItemProps = {
-  paragraph: Database["public"]["Tables"]["documents_lines"]["Row"];
+  line: Doc<"lines">;
   minHeight?: number;
   minWidth?: number;
   defaultHeight?: number;
@@ -15,7 +15,7 @@ export type ViewerParagraphItemProps = {
 };
 
 export const ViewerParagraphItem = ({
-  paragraph,
+  line,
   minHeight,
   minWidth,
   defaultHeight,
@@ -32,7 +32,7 @@ export const ViewerParagraphItem = ({
 
   const calculateCoords = useCallback(() => {
     const $page = document.querySelector<HTMLElement>(
-      `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${paragraph.page_number}"]`
+      `${PDF_VIEWER_PAGE_SELECTOR}[data-page-number="${line.page_number}"]`
     );
 
     if (!$page) {
@@ -43,10 +43,10 @@ export const ViewerParagraphItem = ({
     const top = $page.getBoundingClientRect().top + window.scrollY;
     const left = $page.getBoundingClientRect().left + window.scrollX;
 
-    const pageX = (paragraph.position_x / 100) * width + left;
-    const pageY = (paragraph.position_y / 100) * height + top;
-    const pageHeight = (paragraph.height / 100) * height;
-    const pageWidth = (paragraph.width / 100) * width;
+    const pageX = (line.position_x / 100) * width + left;
+    const pageY = (line.position_y / 100) * height + top;
+    const pageHeight = (line.height / 100) * height;
+    const pageWidth = (line.width / 100) * width;
 
     setCoords({
       pageX,
@@ -56,11 +56,11 @@ export const ViewerParagraphItem = ({
       pageScale: height / 792, // Assuming standard PDF height is 792px (letter size)
     });
   }, [
-    paragraph.page_number,
-    paragraph.position_x,
-    paragraph.position_y,
-    paragraph.height,
-    paragraph.width,
+    line.page_number,
+    line.position_x,
+    line.position_y,
+    line.height,
+    line.width,
   ]);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export const ViewerParagraphItem = ({
   return createPortal(
     <div
       ref={$el}
-      data-field-id={paragraph.id}
+      data-field-id={line._id}
       style={{
         position: "absolute",
         left: coords.pageX,
@@ -91,13 +91,13 @@ export const ViewerParagraphItem = ({
         minWidth: minWidth,
         overflow: "visible",
         fontSize:
-          paragraph.size && coords.pageScale
-            ? `${paragraph.size * coords.pageScale}px`
-            : paragraph.size
-              ? `${paragraph.size}px`
+          line.size && coords.pageScale
+            ? `${line.size * coords.pageScale}px`
+            : line.size
+              ? `${line.size}px`
               : undefined,
-        fontStyle: paragraph.style === "italic" ? "italic" : undefined,
-        fontWeight: paragraph.style === "bold" ? "bold" : undefined,
+        fontStyle: line.style === "italic" ? "italic" : undefined,
+        fontWeight: line.style === "bold" ? "bold" : undefined,
         background: "transparent",
         color: "#222",
         display: "flex",
@@ -108,7 +108,7 @@ export const ViewerParagraphItem = ({
       }}
       className={cn("rounded select-none", "viewer-paragraph-item")}
     >
-      {paragraph.text}
+      {line.text}
     </div>,
     document.body
   );

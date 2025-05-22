@@ -105,7 +105,7 @@ export default defineSchema({
   fields: defineTable(Fields)
     .index("by_document_id", ["document_id"])
     .index("by_recipient_id", ["recipient_id"]),
-  highlights: defineTable(Highlights),
+  highlights: defineTable(Highlights).index("by_document_id", ["document_id"]),
   recipients: defineTable(Recipients).index("by_document_id", ["document_id"]),
-  messages: defineTable(Messages),
+  messages: defineTable(Messages).index("by_document_id", ["document_id"]),
 });
