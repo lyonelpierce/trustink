@@ -4,7 +4,7 @@ import { useState } from "react";
 import EditorNavbar from "./EditorNavbar";
 import RecipientsForm from "./RecipientsForm";
 import { api } from "../../../convex/_generated/api";
-import { Preloaded, usePreloadedQuery } from "convex/react";
+import { Authenticated, Preloaded, usePreloadedQuery } from "convex/react";
 import Elements from "@/components/editor/elements/Elements";
 import { LazyPDFViewerNoLoader } from "@/components/editor/LazyPDFViewer";
 
@@ -30,9 +30,10 @@ const EditorWrapper = ({
   const preloadedRecipients = usePreloadedQuery(recipients);
 
   console.log("PRELOADEDLINES", preloadedLines);
+  console.log("PRELOADEDFIELDS", preloadedFields);
 
   return (
-    <>
+    <Authenticated>
       <EditorNavbar
         documentName={preloadedDocument.name}
         documentId={preloadedDocument._id}
@@ -63,7 +64,7 @@ const EditorWrapper = ({
           </div>
         </div>
       </div>
-    </>
+    </Authenticated>
   );
 };
 

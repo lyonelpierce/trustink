@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import WidthWrapper from "@/components/WidthWrapper";
+import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 
 const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
   const { userId } = await auth();
