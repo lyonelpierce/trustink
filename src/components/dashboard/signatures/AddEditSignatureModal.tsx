@@ -83,7 +83,7 @@ const AddEditSignatureModal = () => {
           toast.error("Failed to create signature");
         }
       } else if (type === "edit") {
-        const response = await fetch(`/api/signatures?id=${signature?.id}`, {
+        const response = await fetch(`/api/signatures?id=${signature?._id}`, {
           method: "PUT",
           body: JSON.stringify(values),
         });

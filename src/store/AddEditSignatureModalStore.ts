@@ -1,16 +1,13 @@
 import { create } from "zustand";
-import { Database } from "../../database.types";
-
+import { Doc } from "../../convex/_generated/dataModel";
 interface AddEditSignatureModalStore {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   type: "add" | "edit";
   setType: (type: "add" | "edit") => void;
   onClose: () => void;
-  signature: Database["public"]["Tables"]["signatures"]["Row"] | null;
-  setSignature: (
-    signature: Database["public"]["Tables"]["signatures"]["Row"] | null
-  ) => void;
+  signature: Doc<"signatures"> | null;
+  setSignature: (signature: Doc<"signatures"> | null) => void;
 }
 
 const useAddEditSignatureModalStore = create<AddEditSignatureModalStore>(

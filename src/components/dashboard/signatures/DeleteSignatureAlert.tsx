@@ -2,31 +2,31 @@
 
 import {
   Credenza,
-  CredenzaContent,
-  CredenzaHeader,
   CredenzaTitle,
   CredenzaFooter,
-  CredenzaDescription,
+  CredenzaHeader,
   CredenzaTrigger,
+  CredenzaContent,
+  CredenzaDescription,
 } from "@/components/ui/credenza";
-import { Button } from "@/components/ui/button";
-import { TrashIcon } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Signature from "./Signature";
-import { Database } from "../../../../database.types";
+import { TrashIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 const DeleteSignatureAlert = ({
   signature,
 }: {
-  signature: Database["public"]["Tables"]["signatures"]["Row"];
+  signature: Doc<"signatures">;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   const handleDelete = async () => {
-    const response = await fetch(`/api/signatures?id=${signature.id}`, {
+    const response = await fetch(`/api/signatures?id=${signature._id}`, {
       method: "DELETE",
     });
 

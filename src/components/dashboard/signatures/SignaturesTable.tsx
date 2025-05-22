@@ -11,14 +11,14 @@ import {
   TableHeader,
 } from "@/components/ui/table";
 import { PencilIcon } from "lucide-react";
-import { Database } from "../../../../database.types";
 import DeleteSignatureAlert from "./DeleteSignatureAlert";
 import useAddEditSignatureModalStore from "@/store/AddEditSignatureModalStore";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 const SignaturesTable = ({
   signatures,
 }: {
-  signatures: Database["public"]["Tables"]["signatures"]["Row"][];
+  signatures: Doc<"signatures">[];
 }) => {
   const { setIsOpen, setType, setSignature } = useAddEditSignatureModalStore();
 
@@ -41,7 +41,7 @@ const SignaturesTable = ({
       </TableHeader>
       <TableBody>
         {signatures.map((signature) => (
-          <TableRow key={signature.id}>
+          <TableRow key={signature._id}>
             <TableCell
               className={cn("font-medium text-4xl select-none", signature.font)}
             >

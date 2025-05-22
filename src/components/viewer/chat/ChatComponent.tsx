@@ -3,15 +3,15 @@ import { SendIcon } from "lucide-react";
 import MessageList from "./MessageList";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Database } from "../../../../database.types";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 const ChatComponent = ({
   documentId,
   chatMessages,
 }: {
   documentId: string;
-  chatMessages: Database["public"]["Tables"]["chat_messages"]["Row"][];
+  chatMessages: Doc<"messages">[];
 }) => {
   const { input, messages, handleInputChange, handleSubmit } = useChat({
     api: "/api/chat",
@@ -19,7 +19,7 @@ const ChatComponent = ({
       documentId,
     },
     initialMessages: chatMessages.map((message) => ({
-      id: message.id.toString(),
+      id: message._id.toString(),
       content: message.content,
       role: message.role as "user" | "assistant",
     })),
