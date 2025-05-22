@@ -259,3 +259,11 @@ export const updateDocumentStatus = mutation({
     return { success: true };
   },
 });
+
+export const getPublicUrl = mutation({
+  args: { storageId: v.string() },
+  handler: async (ctx, { storageId }) => {
+    const url = await ctx.storage.getUrl(storageId as Id<"_storage">);
+    return { url };
+  },
+});

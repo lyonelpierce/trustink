@@ -20,6 +20,7 @@ import type * as http from "../http.js";
 import type * as lines from "../lines.js";
 import type * as messages from "../messages.js";
 import type * as recipients from "../recipients.js";
+import type * as signatures from "../signatures.js";
 import type * as users from "../users.js";
 
 /**
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   lines: typeof lines;
   messages: typeof messages;
   recipients: typeof recipients;
+  signatures: typeof signatures;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

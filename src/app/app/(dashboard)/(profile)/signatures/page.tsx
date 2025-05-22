@@ -1,8 +1,9 @@
 import { Metadata } from "next";
+import { convex } from "@/lib/convex";
 import { auth } from "@clerk/nextjs/server";
 import { SignatureIcon } from "lucide-react";
 import DashbaordTitle from "@/components/dashboard/title";
-import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { api } from "../../../../../../convex/_generated/api";
 import SignaturesTable from "@/components/dashboard/signatures/SignaturesTable";
 import AddEditSignatureModal from "@/components/dashboard/signatures/AddEditSignatureModal";
 import AddEditSignatureButton from "@/components/dashboard/signatures/AddEditSignatureButton";
@@ -13,27 +14,15 @@ export const metadata: Metadata = {
 };
 
 const getUserSignatures = async () => {
+  // Clerk auth is still required for SSR token
   const { userId } = await auth();
-
-  if (!userId) {
-    return [];
-  }
-
-  const supabase = createServerSupabaseClient();
-
+  if (!userId) return [];
   try {
-    const { data, error } = await supabase
-      .from("signatures")
-      .select("*")
-      .eq("user_id", userId);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
+    const data = await convex.query(api.signatures.getUserSignatures, {});
     return data;
   } catch (error) {
     console.log(error);
+    return [];
   }
 };
 

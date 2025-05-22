@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, query } from "./_generated/server";
+import { internalMutation, query, mutation } from "./_generated/server";
 
 export const createUser = internalMutation({
   args: {
@@ -38,5 +38,29 @@ export const getUserByClerkId = query({
       .query("users")
       .withIndex("by_user_id", (q) => q.eq("user_id", clerkId))
       .first();
+  },
+});
+
+export const updateUserProfile = mutation({
+  args: {
+    clerkId: v.string(),
+    first_name: v.optional(v.string()),
+    last_name: v.optional(v.string()),
+    image_url: v.optional(v.string()),
+  },
+  handler: async (ctx, { clerkId, first_name, last_name, image_url }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_user_id", (q) => q.eq("user_id", clerkId))
+      .first();
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const patch: Record<string, unknown> = { updatedAt: Date.now() };
+    if (first_name !== undefined) patch.first_name = first_name;
+    if (last_name !== undefined) patch.last_name = last_name;
+    if (image_url !== undefined) patch.image_url = image_url;
+    await ctx.db.patch(user._id, patch);
+    return { success: true };
   },
 });

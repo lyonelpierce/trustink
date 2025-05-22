@@ -1,6 +1,8 @@
+import { convex } from "@/lib/convex";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseSsr";
+import { api } from "../../../../convex/_generated/api";
+import { Id } from "../../../../convex/_generated/dataModel";
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
@@ -11,37 +13,22 @@ export async function POST(request: NextRequest) {
 
   const { full_name } = await request.json();
 
-  const supabase = createServerSupabaseClient();
-
   try {
-    const initials = full_name
-      .split(" ")
-      .map((name: string) => name[0])
-      .join("");
-
-    const { error } = await supabase.from("signatures").insert({
+    await convex.mutation(api.signatures.createSignature, {
       full_name,
-      initials,
       font: "font-tangerine",
-      user_id: userId,
     });
-
-    if (error) {
-      // Check for unique constraint violation
-      if (error.code === "23505") {
-        return NextResponse.json(
-          { message: "A similar signature already exists" },
-          { status: 409 }
-        );
-      }
-      throw new Error(error.message);
-    }
-
     return NextResponse.json(
       { message: "Signature created successfully" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
+    if (
+      error instanceof Error &&
+      error.message === "A similar signature already exists"
+    ) {
+      return NextResponse.json({ message: error.message }, { status: 409 });
+    }
     console.log(error);
     return NextResponse.json(
       { message: "Failed to create signature" },
@@ -69,33 +56,17 @@ export async function PUT(request: NextRequest) {
 
   const { full_name } = await request.json();
 
-  const initials = full_name
-    .split(" ")
-    .map((name: string) => name[0])
-    .join("");
-
-  const supabase = createServerSupabaseClient();
-
   try {
-    const { error } = await supabase
-      .from("signatures")
-      .update({
-        full_name,
-        initials,
-        font: "font-tangerine",
-      })
-      .eq("id", signatureId)
-      .eq("user_id", userId); // Ensure user can only update their own signatures
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
+    await convex.mutation(api.signatures.updateSignature, {
+      id: signatureId as Id<"signatures">,
+      full_name,
+      font: "font-tangerine",
+    });
     return NextResponse.json(
       { message: "Signature updated successfully" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.log(error);
     return NextResponse.json(
       { message: "Failed to update signature" },
@@ -121,24 +92,15 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  const supabase = createServerSupabaseClient();
-
   try {
-    const { error } = await supabase
-      .from("signatures")
-      .delete()
-      .eq("id", signatureId)
-      .eq("user_id", userId); // Ensure user can only delete their own signatures
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
+    await convex.mutation(api.signatures.deleteSignature, {
+      id: signatureId as Id<"signatures">,
+    });
     return NextResponse.json(
       { message: "Signature deleted successfully" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.log(error);
     return NextResponse.json(
       { message: "Failed to delete signature" },
