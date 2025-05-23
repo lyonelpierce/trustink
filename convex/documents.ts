@@ -220,21 +220,21 @@ export const deleteDocument = mutation({
       await ctx.db.delete(recipient._id);
     }
     // Delete related highlights
-    // const highlights = await ctx.db
-    //   .query("highlights")
-    //   .filter((q) => q.eq("document_id", documentId))
-    //   .collect();
-    // for (const highlight of highlights) {
-    //   await ctx.db.delete(highlight._id);
-    // }
-    // // Delete related messages
-    // const messages = await ctx.db
-    //   .query("messages")
-    //   .filter((q) => q.eq("document_id", documentId))
-    //   .collect();
-    // for (const message of messages) {
-    //   await ctx.db.delete(message._id);
-    // }
+    const highlights = await ctx.db
+      .query("highlights")
+      .withIndex("by_document_id", (q) => q.eq("document_id", documentId))
+      .collect();
+    for (const highlight of highlights) {
+      await ctx.db.delete(highlight._id);
+    }
+    // Delete related messages
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_document_id", (q) => q.eq("document_id", documentId))
+      .collect();
+    for (const message of messages) {
+      await ctx.db.delete(message._id);
+    }
     // Delete the document itself
     await ctx.storage.delete(document.storage_id as Id<"_storage">);
 
