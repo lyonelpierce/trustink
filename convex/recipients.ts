@@ -28,6 +28,8 @@ export const addRecipient = mutation({
       .filter((q) => q.eq("email", args.email))
       .first();
 
+    console.log("USER", user);
+
     const recipient = await ctx.db.insert("recipients", {
       document_id: args.document_id,
       email: args.email,
