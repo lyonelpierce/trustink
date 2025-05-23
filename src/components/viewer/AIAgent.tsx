@@ -303,6 +303,26 @@ const AIAgent = ({
                 content: "I've highlighted where you need to sign.",
               },
             ]);
+            // Save assistant's predefined answer
+            await fetch("/api/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                messages: [
+                  ...messages.map((m) => ({
+                    role: m.role,
+                    content: m.content,
+                  })),
+                  { role: "user", content: message },
+                  {
+                    role: "assistant",
+                    content: "I've highlighted where you need to sign.",
+                  },
+                ],
+                documentId,
+                skipOpenAI: true,
+              }),
+            });
           } else {
             setMessages((prev) => [
               ...prev,
@@ -313,6 +333,27 @@ const AIAgent = ({
                   "I couldn't find any signature fields assigned to you in this document.",
               },
             ]);
+            // Save assistant's predefined answer
+            await fetch("/api/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                messages: [
+                  ...messages.map((m) => ({
+                    role: m.role,
+                    content: m.content,
+                  })),
+                  { role: "user", content: message },
+                  {
+                    role: "assistant",
+                    content:
+                      "I couldn't find any signature fields assigned to you in this document.",
+                  },
+                ],
+                documentId,
+                skipOpenAI: true,
+              }),
+            });
           }
         } else {
           setMessages((prev) => [
@@ -324,6 +365,24 @@ const AIAgent = ({
                 "Sorry, I couldn't fetch your signature fields right now.",
             },
           ]);
+          // Save assistant's predefined answer
+          await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: [
+                ...messages.map((m) => ({ role: m.role, content: m.content })),
+                { role: "user", content: message },
+                {
+                  role: "assistant",
+                  content:
+                    "Sorry, I couldn't fetch your signature fields right now.",
+                },
+              ],
+              documentId,
+              skipOpenAI: true,
+            }),
+          });
         }
       } catch {
         setMessages((prev) => [
@@ -335,6 +394,24 @@ const AIAgent = ({
               "Sorry, something went wrong while looking for your signature fields.",
           },
         ]);
+        // Save assistant's predefined answer
+        await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              ...messages.map((m) => ({ role: m.role, content: m.content })),
+              { role: "user", content: message },
+              {
+                role: "assistant",
+                content:
+                  "Sorry, something went wrong while looking for your signature fields.",
+              },
+            ],
+            documentId,
+            skipOpenAI: true,
+          }),
+        });
       }
       return;
     }
@@ -367,6 +444,23 @@ const AIAgent = ({
             content: `I've highlighted the \"${sectionQuery}\" section.`,
           },
         ]);
+        // Save assistant's predefined answer
+        await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              ...messages.map((m) => ({ role: m.role, content: m.content })),
+              { role: "user", content: message },
+              {
+                role: "assistant",
+                content: `I've highlighted the \"${sectionQuery}\" section.`,
+              },
+            ],
+            documentId,
+            skipOpenAI: true,
+          }),
+        });
         return;
       }
     }
