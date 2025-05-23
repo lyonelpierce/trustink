@@ -40,8 +40,6 @@ export const addField = mutation({
 
     const now = Date.now();
 
-    console.log("RECIPIENTID", args.recipient_id);
-
     const fieldId = await ctx.db.insert("fields", {
       user_id: user._id,
       document_id: args.document_id,
