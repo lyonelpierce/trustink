@@ -25,7 +25,7 @@ export const addRecipient = mutation({
     // Try to find a user with the given email
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     console.log("USER", user);

@@ -98,7 +98,9 @@ export const Messages = {
 };
 
 export default defineSchema({
-  users: defineTable(User).index("by_user_id", ["user_id"]),
+  users: defineTable(User)
+    .index("by_user_id", ["user_id"])
+    .index("by_email", ["email"]),
   signatures: defineTable(Signatures),
   documents: defineTable(Document).index("by_user_id", ["user_id"]),
   lines: defineTable(Lines).index("by_document_id", ["document_id"]),
