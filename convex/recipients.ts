@@ -22,6 +22,12 @@ export const addRecipient = mutation({
     color: v.string(),
   },
   handler: async (ctx, args) => {
+    // Try to find a user with the given email
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq("email", args.email))
+      .first();
+
     const recipient = await ctx.db.insert("recipients", {
       document_id: args.document_id,
       email: args.email,
@@ -29,6 +35,7 @@ export const addRecipient = mutation({
       created_at: Date.now(),
       is_second: false,
       is_read: false,
+      user_id: user ? user._id : undefined,
     });
     return recipient;
   },
