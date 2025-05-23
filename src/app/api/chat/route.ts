@@ -10,7 +10,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, documentId } = await req.json();
+    const { messages, documentId, skipOpenAI } = await req.json();
     const { userId } = await auth();
 
     if (!userId) {
@@ -34,6 +34,11 @@ export async function POST(req: NextRequest) {
       role: latestMessage.role,
       content: latestMessage.content,
     });
+
+    // If skipOpenAI is true, return early after saving the message
+    if (skipOpenAI) {
+      return NextResponse.json({ success: true });
+    }
 
     // 1. Get the document from Convex
     const document = await convex.query(api.documents.getDocument, {

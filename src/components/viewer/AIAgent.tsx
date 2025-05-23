@@ -257,6 +257,19 @@ const AIAgent = ({
   const sendToChatAPI = async (message: string) => {
     // Detect signature-related questions
     if (/where.*sign|where.*signature|where.*do.*i.*sign/i.test(message)) {
+      // Always save the user message
+      await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map((m) => ({ role: m.role, content: m.content })),
+            { role: "user", content: message },
+          ],
+          documentId,
+          skipOpenAI: true,
+        }),
+      });
       try {
         const res = await fetch("/api/fields", {
           method: "POST",
@@ -284,6 +297,7 @@ const AIAgent = ({
             }, 200);
             setMessages((prev) => [
               ...prev,
+              { role: "user", content: message },
               {
                 role: "assistant",
                 content: "I've highlighted where you need to sign.",
@@ -292,6 +306,7 @@ const AIAgent = ({
           } else {
             setMessages((prev) => [
               ...prev,
+              { role: "user", content: message },
               {
                 role: "assistant",
                 content:
@@ -302,6 +317,7 @@ const AIAgent = ({
         } else {
           setMessages((prev) => [
             ...prev,
+            { role: "user", content: message },
             {
               role: "assistant",
               content:
@@ -312,6 +328,7 @@ const AIAgent = ({
       } catch {
         setMessages((prev) => [
           ...prev,
+          { role: "user", content: message },
           {
             role: "assistant",
             content:
@@ -325,12 +342,26 @@ const AIAgent = ({
     // Detect highlight requests
     const highlightRegex = /highlight (.+)/i;
     if (highlightRegex.test(message)) {
+      // Always save the user message
+      await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map((m) => ({ role: m.role, content: m.content })),
+            { role: "user", content: message },
+          ],
+          documentId,
+          skipOpenAI: true,
+        }),
+      });
       const match = message.match(highlightRegex);
       const sectionQuery = match?.[1];
       if (sectionQuery) {
         await highlightSection(sectionQuery);
         setMessages((prev) => [
           ...prev,
+          { role: "user", content: message },
           {
             role: "assistant",
             content: `I've highlighted the \"${sectionQuery}\" section.`,
