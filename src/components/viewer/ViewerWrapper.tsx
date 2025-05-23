@@ -27,6 +27,7 @@ const ViewerWrapper = ({
   const preloadedFields = usePreloadedQuery(fields);
   const preloadedChatMessages = usePreloadedQuery(chatMessages);
   const preloadedHighlights = usePreloadedQuery(highlights);
+
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<Id<"fields"> | null>(
     null

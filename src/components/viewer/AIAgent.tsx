@@ -265,11 +265,15 @@ const AIAgent = ({
         });
         if (res.ok) {
           const { fields } = await res.json();
-          if (fields && fields.length > 0) {
-            setSelectedFieldId(fields[0].id);
+          // Find the first signature field
+          const signatureField = fields?.find(
+            (f: Doc<"fields">) => f.type === "signature"
+          );
+          if (signatureField) {
+            setSelectedFieldId(signatureField._id);
             setTimeout(() => {
               const fieldElement = document.querySelector(
-                `[data-field-id='${fields[0].id}']`
+                `[data-field-id='${signatureField._id}']`
               );
               if (fieldElement) {
                 fieldElement.scrollIntoView({
