@@ -33,11 +33,20 @@ const isDashboardRoute = createRouteMatcher([
   "/editor(.*)",
 ]);
 
+function isRedirectError(error: unknown): error is {
+  message: string;
+  digest?: { includes?: (s: string) => boolean };
+} {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  );
+}
+
 export default clerkMiddleware(async (auth, req) => {
   try {
-    // Protect both dashboard and editor routes
-    if (isDashboardRoute(req)) await auth.protect();
-
     const url = req.nextUrl;
     const host = req.headers.get("host") || "";
 
@@ -56,6 +65,13 @@ export default clerkMiddleware(async (auth, req) => {
       hostname === "trustink.ai" ||
       hostname === "www.trustink.ai"
     ) {
+      // Protect dashboard routes on main domain
+      if (isDashboardRoute(req)) {
+        await auth.protect({
+          unauthenticatedUrl: `${process.env.NEXT_PUBLIC_SUBDOMAIN_URL}/sign-in`,
+          unauthorizedUrl: `${process.env.NEXT_PUBLIC_SUBDOMAIN_URL}/sign-in`,
+        });
+      }
       return NextResponse.next();
     }
 
@@ -70,6 +86,17 @@ export default clerkMiddleware(async (auth, req) => {
         return NextResponse.next();
       }
 
+      // Protect all app subdomain routes except sign-in/sign-up
+      if (
+        !url.pathname.startsWith("/sign-in") &&
+        !url.pathname.startsWith("/sign-up")
+      ) {
+        await auth.protect({
+          unauthenticatedUrl: `${process.env.NEXT_PUBLIC_SUBDOMAIN_URL}/sign-in`,
+          unauthorizedUrl: `${process.env.NEXT_PUBLIC_SUBDOMAIN_URL}/sign-in`,
+        });
+      }
+
       // Redirect to /documents if accessing the root path
       if (url.pathname === "/") {
         return NextResponse.redirect(new URL("/documents", req.url));
@@ -82,15 +109,26 @@ export default clerkMiddleware(async (auth, req) => {
     if (
       reservedSubdomains.some(
         (subdomain) =>
-          hostname === `${subdomain}.${process.env.NEXT_PUBLIC_BASE_URL}`
+          hostname === `${subdomain}.${process.env.NEXT_PUBLIC_BASE_URL}` ||
+          hostname === `${subdomain}.trustink.ai`
       )
     ) {
       return NextResponse.redirect(url);
     }
 
-    // Handle all other routes
+    // Handle all other routes (custom subdomains)
     return NextResponse.rewrite(new URL(`/${hostname}${path}`, req.url));
   } catch (error) {
+    // Re-throw redirect errors - these are expected and handled by Next.js
+    if (
+      isRedirectError(error) &&
+      (error.message === "NEXT_REDIRECT" ||
+        error.digest?.includes?.("NEXT_REDIRECT"))
+    ) {
+      throw error;
+    }
+
+    // Log other unexpected errors
     console.error("[Middleware Error]", error);
     return NextResponse.next();
   }
