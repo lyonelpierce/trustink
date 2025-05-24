@@ -59,10 +59,14 @@ export const getLines = query({
     document_id: v.id("documents"),
   },
   handler: async (ctx, args) => {
+    console.log(args.document_id);
+
     const lines = await ctx.db
       .query("lines")
       .withIndex("by_document_id", (q) => q.eq("document_id", args.document_id))
       .collect();
+
+    console.log(lines);
 
     return lines;
   },
