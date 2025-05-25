@@ -1,12 +1,12 @@
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 import { convex } from "@/lib/convex";
 import { auth } from "@clerk/nextjs/server";
+import { waitUntil } from "@vercel/functions";
 import { getAuth } from "@clerk/nextjs/server";
 import { api } from "../../../../convex/_generated/api";
-import { after, NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const truncateStringByBytes = (str: string, bytes: number) => {
   const enc = new TextEncoder();
@@ -71,25 +71,25 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("API");
-    after(() => {
-      console.log("API2");
-      try {
-        const form = new FormData();
-        form.append("file", file);
-        form.append("user_id", userId);
-        form.append("document_id", document);
-        fetch(`${process.env.BACKEND_API}`, {
-          method: "POST",
-          body: form,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      } catch (error) {
-        console.log("API3");
-        console.error("[API/documents] Error processing document:", error);
-      }
-    });
+    waitUntil(
+      (async () => {
+        try {
+          const form = new FormData();
+          form.append("file", file);
+          form.append("user_id", userId);
+          form.append("document_id", document);
+          await fetch(`${process.env.BACKEND_API}`, {
+            method: "POST",
+            body: form,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        } catch (error) {
+          console.error("[API/documents] Error processing document:", error);
+        }
+      })()
+    );
 
     return NextResponse.json({
       id: document,
