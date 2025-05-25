@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
       updated_at: Date.now(),
     });
 
+    console.log("API");
     after(() => {
+      console.log("API2");
       try {
         const form = new FormData();
         form.append("file", file);
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (error) {
+        console.log("API3");
         console.error("[API/documents] Error processing document:", error);
       }
     });
